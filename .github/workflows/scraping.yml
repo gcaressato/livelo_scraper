@@ -22,7 +22,7 @@ jobs:
         
       - name: Instalar dependências
         run: |
-          pip install selenium webdriver-manager pandas openpyxl selenium-stealth undetected-chromedriver
+          pip install selenium webdriver-manager pandas openpyxl selenium-stealth undetected-chromedriver plotly numpy
           
       - name: Verificar ambiente
         run: |
@@ -34,6 +34,7 @@ jobs:
         run: |
           mkdir -p logs
           mkdir -p output
+          mkdir -p relatorios
           
       - name: Executar script principal
         run: |
@@ -41,9 +42,9 @@ jobs:
         
       - name: Verificar falhas na execução
         run: |
-          if cat output.log | grep -q "Falha no scraper\|Falha no reporter"; then
+          if cat output.log | grep -q "Falha no scraper\|Falha no reporter\|ERRO FATAL"; then
             echo "::error::Falhas detectadas na execução!"
-            grep -A 10 "Falha" output.log || true
+            grep -A 10 "Falha\|ERRO" output.log || true
             echo "SCRAPING_FALHOU=true" >> $GITHUB_ENV
             exit 1
           else
@@ -67,10 +68,11 @@ jobs:
           git add output/
           git add logs/
           
-          # Verifica se há relatório HTML e adiciona para commit
+          # Adicionar relatórios HTML
           if [ -f "relatorio_livelo.html" ]; then
             mkdir -p relatorios
             cp relatorio_livelo.html relatorios/relatorio_livelo_$(date +%Y%m%d).html
+            git add relatorio_livelo.html
             git add relatorios/
           fi
           
