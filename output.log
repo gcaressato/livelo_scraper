@@ -1,0 +1,1837 @@
+Executando livelo_scraper.py...
+Saída de livelo_scraper.py:
+Iniciando Chrome para ambiente GitHub Actions...
+Configurações do Chrome:
+  Headless: Sim
+  User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) ...
+  Window size: 1920x1080
+Iniciando novo processo do Chrome...
+Chrome iniciado com sucesso. Sessão ID: a4e3b38abcf35953ac08daafadabf096
+Navegando para o site da Livelo...
+Tentativa 1/5: Acessando URL...
+Aguardando carregamento básico da página...
+Aguardando 10 segundos para carregamento completo...
+Verificando elementos principais...
+Tentando XPath: /html/body/div[4]/main/div[1]/div[37]/div/div/div[2]/section/div[2]/div[3]/div[1]
+✓ Encontrados 1 elementos com XPath: /html/body/div[4]/main/div[1]/div[37]/div/div/div[2]/section/div[2]/div[3]/div[1]
+Rolando a página para carregar todos os elementos...
+Altura da página: 34031px
+Rolando para posição: 400px
+Rolando para posição: 800px
+Rolando para posição: 1200px
+Rolando para posição: 1600px
+Rolando para posição: 2000px
+Rolando para posição: 2400px
+Rolando para posição: 2800px
+Rolando para posição: 3200px
+Rolando para posição: 3600px
+Rolando para posição: 4000px
+Rolando até o final da página
+Rolando de volta para o topo
+Verificando elementos após rolagem...
+✓ Encontrados 1 elementos com XPath: /html/body/div[4]/main/div[1]/div[37]/div/div/div[2]/section/div[2]/div[3]/div[1] após rolagem
+Página carregada com sucesso!
+Iniciando extração de dados...
+Iniciando extração de dados por XPath...
+Extraído 1: ABC da Construcao | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 2: Abelha Rainha | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 3: ADCOS | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 4: Aguativa Resort | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 5: Aliexpress | Não | U$ | Valor: 1.0 | Pontos: 3
+Extraído 6: Allianz | Não | R$ | Valor: 1.0 | Pontos: 4
+Extraído 7: Allugator | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 8: Amazon | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 9: AMOBELEZA | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 10: Angeloni | Sim | R$ | Valor: 1.0 | Pontos: 3
+Extraído 11: Aramis | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 12: Asics | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 13: Assist Card Seguros | Não | R$ | Valor: 1.0 | Pontos: 10
+Extraído 14: Atalaia Noronha | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 15: avis | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 16: Avon | Não | R$ | Valor: 1.0 | Pontos: 6
+Extraído 17: Azul Viagens | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 18: Bagaggio | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 19: Baianao | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 20: Basicamente | Não | R$ | Valor: 1.0 | Pontos: 4
+Extraído 21: Basico.com | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 22: Beach Park Hospedagens | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 23: Beach Park Ingressos | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 24: Beep | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 25: Beleza na web | Sim | R$ | Valor: 1.0 | Pontos: 10
+Extraído 26: Beleza na Web PRO | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 27: Beto Carrero World | Sim | R$ | Valor: 1.0 | Pontos: 5
+Extraído 28: Beyoung | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 29: Bibi | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 30: BoBo | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 31: Bobstore | Sim | R$ | Valor: 1.0 | Pontos: 4
+Extraído 32: Bombay Herbs & Spices | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 33: Bonjour Lingerie | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 34: Booking.com | Não | U$ | Valor: 1.0 | Pontos: 4
+Extraído 35: Bradesco Capitalizacao | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 36: Buddha Spa | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 37: Budget | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 38: Bulbe Energia | Não | R$ | Valor: 1.0 | Pontos: 12
+Extraído 39: Buser | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 40: Buzios Beach Resort | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 41: Cabana Magazine | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 42: Cadence | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 43: Cafe Orfeu | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 44: Cafe Utam | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 45: Caffeine Army | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 46: Cambio Online | Não | R$ | Valor: 5.0 | Pontos: 1
+Extraído 47: Camicado | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 48: CARE Natural Beauty | Não | R$ | Valor: 1.0 | Pontos: 4
+Extraído 49: Carrefour Mercado | Sim | R$ | Valor: 1.0 | Pontos: 3
+Extraído 50: Carrefour Shopping | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 51: Casa MinD | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 52: Casas Bahia | Sim | R$ | Valor: 1.0 | Pontos: 5
+Extraído 53: CEA | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 54: Centauro | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 55: Cervejabox | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 56: Cestas Michelli | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 57: Chico Rei | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 58: Ciclic Seguros – Bike | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 59: Ciclic Seguros – Celular | Sim | R$ | Valor: 1.0 | Pontos: 6
+Extraído 60: Ciclic Seguros – Viagem | Sim | R$ | Valor: 1.0 | Pontos: 15
+Extraído 61: Claro | Não | R$ | Valor: 1.0 | Pontos: 6
+Extraído 62: ClickBus | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 63: Coffee Mais | Não | R$ | Valor: 1.0 | Pontos: 4
+Extraído 64: Colcci | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 65: Coliseu | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 66: Consorcio Magalu | Não | R$ | Valor: 1.0 | Pontos: 10
+Extraído 67: Cook Eletroraro | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 68: Coris | Não | R$ | Valor: 1.0 | Pontos: 5
+Extraído 69: Creditas | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 70: Crocs | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 71: Cruzeiros Agaxtur | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 72: Dafiti | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 73: Dako | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 74: Darkness | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 75: Decathlon | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 76: Decolar | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 77: Democrata | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 78: Divvino | Sim | R$ | Valor: 1.0 | Pontos: 3
+Extraído 79: DPaschoal | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 80: Dr Jones | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 81: Drogaria Sao Paulo | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 82: Drogarias Pacheco | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 83: Dudalina | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 84: Easy Live | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 85: EDP | Não | R$ | Valor: 1.0 | Pontos: 6
+Extraído 86: elbo | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 87: Ellus | Sim | R$ | Valor: 1.0 | Pontos: 4
+Extraído 88: Epoca cosmesticos | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 89: eSim Travelex | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 90: Estoque | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 91: Eudora | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 92: Euro | Sim | R$ | Valor: 1.0 | Pontos: 6
+Extraído 93: Extra | Sim | R$ | Valor: 1.0 | Pontos: 5
+Extraído 94: Faber-Castell | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 95: Farmacias App | Não | R$ | Valor: 1.0 | Pontos: 6
+Extraído 96: Fast Shop | Sim | R$ | Valor: 1.0 | Pontos: 6
+Extraído 97: Fila | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 98: Flormel | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 99: Foco | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 100: Forever Liss | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 101: Fossil | Sim | R$ | Valor: 1.0 | Pontos: 10
+Extraído 102: Frigelar  | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 103: Gazin | Sim | R$ | Valor: 1.0 | Pontos: 3
+Extraído 104: Giuliana Flores | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 105: Go case | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 106: Granado | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 107: Grupo Dreams | Não | R$ | Valor: 1.0 | Pontos: 4
+Extraído 108: Guess  | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 109: Guldi | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 110: Havaianas | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 111: Hering | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 112: Hering Outlet | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 113: HERO SEGUROS | Não | R$ | Valor: 1.0 | Pontos: 10
+Extraído 114: Hertz Internacional | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 115: Highstil  | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 116: Home Angels | Não | R$ | Valor: 10.0 | Pontos: 1
+Extraído 117: Hope | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 118: Hope Resort | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 119: Hopper Nutrition | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 120: Horas Magicas | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 121: Hot Beach | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 122: Hoteis Deville | Não | R$ | Valor: 3.0 | Pontos: 1
+Extraído 123: Hoteis Windsor | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 124: Hoteis.com | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 125: Hotel Gran Marquise | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 126: Hotel Nacional | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 127: Imaginarium | Sim | R$ | Valor: 1.0 | Pontos: 8
+Extraído 128: Imperio | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 129: Individual | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 130: Infinix | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 131: Insider Store | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 132: IntegralMedica | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 133: John John | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 134: Julio Okubo | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 135: Kaligo | Não | U$ | Valor: 1.0 | Pontos: 15
+Extraído 136: Key Design | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 137: Klabin ForYou | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 138: Lacoste | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 139: LE LIS | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 140: LEGO | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 141: Liga Vitoria - Seguro de Viagem | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 142: Liga Vitoria Consorcio | Não | R$ | Valor: 1.0 | Pontos: 30
+Extraído 143: Liga Vitoria Seguro Auto | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 144: Liga Vitoria Seguro de Vida | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 145: Liga Vitoria Seguro Moto | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 146: Liga Vitoria Seguro Residencial | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 147: LIVE! | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 148: Liz | Sim | R$ | Valor: 1.0 | Pontos: 8
+Extraído 149: Localiza | Não | U$ | Valor: 1.0 | Pontos: 5
+Extraído 150: Localiza | Não | R$ | Valor: 1.0 | Pontos: 4
+Extraído 151: Localiza Meoo | Não | R$ | Valor: 1.0 | Pontos: 4
+Extraído 152: Loccitane | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 153: Loccitane au Bresil | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 154: Lolita | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 155: Lord Perfumaria | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 156: Loungerie | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 157: Luck Receptivo (Joao Pessoa) | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 158: Luck Receptivo (Salvador) | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 159: Luck Receptivo - Recife | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 160: Luck Receptivo Maceio | Sim | R$ | Valor: 1.0 | Pontos: 3
+Extraído 161: Luck Receptivo Natal | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 162: Luxury Loyalty | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 163: Madesa | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 164: Magalu | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 165: Malwee | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 166: MAPFRE Seguro Auto | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 167: Max Titanium | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 168: MaxRacer | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 169: MedSenior | Não | R$ | Valor: 1.0 | Pontos: 7
+Extraído 170: Meia Sola | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 171: MeuCopo | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 172: Mevo Farma | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 173: Midea | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 174: Mistral | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 175: Mizuno | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 176: Mobills | Não | R$ | Valor: 1.0 | Pontos: 10
+Extraído 177: Mobly | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 178: Mondaine | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 179: Monica Sanches | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 180: Monte Carlo | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 181: Morana | Sim | R$ | Valor: 1.0 | Pontos: 10
+Extraído 182: Movida | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 183: Mycon Consorcio Digital | Não | R$ | Valor: 1.0 | Pontos: 32
+Extraído 184: Nars | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 185: Natura | Não | R$ | Valor: 1.0 | Pontos: 4
+Extraído 186: Netshoes | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 187: New Balance | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 188: Next Seguro Viagem | Não | R$ | Valor: 1.0 | Pontos: 7
+Extraído 189: Nike | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 190: Nomad Trips | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 191: Nova Era | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 192: Nutty Bavarian | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 193: O Boticario | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 194: O.U.i Paris | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 195: Oceane | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 196: Oficina Reserva | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 197: Olympikus | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 198: Ondas Praia Resort | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 199: Osklen | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 200: Oster | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 201: Oxford | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 202: Pado | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 203: Panvel | Sim | R$ | Valor: 1.0 | Pontos: 8
+Extraído 204: PerfectDraft (Ambev) | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 205: Pet Paluche | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 206: Pet Paluche Box | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 207: Petlove | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 208: Petlove Saude | Não | R$ | Valor: 1.0 | Pontos: 6
+Extraído 209: Petz | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 210: Piatan Natural | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 211: Pipooh  | Não | R$ | Valor: 1.0 | Pontos: 4
+Extraído 212: PneuStore | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 213: Pontofrio | Sim | R$ | Valor: 1.0 | Pontos: 6
+Extraído 214: Portal das Malas | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 215: Portallar | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 216: Porto Faz | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 217: Posthaus | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 218: Prive Hoteis e Parques | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 219: Probiotica | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 220: Puket | Sim | R$ | Valor: 1.0 | Pontos: 8
+Extraído 221: Qcompra | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 222: Quem Disse, Berenice? | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 223: Quero Passagem | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 224: Quero-Quero | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 225: Quintess | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 226: RDC Viagens | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 227: Re Petit | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 228: Renner | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 229: Rentalcars | Não | U$ | Valor: 1.0 | Pontos: 6
+Extraído 230: Rentcars | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 231: Reserva | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 232: Reservecar | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 233: Riachuelo | Sim | R$ | Valor: 1.0 | Pontos: 10
+Extraído 234: Richards | Sim | R$ | Valor: 1.0 | Pontos: 4
+Extraído 235: ropo®️ | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 236: Saint Paul | Não | R$ | Valor: 1.0 | Pontos: 4
+Extraído 237: Salinas | Sim | R$ | Valor: 1.0 | Pontos: 4
+Extraído 238: Sam's Club | Não | R$ | Valor: 1.0 | Pontos: 14
+Extraído 239: Sam's Club - E-commerce | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 240: Samsonite  | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 241: Sebastian Coffee | Sim | R$ | Valor: 1.0 | Pontos: 11
+Extraído 242: Seculus | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 243: Seguro Residencial MAPFRE | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 244: Seguro Viagem Bradesco | Não | R$ | Valor: 1.0 | Pontos: 10
+Extraído 245: Sephora | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 246: Seus Ingressos | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 247: Shiseido | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 248: Shoestock | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 249: Shopee | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 250: Simple Organic | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 251: Sioux Seguro Celular | Não | R$ | Valor: 1.0 | Pontos: 4
+Extraído 252: Sixt | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 253: Sottile | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 254: Speedo | Não | R$ | Valor: 1.0 | Pontos: 4
+Extraído 255: Spicy | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 256: Studio Z | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 257: SulAmerica Plano Odonto | Sim | R$ | Valor: 1.0 | Pontos: 8
+Extraído 258: SulAmerica Seguro Viagem | Sim | R$ | Valor: 1.0 | Pontos: 10
+Extraído 259: Summerville | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 260: Supernosso | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 261: Tailors Mind  | Não | R$ | Valor: 1.0 | Pontos: 4
+Extraído 262: Technos | Sim | R$ | Valor: 1.0 | Pontos: 8
+Extraído 263: Thule | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 264: Tia Sonia | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 265: TIM | Não | R$ | Valor: 1.0 | Pontos: 6
+Extraído 266: Tokio Marine Seguros | Não | R$ | Valor: 1.0 | Pontos: 10
+Extraído 267: Top Moveis | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 268: Travel 365 | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 269: Travelex | Não | U$ | Valor: 1.0 | Pontos: 1
+Extraído 270: TripChip | Não | R$ | Valor: 1.0 | Pontos: 6
+Extraído 271: Trocafy | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 272: Truss | Não | R$ | Valor: 1.0 | Pontos: 4
+Extraído 273: Umbro | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 274: Under Armour | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 275: Unidas | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 276: Universal Assistance – Seguro Viagem | Sim | R$ | Valor: 1.0 | Pontos: 12
+Extraído 277: Utilplast | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 278: Viacao Garcia | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 279: Viajar | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 280: Vivara | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 281: VR Collezioni | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 282: Vult | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 283: Wise UP | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 284: Yvy | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 285: Zattini | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 286: Zissou | Não | R$ | Valor: 1.0 | Pontos: 3
+Total de parceiros encontrados: 286
+Arquivo /home/runner/work/livelo_scraper/livelo_scraper/livelo_parceiros.xlsx encontrado. Verificando dados existentes...
+Encontrados dados do dia 2025-05-05 no arquivo existente.
+Substituindo os dados antigos pelos novos...
+Dados salvos no arquivo: /home/runner/work/livelo_scraper/livelo_scraper/livelo_parceiros.xlsx
+Cópia salva em: output/livelo_parceiros.xlsx
+Encerrando driver do Selenium...
+Driver encerrado com sucesso.
+Encerramento completo.
+Processo de scraping concluído com sucesso!
+
+Executando livelo_reporter.py...
+Saída de livelo_reporter.py:
+
+--- INICIANDO PROCESSAMENTO ---
+
+Verificando arquivo: livelo_parceiros.xlsx
+Diretório de trabalho atual: /home/runner/work/livelo_scraper/livelo_scraper
+✓ Arquivo encontrado: livelo_parceiros.xlsx
+Carregando dados de livelo_parceiros.xlsx...
+
+Dados completos carregados: 9463 registros
+Data mais recente: 2025-05-05
+Registros da data mais recente: 286 de 9463 total
+
+--- CALCULANDO MÉTRICAS ---
+
+Identificados 6 novos parceiros (≤7 ocorrências)
+Cálculo de dias com pontuação atual (corrigido):
+
+Parceiro: ABC da Construcao
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 14 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Abelha Rainha
+Pontos atuais: 3 em 2025-05-05
+  Pontuação anterior: 8 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: ADCOS
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 5 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Aguativa Resort
+Pontos atuais: 2 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Aliexpress
+Pontos atuais: 3 em 2025-05-05
+  Pontuação anterior: 10 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Allianz
+Pontos atuais: 4 em 2025-05-05
+  Pontuação anterior: 12 em 2025-04-20
+  Dias com pontuação atual: 15
+
+Parceiro: Allugator
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Amazon
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 4 em 2025-04-24
+  Dias com pontuação atual: 11
+
+Parceiro: AMOBELEZA
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 10 em 2025-04-24
+  Dias com pontuação atual: 11
+
+Parceiro: Angeloni
+Pontos atuais: 3 em 2025-05-05
+  Pontuação anterior: 1 em 2025-05-01
+  Dias com pontuação atual: 4
+
+Parceiro: Aramis
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 11 em 2025-04-24
+  Dias com pontuação atual: 11
+
+Parceiro: Asics
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Assist Card Seguros
+Pontos atuais: 10 em 2025-05-05
+  Pontuação anterior: 12 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Atalaia Noronha
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 4 em 2025-04-24
+  Dias com pontuação atual: 11
+
+Parceiro: avis
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Avon
+Pontos atuais: 6 em 2025-05-05
+  Pontuação anterior: 12 em 2025-04-24
+  Dias com pontuação atual: 11
+
+Parceiro: Azul Viagens
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 3 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Bagaggio
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 4 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Baianao
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Basicamente
+Pontos atuais: 4 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Basico.com
+Pontos atuais: 3 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Beach Park Hospedagens
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 4 em 2025-04-20
+  Dias com pontuação atual: 15
+
+Parceiro: Beach Park Ingressos
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 4 em 2025-04-20
+  Dias com pontuação atual: 15
+
+Parceiro: Beep
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 9 em 2025-04-17
+  Dias com pontuação atual: 18
+
+Parceiro: Beleza na web
+Pontos atuais: 10 em 2025-05-05
+  Pontuação anterior: 2 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Beleza na Web PRO
+Pontos atuais: 3 em 2025-05-05
+  Pontuação anterior: 6 em 2025-04-24
+  Dias com pontuação atual: 11
+
+Parceiro: Beto Carrero World
+Pontos atuais: 5 em 2025-05-05
+  Pontuação anterior: 2 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Beyoung
+Pontos atuais: 3 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Bibi
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 7 em 2025-04-24
+  Dias com pontuação atual: 11
+
+Parceiro: BoBo
+Pontos atuais: 3 em 2025-05-05
+  Pontuação anterior: 11 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Bobstore
+Pontos atuais: 4 em 2025-05-05
+  Pontuação anterior: 2 em 2025-04-24
+  Dias com pontuação atual: 11
+
+Parceiro: Bombay Herbs & Spices
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 8 em 2025-05-02
+  Dias com pontuação atual: 3
+
+Parceiro: Bonjour Lingerie
+Pontos atuais: 2 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Booking.com
+Pontos atuais: 4 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Bradesco Capitalizacao
+Pontos atuais: 2 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Buddha Spa
+Pontos atuais: 2 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Budget
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Bulbe Energia
+Pontos atuais: 12 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Buser
+Pontos atuais: 2 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Buzios Beach Resort
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Cabana Magazine
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Cadence
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Cafe Orfeu
+Pontos atuais: 3 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Cafe Utam
+Pontos atuais: 2 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Caffeine Army
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Cambio Online
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Camicado
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 10 em 2025-04-27
+  Dias com pontuação atual: 8
+
+Parceiro: CARE Natural Beauty
+Pontos atuais: 4 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Carrefour Mercado
+Pontos atuais: 3 em 2025-05-05
+  Pontuação anterior: 1 em 2025-05-01
+  Dias com pontuação atual: 4
+
+Parceiro: Carrefour Shopping
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 3 em 2025-04-15
+  Dias com pontuação atual: 20
+
+Parceiro: Casa MinD
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Casas Bahia
+Pontos atuais: 5 em 2025-05-05
+  Pontuação anterior: 4 em 2025-04-22
+  Dias com pontuação atual: 13
+
+Parceiro: CEA
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 6 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Centauro
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 5 em 2025-05-02
+  Dias com pontuação atual: 3
+
+Parceiro: Cervejabox
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Cestas Michelli
+Pontos atuais: 3 em 2025-05-05
+  Pontuação anterior: 8 em 2025-04-29
+  Dias com pontuação atual: 6
+
+Parceiro: Chico Rei
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Ciclic Seguros – Bike
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Ciclic Seguros – Celular
+Pontos atuais: 6 em 2025-05-05
+  Pontuação anterior: 4 em 2025-04-25
+  Dias com pontuação atual: 10
+
+Parceiro: Ciclic Seguros – Viagem
+Pontos atuais: 15 em 2025-05-05
+  Pontuação anterior: 18 em 2025-04-28
+  Dias com pontuação atual: 7
+
+Parceiro: Claro
+Pontos atuais: 6 em 2025-05-05
+  Pontuação anterior: 10 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: ClickBus
+Pontos atuais: 2 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Coffee Mais
+Pontos atuais: 4 em 2025-05-05
+  Pontuação anterior: 11 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Colcci
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 10 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Coliseu
+Pontos atuais: 2 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Consorcio Magalu
+Pontos atuais: 10 em 2025-05-05
+  Pontuação anterior: 25 em 2025-04-24
+  Dias com pontuação atual: 11
+
+Parceiro: Cook Eletroraro
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Coris
+Pontos atuais: 5 em 2025-05-05
+  Pontuação anterior: 10 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Creditas
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Crocs
+Pontos atuais: 3 em 2025-05-05
+  Pontuação anterior: 8 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Cruzeiros Agaxtur
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 3 em 2025-04-28
+  Dias com pontuação atual: 7
+
+Parceiro: Dafiti
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 2 em 2025-04-09
+  Dias com pontuação atual: 26
+
+Parceiro: Dako
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Darkness
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 5 em 2025-04-29
+  Dias com pontuação atual: 6
+
+Parceiro: Decathlon
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 3 em 2025-04-10
+  Dias com pontuação atual: 25
+
+Parceiro: Decolar
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 6 em 2025-04-28
+  Dias com pontuação atual: 7
+
+Parceiro: Democrata
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 10 em 2025-04-10
+  Dias com pontuação atual: 25
+
+Parceiro: Divvino
+Pontos atuais: 3 em 2025-05-05
+  Pontuação anterior: 1 em 2025-05-01
+  Dias com pontuação atual: 4
+
+Parceiro: DPaschoal
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Dr Jones
+Pontos atuais: 3 em 2025-05-05
+  Pontuação anterior: 8 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Drogaria Sao Paulo
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Drogarias Pacheco
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Dudalina
+Pontos atuais: 3 em 2025-05-05
+  Pontuação anterior: 10 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Easy Live
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-23
+  Dias com pontuação atual: 12
+
+Parceiro: EDP
+Pontos atuais: 6 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: elbo
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 8 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Ellus
+Pontos atuais: 4 em 2025-05-05
+  Pontuação anterior: 2 em 2025-04-24
+  Dias com pontuação atual: 11
+
+Parceiro: Epoca cosmesticos
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 10 em 2025-04-24
+  Dias com pontuação atual: 11
+
+Parceiro: eSim Travelex
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 25 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Estoque
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 11 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Eudora
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 6 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Euro
+Pontos atuais: 6 em 2025-05-05
+  Pontuação anterior: 8 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Extra
+Pontos atuais: 5 em 2025-05-05
+  Pontuação anterior: 4 em 2025-04-28
+  Dias com pontuação atual: 7
+
+Parceiro: Faber-Castell
+Pontos atuais: 2 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Farmacias App
+Pontos atuais: 6 em 2025-05-05
+  Pontuação anterior: 10 em 2025-04-28
+  Dias com pontuação atual: 7
+
+Parceiro: Fast Shop
+Pontos atuais: 6 em 2025-05-05
+  Pontuação anterior: 2 em 2025-05-01
+  Dias com pontuação atual: 4
+
+Parceiro: Fila
+Pontos atuais: 2 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Flormel
+Pontos atuais: 3 em 2025-05-05
+  Pontuação anterior: 12 em 2025-04-24
+  Dias com pontuação atual: 11
+
+Parceiro: Foco
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 8 em 2025-04-24
+  Dias com pontuação atual: 11
+
+Parceiro: Forever Liss
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 20 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Fossil
+Pontos atuais: 10 em 2025-05-05
+  Pontuação anterior: 8 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Frigelar 
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Gazin
+Pontos atuais: 3 em 2025-05-05
+  Pontuação anterior: 2 em 2025-04-16
+  Dias com pontuação atual: 19
+
+Parceiro: Giuliana Flores
+Pontos atuais: 3 em 2025-05-05
+  Pontuação anterior: 8 em 2025-04-29
+  Dias com pontuação atual: 6
+
+Parceiro: Go case
+Pontos atuais: 2 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Granado
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Grupo Dreams
+Pontos atuais: 4 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Guess 
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 10 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Guldi
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Havaianas
+Pontos atuais: 2 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Hering
+Pontos atuais: 3 em 2025-05-05
+  Pontuação anterior: 7 em 2025-04-14
+  Dias com pontuação atual: 21
+
+Parceiro: Hering Outlet
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 6 em 2025-04-29
+  Dias com pontuação atual: 6
+
+Parceiro: HERO SEGUROS
+Pontos atuais: 10 em 2025-05-05
+  Pontuação anterior: 18 em 2025-04-24
+  Dias com pontuação atual: 11
+
+Parceiro: Hertz Internacional
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Highstil 
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Home Angels
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Hope
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 10 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Hope Resort
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 10 em 2025-04-10
+  Dias com pontuação atual: 25
+
+Parceiro: Hopper Nutrition
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Horas Magicas
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 2 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Hot Beach
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 5 em 2025-04-21
+  Dias com pontuação atual: 14
+
+Parceiro: Hoteis Deville
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Hoteis Windsor
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Hoteis.com
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 10 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Hotel Gran Marquise
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Hotel Nacional
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 7 em 2025-04-13
+  Dias com pontuação atual: 22
+
+Parceiro: Imaginarium
+Pontos atuais: 8 em 2025-05-05
+  Pontuação anterior: 1 em 2025-05-01
+  Dias com pontuação atual: 4
+
+Parceiro: Imperio
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Individual
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 10 em 2025-04-29
+  Dias com pontuação atual: 6
+
+Parceiro: Infinix
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Insider Store
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: IntegralMedica
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 5 em 2025-04-29
+  Dias com pontuação atual: 6
+
+Parceiro: John John
+Pontos atuais: 3 em 2025-05-05
+  Pontuação anterior: 8 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Julio Okubo
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Kaligo
+Pontos atuais: 15 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Key Design
+Pontos atuais: 3 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Klabin ForYou
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 12 em 2025-04-24
+  Dias com pontuação atual: 11
+
+Parceiro: Lacoste
+Pontos atuais: 2 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: LE LIS
+Pontos atuais: 3 em 2025-05-05
+  Pontuação anterior: 11 em 2025-04-25
+  Dias com pontuação atual: 10
+
+Parceiro: LEGO
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Liga Vitoria - Seguro de Viagem
+Pontos atuais: 3 em 2025-05-05
+  Pontuação anterior: 10 em 2025-04-20
+  Dias com pontuação atual: 15
+
+Parceiro: Liga Vitoria Consorcio
+Pontos atuais: 30 em 2025-05-05
+  Pontuação anterior: 50 em 2025-04-29
+  Dias com pontuação atual: 6
+
+Parceiro: Liga Vitoria Seguro Auto
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 2 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Liga Vitoria Seguro de Vida
+Pontos atuais: 3 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Liga Vitoria Seguro Moto
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 5 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Liga Vitoria Seguro Residencial
+Pontos atuais: 3 em 2025-05-05
+  Pontuação anterior: 10 em 2025-04-10
+  Dias com pontuação atual: 25
+
+Parceiro: LIVE!
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 10 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Liz
+Pontos atuais: 8 em 2025-05-05
+  Pontuação anterior: 3 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Localiza
+Pontos atuais: 5 em 2025-05-05
+  Pontuação anterior: 4 em 2025-05-04
+  Dias com pontuação atual: 1
+
+Parceiro: Localiza Meoo
+Pontos atuais: 4 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Loccitane
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 13 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Loccitane au Bresil
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 13 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Lolita
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Lord Perfumaria
+Pontos atuais: 2 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Loungerie
+Pontos atuais: 3 em 2025-05-05
+  Pontuação anterior: 6 em 2025-04-29
+  Dias com pontuação atual: 6
+
+Parceiro: Luck Receptivo (Joao Pessoa)
+Pontos atuais: 3 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Luck Receptivo (Salvador)
+Pontos atuais: 3 em 2025-05-05
+  Pontuação anterior: 6 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Luck Receptivo - Recife
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 3 em 2025-04-24
+  Dias com pontuação atual: 11
+
+Parceiro: Luck Receptivo Maceio
+Pontos atuais: 3 em 2025-05-05
+  Pontuação anterior: 1 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Luck Receptivo Natal
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Luxury Loyalty
+Pontos atuais: 2 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Madesa
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Magalu
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 4 em 2025-04-29
+  Dias com pontuação atual: 6
+
+Parceiro: Malwee
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 8 em 2025-04-24
+  Dias com pontuação atual: 11
+
+Parceiro: MAPFRE Seguro Auto
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Max Titanium
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: MaxRacer
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: MedSenior
+Pontos atuais: 7 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Meia Sola
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 10 em 2025-05-02
+  Dias com pontuação atual: 3
+
+Parceiro: MeuCopo
+Pontos atuais: 2 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Mevo Farma
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Midea
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Mistral
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 8 em 2025-05-01
+  Dias com pontuação atual: 4
+
+Parceiro: Mizuno
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 12 em 2025-04-24
+  Dias com pontuação atual: 11
+
+Parceiro: Mobills
+Pontos atuais: 10 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Mobly
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Mondaine
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 15 em 2025-04-28
+  Dias com pontuação atual: 7
+
+Parceiro: Monica Sanches
+Pontos atuais: 2 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Monte Carlo
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 5 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Morana
+Pontos atuais: 10 em 2025-05-05
+  Pontuação anterior: 3 em 2025-05-01
+  Dias com pontuação atual: 4
+
+Parceiro: Movida
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 8 em 2025-05-02
+  Dias com pontuação atual: 3
+
+Parceiro: Mycon Consorcio Digital
+Pontos atuais: 32 em 2025-05-05
+  Pontuação anterior: 40 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Nars
+Pontos atuais: 3 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Natura
+Pontos atuais: 4 em 2025-05-05
+  Pontuação anterior: 8 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Netshoes
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 6 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: New Balance
+Pontos atuais: 2 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Next Seguro Viagem
+Pontos atuais: 7 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Nike
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 5 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Nomad Trips
+Pontos atuais: 3 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Nova Era
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Nutty Bavarian
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: O Boticario
+Pontos atuais: 3 em 2025-05-05
+  Pontuação anterior: 6 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: O.U.i Paris
+Pontos atuais: 3 em 2025-05-05
+  Pontuação anterior: 8 em 2025-04-25
+  Dias com pontuação atual: 10
+
+Parceiro: Oceane
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 10 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Oficina Reserva
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Olympikus
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 11 em 2025-04-29
+  Dias com pontuação atual: 6
+
+Parceiro: Ondas Praia Resort
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Osklen
+Pontos atuais: 2 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Oster
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Oxford
+Pontos atuais: 2 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Pado
+Pontos atuais: 2 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Panvel
+Pontos atuais: 8 em 2025-05-05
+  Pontuação anterior: 1 em 2025-05-01
+  Dias com pontuação atual: 4
+
+Parceiro: PerfectDraft (Ambev)
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Pet Paluche
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Pet Paluche Box
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Petlove
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 6 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Petlove Saude
+Pontos atuais: 6 em 2025-05-05
+  Pontuação anterior: 20 em 2025-05-01
+  Dias com pontuação atual: 4
+
+Parceiro: Petz
+Pontos atuais: 2 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Piatan Natural
+Pontos atuais: 3 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Pipooh 
+Pontos atuais: 4 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: PneuStore
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 2 em 2025-04-16
+  Dias com pontuação atual: 19
+
+Parceiro: Pontofrio
+Pontos atuais: 6 em 2025-05-05
+  Pontuação anterior: 10 em 2025-04-28
+  Dias com pontuação atual: 7
+
+Parceiro: Portal das Malas
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Portallar
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 6 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Porto Faz
+Pontos atuais: 2 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Posthaus
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 10 em 2025-04-27
+  Dias com pontuação atual: 8
+
+Parceiro: Prive Hoteis e Parques
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Probiotica
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Puket
+Pontos atuais: 8 em 2025-05-05
+  Pontuação anterior: 1 em 2025-05-01
+  Dias com pontuação atual: 4
+
+Parceiro: Qcompra
+Pontos atuais: 3 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Quem Disse, Berenice?
+Pontos atuais: 3 em 2025-05-05
+  Pontuação anterior: 7 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Quero Passagem
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Quero-Quero
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Quintess
+Pontos atuais: 3 em 2025-05-05
+  Pontuação anterior: 6 em 2025-04-24
+  Dias com pontuação atual: 11
+
+Parceiro: RDC Viagens
+Pontos atuais: 2 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Re Petit
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Renner
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 5 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Rentalcars
+Pontos atuais: 6 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Rentcars
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 10 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Reserva
+Pontos atuais: 2 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Reservecar
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 3 em 2025-04-21
+  Dias com pontuação atual: 14
+
+Parceiro: Riachuelo
+Pontos atuais: 10 em 2025-05-05
+  Pontuação anterior: 3 em 2025-05-01
+  Dias com pontuação atual: 4
+
+Parceiro: Richards
+Pontos atuais: 4 em 2025-05-05
+  Pontuação anterior: 2 em 2025-04-24
+  Dias com pontuação atual: 11
+
+Parceiro: ropo®️
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Saint Paul
+Pontos atuais: 4 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Salinas
+Pontos atuais: 4 em 2025-05-05
+  Pontuação anterior: 2 em 2025-04-24
+  Dias com pontuação atual: 11
+
+Parceiro: Sam's Club
+Pontos atuais: 14 em 2025-05-05
+  Pontuação anterior: 30 em 2025-04-29
+  Dias com pontuação atual: 6
+
+Parceiro: Sam's Club - E-commerce
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 30 em 2025-04-29
+  Dias com pontuação atual: 6
+
+Parceiro: Samsonite 
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 8 em 2025-04-27
+  Dias com pontuação atual: 8
+
+Parceiro: Sebastian Coffee
+Pontos atuais: 11 em 2025-05-05
+  Pontuação anterior: 3 em 2025-05-01
+  Dias com pontuação atual: 4
+
+Parceiro: Seculus
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 17 em 2025-04-29
+  Dias com pontuação atual: 6
+
+Parceiro: Seguro Residencial MAPFRE
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Seguro Viagem Bradesco
+Pontos atuais: 10 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Sephora
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 7 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Seus Ingressos
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 3 em 2025-04-20
+  Dias com pontuação atual: 15
+
+Parceiro: Shiseido
+Pontos atuais: 3 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Shoestock
+Pontos atuais: 3 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Shopee
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 5 em 2025-04-17
+  Dias com pontuação atual: 18
+
+Parceiro: Simple Organic
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Sioux Seguro Celular
+Pontos atuais: 4 em 2025-05-05
+  Pontuação anterior: 9 em 2025-04-24
+  Dias com pontuação atual: 11
+
+Parceiro: Sixt
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Sottile
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Speedo
+Pontos atuais: 4 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Spicy
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Studio Z
+Pontos atuais: 2 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: SulAmerica Plano Odonto
+Pontos atuais: 8 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-29
+  Dias com pontuação atual: 6
+
+Parceiro: SulAmerica Seguro Viagem
+Pontos atuais: 10 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-29
+  Dias com pontuação atual: 6
+
+Parceiro: Summerville
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 4 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Supernosso
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Tailors Mind 
+Pontos atuais: 4 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Technos
+Pontos atuais: 8 em 2025-05-05
+  Pontuação anterior: 1 em 2025-04-21
+  Dias com pontuação atual: 14
+
+Parceiro: Thule
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Tia Sonia
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: TIM
+Pontos atuais: 6 em 2025-05-05
+  Pontuação anterior: 10 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Tokio Marine Seguros
+Pontos atuais: 10 em 2025-05-05
+  Pontuação anterior: 15 em 2025-04-24
+  Dias com pontuação atual: 11
+
+Parceiro: Top Moveis
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Travel 365
+Pontos atuais: 3 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Travelex
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 3 em 2025-04-24
+  Dias com pontuação atual: 11
+
+Parceiro: TripChip
+Pontos atuais: 6 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Trocafy
+Pontos atuais: 2 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Truss
+Pontos atuais: 4 em 2025-05-05
+  Pontuação anterior: 10 em 2025-04-27
+  Dias com pontuação atual: 8
+
+Parceiro: Umbro
+Pontos atuais: 2 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Under Armour
+Pontos atuais: 1 em 2025-05-05
+  Pontuação anterior: 12 em 2025-04-24
+  Dias com pontuação atual: 11
+
+Parceiro: Unidas
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 6 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Universal Assistance – Seguro Viagem
+Pontos atuais: 12 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Utilplast
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Viacao Garcia
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Viajar
+Pontos atuais: 2 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Vivara
+Pontos atuais: 1 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: VR Collezioni
+Pontos atuais: 2 em 2025-05-05
+  Pontuação anterior: 5 em 2025-04-15
+  Dias com pontuação atual: 20
+
+Parceiro: Vult
+Pontos atuais: 3 em 2025-05-05
+  Pontuação anterior: 8 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Wise UP
+Pontos atuais: 2 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Yvy
+Pontos atuais: 3 em 2025-05-05
+  Pontuação anterior: 8 em 2025-04-30
+  Dias com pontuação atual: 5
+
+Parceiro: Zattini
+Pontos atuais: 2 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Parceiro: Zissou
+Pontos atuais: 3 em 2025-05-05
+  Sem mudança nos pontos no histórico, usando registro mais antigo: 2025-04-03
+  Dias com pontuação atual: 32
+
+Exemplos de dias com pontuação atual para verificação:
+Parceiro: Panvel, Pontos: 8, Dias com pontuação atual: 4
+Parceiro: Viacao Garcia, Pontos: 1, Dias com pontuação atual: 32
+Parceiro: Piatan Natural, Pontos: 3, Dias com pontuação atual: 32
+Parceiro: Nars, Pontos: 3, Dias com pontuação atual: 32
+Parceiro: Granado, Pontos: 1, Dias com pontuação atual: 32
+
+Total de parceiros atuais: 286
+Parceiros com oferta: 30
+Novas ofertas (<7 dias): 18
+Novos parceiros: 2
+
+Top 3 melhores parceiros:
+1. Mycon Consorcio Digital: 32 pontos por R$ 1,00 (Sem oferta)
+   Variação: -20.00% vs. 40 pontos
+   Dias com esta pontuação: 5
+2. Liga Vitoria Consorcio: 30 pontos por R$ 1,00 (Sem oferta)
+   Variação: -40.00% vs. 50 pontos
+   Dias com esta pontuação: 6
+3. Ciclic Seguros – Viagem: 15 pontos por R$ 1,00 (Com oferta)
+   Variação: -16.67% vs. 18 pontos
+   Dias com esta pontuação: 7
+
+--- GERANDO GRÁFICOS ---
+
+
+--- GERANDO RELATÓRIO HTML ---
+
+✓ Relatório salvo em /home/runner/work/livelo_scraper/livelo_scraper/relatorios/report_2025-05-05.html
+✓ Cópia do relatório salva na raiz como: /home/runner/work/livelo_scraper/livelo_scraper/relatorio_livelo.html
+
+--- PROCESSAMENTO CONCLUÍDO COM SUCESSO ---
+
+📊 Relatório gerado com 286 registros atuais
+📄 Relatório salvo em: /home/runner/work/livelo_scraper/livelo_scraper/relatorios/report_2025-05-05.html
+
+Erros de livelo_reporter.py:
+/home/runner/work/livelo_scraper/livelo_scraper/livelo_reporter.py:131: FutureWarning: A value is trying to be set on a copy of a DataFrame or Series through chained assignment using an inplace method.
+The behavior will change in pandas 3.0. This inplace method will never work because the intermediate object on which we are setting values always behaves as a copy.
+
+For example, when doing 'df[col].method(value, inplace=True)', try using 'df.method({col: value}, inplace=True)' or df[col] = df[col].method(value) instead, to perform the operation inplace on the original object.
+
+
+  df['Pontos_por_Moeda'].replace([np.inf, -np.inf], np.nan, inplace=True)
+/home/runner/work/livelo_scraper/livelo_scraper/livelo_reporter.py:131: FutureWarning: A value is trying to be set on a copy of a DataFrame or Series through chained assignment using an inplace method.
+The behavior will change in pandas 3.0. This inplace method will never work because the intermediate object on which we are setting values always behaves as a copy.
+
+For example, when doing 'df[col].method(value, inplace=True)', try using 'df.method({col: value}, inplace=True)' or df[col] = df[col].method(value) instead, to perform the operation inplace on the original object.
+
+
+  df['Pontos_por_Moeda'].replace([np.inf, -np.inf], np.nan, inplace=True)
+/home/runner/work/livelo_scraper/livelo_scraper/livelo_reporter.py:319: FutureWarning: The behavior of DataFrame concatenation with empty or all-NA entries is deprecated. In a future version, this will no longer exclude empty or all-NA columns when determining the result dtypes. To retain the old behavior, exclude the relevant entries before the concat operation.
+  historico_variacao = pd.concat([
+/home/runner/work/livelo_scraper/livelo_scraper/livelo_reporter.py:342: FutureWarning: Downcasting object dtype arrays on .fillna, .ffill, .bfill is deprecated and will change in a future version. Call result.infer_objects(copy=False) instead. To opt-in to the future behavior, set `pd.set_option('future.no_silent_downcasting', True)`
+  dados_atuais['Dias_Pontuacao_Atual'] = dados_atuais['Dias_Pontuacao_Atual'].fillna(0).astype(int)
+/home/runner/work/livelo_scraper/livelo_scraper/livelo_reporter.py:352: FutureWarning: Downcasting object dtype arrays on .fillna, .ffill, .bfill is deprecated and will change in a future version. Call result.infer_objects(copy=False) instead. To opt-in to the future behavior, set `pd.set_option('future.no_silent_downcasting', True)`
+  dados_atuais['Dias_Desde_Variacao'] = dados_atuais['Dias_Desde_Variacao'].fillna(0).astype(int)
+/home/runner/work/livelo_scraper/livelo_scraper/livelo_reporter.py:353: FutureWarning: Downcasting object dtype arrays on .fillna, .ffill, .bfill is deprecated and will change in a future version. Call result.infer_objects(copy=False) instead. To opt-in to the future behavior, set `pd.set_option('future.no_silent_downcasting', True)`
+  dados_atuais['Pontos_Anterior'] = dados_atuais['Pontos_Anterior'].fillna(0)
+
+Todos os scripts foram executados com sucesso.
