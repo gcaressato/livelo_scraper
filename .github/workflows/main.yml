@@ -5,6 +5,8 @@ on:
   workflow_dispatch:  # Permite execução manual
 permissions:
   contents: write
+  pages: write
+  id-token: write
 jobs:
   scrape:
     runs-on: ubuntu-latest
@@ -23,11 +25,19 @@ jobs:
       - name: Instalar dependências
         run: |
           pip install selenium webdriver-manager pandas openpyxl selenium-stealth plotly numpy
+          # Verificar versão do Selenium e Chrome
+          python -c "import selenium; print(f'Selenium version: {selenium.__version__}')"
+          google-chrome --version
           
       - name: Criar diretórios para logs e saída
         run: |
           mkdir -p logs
           mkdir -p relatorios
+          
+      - name: Executar scraper diretamente (para depuração)
+        run: |
+          python livelo_scraper.py 2>&1 | tee scraper_debug.log
+        continue-on-error: true
           
       - name: Executar script principal
         run: |
@@ -43,34 +53,6 @@ jobs:
           else
             echo "Nenhuma falha detectada na execução."
           fi
-      
-      - name: Encontrar relatório mais recente
-        id: find_report
-        run: |
-          if [ -d "relatorios" ]; then
-            LATEST_REPORT=$(ls -t relatorios/*.html 2>/dev/null | head -1)
-            if [ -n "$LATEST_REPORT" ]; then
-              echo "report_path=$LATEST_REPORT" >> $GITHUB_OUTPUT
-              echo "Relatório mais recente encontrado: $LATEST_REPORT"
-            else
-              echo "Nenhum relatório encontrado na pasta relatorios"
-            fi
-          else
-            echo "Pasta relatorios não existe"
-          fi
-      
-      # Usando SendGrid para enviar email sem necessidade de senha
-      - name: Enviar relatório por email
-        if: steps.find_report.outputs.report_path != ''
-        uses: rjstone/discord-webhook-notify@v1
-        with:
-          severity: info
-          username: ${{ secrets.EMAIL_USERNAME }}
-          color: '#47B581'
-          text: Relatório Livelo Partners gerado
-          details: O relatório da Livelo está disponível para visualização no repositório.
-          avatarUrl: https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png
-          webhook_url: ${{ secrets.DISCORD_WEBHOOK_URL }}
       
       - name: Configurar Git para commit
         run: |
@@ -103,3 +85,81 @@ jobs:
           
           # Push com tratamento de erro
           git push || echo "Falha ao fazer push, verifique os logs para mais detalhes"
+  
+  # Job separado para publicação no GitHub Pages
+  deploy:
+    needs: scrape
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+        
+      - name: Encontrar e preparar o relatório mais recente
+        run: |
+          # Criar diretório para GitHub Pages
+          mkdir -p _site
+          
+          # Encontrar o relatório mais recente
+          if [ -d "relatorios" ]; then
+            LATEST_REPORT=$(ls -t relatorios/*.html 2>/dev/null | head -1)
+            if [ -n "$LATEST_REPORT" ]; then
+              echo "Relatório mais recente encontrado: $LATEST_REPORT"
+              
+              # Copiar para o diretório raiz como index.html
+              cp "$LATEST_REPORT" _site/index.html
+              echo "Relatório copiado para _site/index.html"
+            else
+              echo "Nenhum relatório encontrado. Criando página de erro."
+              cat > _site/index.html << EOF
+              <!DOCTYPE html>
+              <html>
+              <head>
+                <title>Relatório Livelo Partners - Não encontrado</title>
+                <style>
+                  body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+                  h1 { color: #ff0a8c; }
+                </style>
+              </head>
+              <body>
+                <h1>Relatório não disponível</h1>
+                <p>O relatório mais recente não está disponível no momento.</p>
+                <p>Data e hora: $(date)</p>
+              </body>
+              </html>
+              EOF
+            fi
+          else
+            echo "Pasta relatorios não existe. Criando página de erro."
+            cat > _site/index.html << EOF
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <title>Relatório Livelo Partners - Não encontrado</title>
+              <style>
+                body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+                h1 { color: #ff0a8c; }
+              </style>
+            </head>
+            <body>
+              <h1>Relatório não disponível</h1>
+              <p>O relatório mais recente não está disponível no momento.</p>
+              <p>Data e hora: $(date)</p>
+            </body>
+            </html>
+            EOF
+          fi
+      
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: '_site'
+      
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
