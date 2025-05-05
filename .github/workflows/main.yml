@@ -8,8 +8,11 @@ permissions:
   pages: write
   id-token: write
 jobs:
-  scrape:
+  scrape-and-deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout do repositório
         uses: actions/checkout@v4
@@ -25,14 +28,12 @@ jobs:
       - name: Instalar dependências
         run: |
           pip install selenium webdriver-manager pandas openpyxl selenium-stealth plotly numpy
-          # Verificar versão do Selenium e Chrome
-          python -c "import selenium; print(f'Selenium version: {selenium.__version__}')"
-          google-chrome --version
           
       - name: Criar diretórios para logs e saída
         run: |
           mkdir -p logs
           mkdir -p relatorios
+          mkdir -p _site
           
       - name: Executar scraper diretamente (para depuração)
         run: |
@@ -49,7 +50,6 @@ jobs:
           if cat output.log | grep -q "Falha no scraper\|Falha no reporter\|ERRO FATAL"; then
             echo "::warning::Falhas detectadas na execução!"
             grep -A 10 "Falha\|ERRO" output.log || true
-            echo "SCRAPING_FALHOU=true" >> $GITHUB_ENV
           else
             echo "Nenhuma falha detectada na execução."
           fi
@@ -66,100 +66,45 @@ jobs:
             cp output.log logs/scraper_$(date +%Y%m%d_%H%M%S).log
           fi
           
-          # Adicionar diretórios
-          if [ -d "logs" ]; then
-            git add logs/ || echo "Não foi possível adicionar logs/"
-          fi
-          
-          if [ -d "relatorios" ]; then
-            git add relatorios/ || echo "Não foi possível adicionar relatorios/"
-          fi
-          
-          # Adicionar o arquivo Excel se existir
-          if [ -f "livelo_parceiros.xlsx" ]; then
-            git add livelo_parceiros.xlsx || echo "Não foi possível adicionar livelo_parceiros.xlsx"
-          fi
+          # Adicionar arquivos ao git
+          git add logs/ relatorios/ livelo_parceiros.xlsx || echo "Falha ao adicionar arquivos"
           
           # Tentar commit com verificação se há algo para comitar
           git diff --staged --quiet || git commit -m "Atualização automática [$(date)]"
           
           # Push com tratamento de erro
           git push || echo "Falha ao fazer push, verifique os logs para mais detalhes"
-  
-  # Job separado para publicação no GitHub Pages
-  deploy:
-    needs: scrape
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        
-      - name: Setup Pages
+      
+      # Parte de GitHub Pages
+      - name: Configurar Pages
         uses: actions/configure-pages@v3
         
-      - name: Encontrar e preparar o relatório mais recente
+      - name: Preparar relatório para GitHub Pages
         run: |
-          # Criar diretório para GitHub Pages
-          mkdir -p _site
-          
           # Encontrar o relatório mais recente
           if [ -d "relatorios" ]; then
             LATEST_REPORT=$(ls -t relatorios/*.html 2>/dev/null | head -1)
             if [ -n "$LATEST_REPORT" ]; then
               echo "Relatório mais recente encontrado: $LATEST_REPORT"
-              
-              # Copiar para o diretório raiz como index.html
+              # Copiar para a pasta _site como index.html
               cp "$LATEST_REPORT" _site/index.html
               echo "Relatório copiado para _site/index.html"
             else
-              echo "Nenhum relatório encontrado. Criando página de erro."
-              cat > _site/index.html << EOF
-              <!DOCTYPE html>
-              <html>
-              <head>
-                <title>Relatório Livelo Partners - Não encontrado</title>
-                <style>
-                  body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-                  h1 { color: #ff0a8c; }
-                </style>
-              </head>
-              <body>
-                <h1>Relatório não disponível</h1>
-                <p>O relatório mais recente não está disponível no momento.</p>
-                <p>Data e hora: $(date)</p>
-              </body>
-              </html>
-              EOF
+              # Criar página de erro se não encontrar relatório
+              echo "<html><head><title>Relatório Livelo</title></head><body><h1>Relatório não encontrado</h1><p>Nenhum relatório disponível.</p></body></html>" > _site/index.html
+              echo "Página de erro criada"
             fi
           else
-            echo "Pasta relatorios não existe. Criando página de erro."
-            cat > _site/index.html << EOF
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <title>Relatório Livelo Partners - Não encontrado</title>
-              <style>
-                body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-                h1 { color: #ff0a8c; }
-              </style>
-            </head>
-            <body>
-              <h1>Relatório não disponível</h1>
-              <p>O relatório mais recente não está disponível no momento.</p>
-              <p>Data e hora: $(date)</p>
-            </body>
-            </html>
-            EOF
+            # Criar página de erro se pasta não existir
+            echo "<html><head><title>Relatório Livelo</title></head><body><h1>Relatório não encontrado</h1><p>Pasta de relatórios não existe.</p></body></html>" > _site/index.html
+            echo "Página de erro criada"
           fi
       
-      - name: Upload artifact
+      - name: Upload páginas
         uses: actions/upload-pages-artifact@v2
         with:
           path: '_site'
       
-      - name: Deploy to GitHub Pages
+      - name: Deploy para GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v2
