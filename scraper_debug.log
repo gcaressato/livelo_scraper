@@ -4,7 +4,7 @@ Configurações do Chrome:
   User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) ...
   Window size: 1920x1080
 Iniciando novo processo do Chrome...
-Chrome iniciado com sucesso. Sessão ID: 82652e690a4087f045a36084a15fa27b
+Chrome iniciado com sucesso. Sessão ID: a93ee462e277e435c96449290e458326
 Navegando para o site da Livelo...
 Tentativa 1/5: Acessando URL...
 Aguardando carregamento básico da página...
@@ -55,7 +55,7 @@ Extraído 21: Basico.com | Não | R$ | Valor: 1.0 | Pontos: 3
 Extraído 22: Beach Park Hospedagens | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 23: Beach Park Ingressos | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 24: Beep | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 25: Beleza na web | Sim | R$ | Valor: 1.0 | Pontos: 10
+Extraído 25: Beleza na web | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 26: Beleza na Web PRO | Não | R$ | Valor: 1.0 | Pontos: 3
 Extraído 27: Beto Carrero World | Sim | R$ | Valor: 1.0 | Pontos: 5
 Extraído 28: Beyoung | Não | R$ | Valor: 1.0 | Pontos: 3
@@ -79,10 +79,10 @@ Extraído 45: Caffeine Army | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 46: Cambio Online | Não | R$ | Valor: 5.0 | Pontos: 1
 Extraído 47: Camicado | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 48: CARE Natural Beauty | Não | R$ | Valor: 1.0 | Pontos: 4
-Extraído 49: Carrefour Mercado | Sim | R$ | Valor: 1.0 | Pontos: 3
+Extraído 49: Carrefour Mercado | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 50: Carrefour Shopping | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 51: Casa MinD | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 52: Casas Bahia | Sim | R$ | Valor: 1.0 | Pontos: 5
+Extraído 52: Casas Bahia | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 53: CEA | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 54: Centauro | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 55: Cervejabox | Não | R$ | Valor: 1.0 | Pontos: 1
@@ -123,10 +123,10 @@ Extraído 89: eSim Travelex | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 90: Estoque | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 91: Eudora | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 92: Euro | Sim | R$ | Valor: 1.0 | Pontos: 6
-Extraído 93: Extra | Sim | R$ | Valor: 1.0 | Pontos: 5
+Extraído 93: Extra | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 94: Faber-Castell | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 95: Farmacias App | Não | R$ | Valor: 1.0 | Pontos: 6
-Extraído 96: Fast Shop | Sim | R$ | Valor: 1.0 | Pontos: 6
+Extraído 96: Fast Shop | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 97: Fila | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 98: Flormel | Não | R$ | Valor: 1.0 | Pontos: 3
 Extraído 99: Foco | Não | R$ | Valor: 1.0 | Pontos: 2
@@ -319,7 +319,8 @@ Extraído 285: Zattini | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 286: Zissou | Não | R$ | Valor: 1.0 | Pontos: 3
 Total de parceiros encontrados: 286
 Arquivo /home/runner/work/livelo_scraper/livelo_scraper/livelo_parceiros.xlsx encontrado. Verificando dados existentes...
-Não foram encontrados dados do dia 2025-05-05. Adicionando novos dados...
+Encontrados dados do dia 2025-05-05 no arquivo existente.
+Substituindo os dados antigos pelos novos...
 Dados salvos no arquivo: /home/runner/work/livelo_scraper/livelo_scraper/livelo_parceiros.xlsx
 Cópia salva em: output/livelo_parceiros.xlsx
 Encerrando driver do Selenium...
