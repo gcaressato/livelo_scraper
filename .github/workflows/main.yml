@@ -3,10 +3,13 @@ on:
   schedule:
     - cron: '0 12 * * *'  # Executa todos os dias às 12:00 UTC
   workflow_dispatch:  # Permite execução manual
+
+# Permissões mínimas necessárias
 permissions:
-  contents: write
-  pages: write
-  id-token: write
+  contents: write  # Para commit e push
+  pages: write    # Para GitHub Pages
+  id-token: write # Para deployment
+
 jobs:
   scrape-and-deploy:
     runs-on: ubuntu-latest
@@ -21,11 +24,10 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-          cache: 'pip'  # Adiciona cache para instalações pip
           
       - name: Configurar Chrome
         uses: browser-actions/setup-chrome@latest
-        
+          
       - name: Instalar dependências
         run: |
           pip install selenium webdriver-manager pandas openpyxl selenium-stealth plotly numpy
@@ -46,22 +48,9 @@ jobs:
           if cat output.log | grep -q "Falha no scraper\|Falha no reporter\|ERRO FATAL"; then
             echo "::warning::Falhas detectadas na execução!"
             grep -A 10 "Falha\|ERRO" output.log || true
-            # Opcionalmente, você pode falhar o workflow aqui com:
-            # exit 1
           else
             echo "Nenhuma falha detectada na execução."
           fi
-      
-      - name: Upload de logs e artefatos
-        uses: actions/upload-artifact@v3  # Adicionando explicitamente
-        with:
-          name: execution-logs-and-data
-          path: |
-            output.log
-            logs/
-            relatorios/
-            livelo_parceiros.xlsx
-          retention-days: 7  # Mantém por 7 dias
       
       - name: Configurar Git para commit
         run: |
