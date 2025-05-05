@@ -48,8 +48,9 @@ jobs:
           python main.py 2>&1 | tee output.log
         continue-on-error: true
         
+      # Usando a versão v2 da ação upload-artifact em vez de v3
       - name: Upload de arquivos de diagnóstico
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v2
         with:
           name: debug-files
           path: |
@@ -83,7 +84,7 @@ jobs:
           
           # Adicionar todos os arquivos relevantes mesmo se houver falhas
           # Isso permite ver os arquivos de diagnóstico no repositório
-          git add -f *.html *.png *.txt *.log || echo "Nenhum arquivo de diagnóstico para adicionar"
+          git add -f debug_*.html debug_*.png debug_*.txt *.log || echo "Nenhum arquivo de diagnóstico para adicionar"
           git add logs/
           git add relatorios/ || echo "Pasta relatorios não existe"
           
