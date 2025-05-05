@@ -18,33 +18,52 @@ class LiveloScraper:
         self.debug = debug
         
     def iniciar_navegador(self):
-        """Inicia um novo processo Chrome usando o ChromeDriver"""
-        print("Verificando se há processos do Chrome em execução...")
+        """Inicia um novo processo Chrome usando o ChromeDriver otimizado para GitHub Actions"""
+        print("Iniciando Chrome para ambiente GitHub Actions...")
         
-        # Para ambiente GitHub Actions, simplesmente configuramos o Chrome
         try:
             # Configuração do driver Chrome
             options = webdriver.ChromeOptions()
             
-            # Configuração específica para GitHub Actions
-            print("Iniciando Chrome para ambiente GitHub Actions...")
-            options.add_argument("--headless")  # Modo headless para GitHub Actions
+            # Configurações essenciais para GitHub Actions
+            options.add_argument("--headless=new")  # Novo modo headless do Chrome
             options.add_argument("--no-sandbox")
             options.add_argument("--disable-dev-shm-usage")
+            
+            # Configurações adicionais para evitar detecção de automação
+            options.add_argument("--disable-blink-features=AutomationControlled")
+            options.add_argument("--disable-extensions")
+            options.add_argument("--window-size=1920,1080")  # Tamanho padrão de tela
             options.add_argument("--start-maximized")
             options.add_argument("--disable-notifications")
+            
+            # User agent de um navegador normal (importante para evitar bloqueios)
+            options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
+            
+            # Configurações experimentais
             options.add_experimental_option("excludeSwitches", ["enable-automation"])
             options.add_experimental_option("useAutomationExtension", False)
             options.add_argument("--lang=pt-BR")
             
-            # Inicializar o driver
+            # Log detalhado para depuração
+            print("Configurações do Chrome:")
+            print(f"  Headless: Sim")
+            print(f"  User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) ...")
+            print(f"  Window size: 1920x1080")
+            
+            # Inicializar o driver com timeout aumentado
             print("Iniciando novo processo do Chrome...")
             self.driver = webdriver.Chrome(options=options)
-            self.wait = WebDriverWait(self.driver, 10)
+            self.driver.set_page_load_timeout(30)  # Timeout aumentado para 30 segundos
+            self.wait = WebDriverWait(self.driver, 15)  # Timeout de espera aumentado para 15 segundos
             
+            # Verificar se o driver foi iniciado corretamente
+            print(f"Chrome iniciado com sucesso. Sessão ID: {self.driver.session_id}")
             return True
         except Exception as e:
             print(f"Erro ao iniciar navegador: {e}")
+            import traceback
+            traceback.print_exc()
             return False
             
     def encerrar_navegador(self):
@@ -72,42 +91,130 @@ class LiveloScraper:
             return False
             
     def navegar_para_site(self):
-        """Navega para o site da Livelo com retentativas usando Ctrl+F5 se necessário"""
+        """Navega para o site da Livelo com retentativas e tratamento de erros melhorado"""
         print("Navegando para o site da Livelo...")
         
         max_tentativas = 5
         for tentativa in range(1, max_tentativas + 1):
             try:
                 # Navega para o site
+                print(f"Tentativa {tentativa}/{max_tentativas}: Acessando URL...")
                 self.driver.get("https://www.livelo.com.br/ganhe-pontos-compre-e-pontue")
                 
                 # Aguarda o carregamento básico da página
+                print("Aguardando carregamento básico da página...")
                 self.wait.until(EC.presence_of_element_located((By.XPATH, "//body")))
-                time.sleep(5)  # Pausa para carregamento
                 
-                # Verifica se os elementos principais estão presentes
-                xpath_teste = "/html/body/div[4]/main/div[1]/div[37]/div/div/div[2]/section/div[2]/div[3]/div[1]"
-                self.wait.until(EC.presence_of_element_located((By.XPATH, xpath_teste)))
+                # Aguardar um pouco mais para garantir o carregamento completo
+                print("Aguardando 10 segundos para carregamento completo...")
+                time.sleep(10)
+                
+                # Tentar localizar elementos principais usando múltiplos XPaths
+                print("Verificando elementos principais...")
+                elementos_encontrados = False
+                
+                # Lista de possíveis XPaths para detectar elementos na página
+                xpaths_possiveis = [
+                    "/html/body/div[4]/main/div[1]/div[37]/div/div/div[2]/section/div[2]/div[3]/div[1]",
+                    "//div[contains(@class, 'parity__card')]",
+                    "//div[contains(@class, 'parity_card')]",
+                    "//img[@id='img-parityImg']",
+                    "//span[@id='info__club-parity']"
+                ]
+                
+                # Tenta cada XPath possível
+                for xpath in xpaths_possiveis:
+                    try:
+                        print(f"Tentando XPath: {xpath}")
+                        elementos = self.driver.find_elements(By.XPATH, xpath)
+                        if elementos and len(elementos) > 0:
+                            print(f"✓ Encontrados {len(elementos)} elementos com XPath: {xpath}")
+                            elementos_encontrados = True
+                            break
+                    except Exception as e:
+                        print(f"Erro ao verificar XPath {xpath}: {e}")
+                
+                # Se não encontrar nenhum elemento, tenta salvar o HTML para análise
+                if not elementos_encontrados:
+                    print("⚠️ Nenhum elemento principal encontrado. Salvando HTML para análise...")
+                    html = self.driver.page_source
+                    with open(f"debug_pagina_tentativa_{tentativa}.html", "w", encoding="utf-8") as f:
+                        f.write(html)
+                    
+                    # Verificar se estamos em uma página de bloqueio ou captcha
+                    if "captcha" in html.lower() or "verificação" in html.lower() or "robô" in html.lower():
+                        print("⚠️ Possível captcha ou verificação detectada!")
+                        # Continuar mesmo assim, tentando rolar a página
+                    else:
+                        print("Página carregada, mas elementos não encontrados. Tentando mesmo assim...")
                 
                 # Rola a página para carregar todos os elementos
                 print("Rolando a página para carregar todos os elementos...")
-                for _ in range(10):
-                    self.driver.execute_script("window.scrollBy(0, 800);")
-                    time.sleep(0.5)
+                try:
+                    # Executa JavaScript para verificar altura da página
+                    altura_pagina = self.driver.execute_script("return document.body.scrollHeight")
+                    print(f"Altura da página: {altura_pagina}px")
                     
-                self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                time.sleep(3)
-                self.driver.execute_script("window.scrollTo(0, 0);")
-                time.sleep(2)
+                    # Rolar para baixo em etapas
+                    for i in range(10):
+                        # Método 1: ScrollBy
+                        self.driver.execute_script(f"window.scrollBy(0, {(i+1)*400});")
+                        print(f"Rolando para posição: {(i+1)*400}px")
+                        time.sleep(1)
+                    
+                    # Rolar até o fim
+                    self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                    print("Rolando até o final da página")
+                    time.sleep(5)
+                    
+                    # Rolar de volta para o topo
+                    self.driver.execute_script("window.scrollTo(0, 0);")
+                    print("Rolando de volta para o topo")
+                    time.sleep(2)
+                except Exception as e:
+                    print(f"Erro ao rolar a página: {e}")
                 
-                print("Página carregada com sucesso!")
-                return True
-            
+                # Verificar novamente se encontramos elementos após a rolagem
+                print("Verificando elementos após rolagem...")
+                elementos_encontrados_apos_rolagem = False
+                for xpath in xpaths_possiveis:
+                    try:
+                        elementos = self.driver.find_elements(By.XPATH, xpath)
+                        if elementos and len(elementos) > 0:
+                            print(f"✓ Encontrados {len(elementos)} elementos com XPath: {xpath} após rolagem")
+                            elementos_encontrados_apos_rolagem = True
+                            break
+                    except:
+                        pass
+                
+                if elementos_encontrados or elementos_encontrados_apos_rolagem:
+                    print("Página carregada com sucesso!")
+                    return True
+                else:
+                    raise Exception("Elementos principais não encontrados mesmo após rolagem")
+                
             except Exception as e:
                 print(f"Tentativa {tentativa}/{max_tentativas} falhou: {e}")
                 
+                # Salvar screenshot para diagnóstico
+                try:
+                    screenshot_path = f"debug_screenshot_tentativa_{tentativa}.png"
+                    self.driver.save_screenshot(screenshot_path)
+                    print(f"Screenshot salvo em: {screenshot_path}")
+                except Exception as ss_error:
+                    print(f"Erro ao salvar screenshot: {ss_error}")
+                
+                # Salvar HTML para diagnóstico
+                try:
+                    html_path = f"debug_html_tentativa_{tentativa}.txt"
+                    with open(html_path, "w", encoding="utf-8") as f:
+                        f.write(self.driver.page_source)
+                    print(f"HTML salvo em: {html_path}")
+                except Exception as html_error:
+                    print(f"Erro ao salvar HTML: {html_error}")
+                
                 if tentativa < max_tentativas:
-                    print(f"Recarregando página com Ctrl+F5 (sem cache). Aguardando 10 segundos...")
+                    print(f"Recarregando página. Aguardando 15 segundos antes da próxima tentativa...")
                     
                     # Simula Ctrl+F5 usando JavaScript
                     try:
@@ -116,7 +223,7 @@ class LiveloScraper:
                         # Método alternativo se execute_script falhar
                         self.driver.refresh()
                     
-                    time.sleep(10)  # Aguarda 10 segundos antes da próxima tentativa
+                    time.sleep(15)  # Aguarda mais tempo antes da próxima tentativa
                 else:
                     print("Número máximo de tentativas alcançado. Não foi possível carregar a página.")
                     return False
