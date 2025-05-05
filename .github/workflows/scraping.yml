@@ -33,7 +33,6 @@ jobs:
       - name: Criar diretórios para logs e saída
         run: |
           mkdir -p logs
-          mkdir -p output
           mkdir -p relatorios
           
       - name: Executar script principal
@@ -64,17 +63,13 @@ jobs:
             cp output.log logs/scraper_$(date +%Y%m%d_%H%M%S).log
           fi
           
+          # Adicionar o arquivo Excel e o relatório HTML principal
           git add livelo_parceiros.xlsx
-          git add output/
-          git add logs/
+          git add relatorio_livelo.html
           
-          # Adicionar relatórios HTML
-          if [ -f "relatorio_livelo.html" ]; then
-            mkdir -p relatorios
-            cp relatorio_livelo.html relatorios/relatorio_livelo_$(date +%Y%m%d).html
-            git add relatorio_livelo.html
-            git add relatorios/
-          fi
+          # Adicionar logs e relatórios
+          git add logs/
+          git add relatorios/
           
           git commit -m "Atualização diária de dados [$(date)]" || echo "Sem alterações para commit"
           git push
