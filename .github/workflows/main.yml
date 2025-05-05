@@ -21,6 +21,7 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
+          cache: 'pip'  # Adiciona cache para instalações pip
           
       - name: Configurar Chrome
         uses: browser-actions/setup-chrome@latest
@@ -35,11 +36,6 @@ jobs:
           mkdir -p relatorios
           mkdir -p _site
           
-      - name: Executar scraper diretamente (para depuração)
-        run: |
-          python livelo_scraper.py 2>&1 | tee scraper_debug.log
-        continue-on-error: true
-          
       - name: Executar script principal
         run: |
           python main.py 2>&1 | tee output.log
@@ -50,9 +46,22 @@ jobs:
           if cat output.log | grep -q "Falha no scraper\|Falha no reporter\|ERRO FATAL"; then
             echo "::warning::Falhas detectadas na execução!"
             grep -A 10 "Falha\|ERRO" output.log || true
+            # Opcionalmente, você pode falhar o workflow aqui com:
+            # exit 1
           else
             echo "Nenhuma falha detectada na execução."
           fi
+      
+      - name: Upload de logs e artefatos
+        uses: actions/upload-artifact@v3  # Adicionando explicitamente
+        with:
+          name: execution-logs-and-data
+          path: |
+            output.log
+            logs/
+            relatorios/
+            livelo_parceiros.xlsx
+          retention-days: 7  # Mantém por 7 dias
       
       - name: Configurar Git para commit
         run: |
