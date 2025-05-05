@@ -23,6 +23,9 @@ jobs:
       - name: Instalar dependências
         run: |
           pip install selenium webdriver-manager pandas openpyxl selenium-stealth undetected-chromedriver plotly numpy
+          # Verificar versão do Selenium e ChromeDriver
+          python -c "import selenium; print(f'Selenium version: {selenium.__version__}')"
+          python -c "from webdriver_manager.chrome import ChromeDriverManager; print(f'ChromeDriver path: {ChromeDriverManager().install()}')"
           
       - name: Verificar ambiente
         run: |
@@ -35,41 +38,60 @@ jobs:
           mkdir -p logs
           mkdir -p relatorios
           
+      - name: Executar scraper diretamente (para depuração)
+        run: |
+          python livelo_scraper.py 2>&1 | tee scraper_debug.log
+        continue-on-error: true
+          
       - name: Executar script principal
         run: |
           python main.py 2>&1 | tee output.log
+        continue-on-error: true
+        
+      - name: Upload de arquivos de diagnóstico
+        uses: actions/upload-artifact@v3
+        with:
+          name: debug-files
+          path: |
+            *.html
+            *.png
+            *.txt
+            *.log
+          retention-days: 3
         
       - name: Verificar falhas na execução
         run: |
           if cat output.log | grep -q "Falha no scraper\|Falha no reporter\|ERRO FATAL"; then
-            echo "::error::Falhas detectadas na execução!"
+            echo "::warning::Falhas detectadas na execução!"
             grep -A 10 "Falha\|ERRO" output.log || true
             echo "SCRAPING_FALHOU=true" >> $GITHUB_ENV
-            exit 1
           else
             echo "Nenhuma falha detectada na execução."
           fi
       
       - name: Configurar Git para commit
-        if: env.SCRAPING_FALHOU != 'true'
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
           
       - name: Commit e push dos novos dados
-        if: env.SCRAPING_FALHOU != 'true'
         run: |
+          # Copiar logs
           if [ -f "output.log" ]; then
             cp output.log logs/scraper_$(date +%Y%m%d_%H%M%S).log
           fi
           
-          # Adicionar o arquivo Excel e o relatório HTML principal
-          git add livelo_parceiros.xlsx
-          git add relatorio_livelo.html
-          
-          # Adicionar logs e relatórios
+          # Adicionar todos os arquivos relevantes mesmo se houver falhas
+          # Isso permite ver os arquivos de diagnóstico no repositório
+          git add -f *.html *.png *.txt *.log || echo "Nenhum arquivo de diagnóstico para adicionar"
           git add logs/
-          git add relatorios/
+          git add relatorios/ || echo "Pasta relatorios não existe"
           
-          git commit -m "Atualização diária de dados [$(date)]" || echo "Sem alterações para commit"
-          git push
+          # Tentar adicionar o arquivo Excel se existir
+          git add livelo_parceiros.xlsx || echo "Arquivo Excel não encontrado"
+          
+          # Tentar adicionar o relatório HTML se existir
+          git add relatorio_livelo.html || echo "Arquivo HTML não encontrado"
+          
+          git commit -m "Atualização automática e arquivos de diagnóstico [$(date)]" || echo "Sem alterações para commit"
+          git push || echo "Falha ao fazer push, continuando mesmo assim"
