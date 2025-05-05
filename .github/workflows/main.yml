@@ -5,6 +5,8 @@ on:
   workflow_dispatch:  # Permite execução manual
 permissions:
   contents: write
+  pages: write
+  id-token: write
 jobs:
   scrape:
     runs-on: ubuntu-latest
@@ -46,8 +48,6 @@ jobs:
         run: |
           python main.py 2>&1 | tee output.log
         continue-on-error: true
-        
-      # Removendo a etapa de upload-artifact para simplificar
         
       - name: Verificar falhas na execução
         run: |
@@ -111,3 +111,25 @@ jobs:
           
           # Push com tratamento de erro
           git push || echo "Falha ao fazer push, verifique os logs para mais detalhes"
+      
+      # Configurar e publicar no GitHub Pages
+      - name: Configurar diretório de publicação
+        run: |
+          mkdir -p ./public
+          # Copiar o arquivo HTML principal para o diretório de publicação
+          cp relatorio_livelo.html ./public/index.html || echo "Relatório HTML não encontrado"
+          # Copiar outros arquivos necessários (CSS, JS, imagens)
+          cp -r *.css *.js ./public/ 2>/dev/null || echo "Nenhum arquivo CSS/JS encontrado"
+          if [ -d "relatorios" ]; then
+            cp -r relatorios/* ./public/ 2>/dev/null || echo "Nenhum arquivo encontrado em relatórios"
+          fi
+          
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+        
+      - name: Deploy para GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: public
+          branch: gh-pages
+          clean: true # Remove arquivos antigos
