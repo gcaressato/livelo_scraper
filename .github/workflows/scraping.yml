@@ -1,0 +1,78 @@
+name: Livelo Partners Scraper
+on:
+  schedule:
+    - cron: '0 12 * * *'  # Executa todos os dias às 12:00 UTC
+  workflow_dispatch:  # Permite execução manual
+permissions:
+  contents: write
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+        
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          
+      - name: Configurar Chrome
+        uses: browser-actions/setup-chrome@latest
+        
+      - name: Instalar dependências
+        run: |
+          pip install selenium webdriver-manager pandas openpyxl selenium-stealth undetected-chromedriver
+          
+      - name: Verificar ambiente
+        run: |
+          echo "Diretório atual: $(pwd)"
+          echo "Conteúdo do diretório: $(ls -la)"
+          echo "Versão do Chrome: $(chrome --version)"
+          
+      - name: Criar diretórios para logs e saída
+        run: |
+          mkdir -p logs
+          mkdir -p output
+          
+      - name: Executar script principal
+        run: |
+          python main.py 2>&1 | tee output.log
+        
+      - name: Verificar falhas na execução
+        run: |
+          if cat output.log | grep -q "Falha no scraper\|Falha no reporter"; then
+            echo "::error::Falhas detectadas na execução!"
+            grep -A 10 "Falha" output.log || true
+            echo "SCRAPING_FALHOU=true" >> $GITHUB_ENV
+            exit 1
+          else
+            echo "Nenhuma falha detectada na execução."
+          fi
+      
+      - name: Configurar Git para commit
+        if: env.SCRAPING_FALHOU != 'true'
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+          
+      - name: Commit e push dos novos dados
+        if: env.SCRAPING_FALHOU != 'true'
+        run: |
+          if [ -f "output.log" ]; then
+            cp output.log logs/scraper_$(date +%Y%m%d_%H%M%S).log
+          fi
+          
+          git add livelo_parceiros.xlsx
+          git add output/
+          git add logs/
+          
+          # Verifica se há relatório HTML e adiciona para commit
+          if [ -f "relatorio_livelo.html" ]; then
+            mkdir -p relatorios
+            cp relatorio_livelo.html relatorios/relatorio_livelo_$(date +%Y%m%d).html
+            git add relatorios/
+          fi
+          
+          git commit -m "Atualização diária de dados [$(date)]" || echo "Sem alterações para commit"
+          git push
