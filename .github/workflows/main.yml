@@ -1,0 +1,105 @@
+name: Livelo Partners Scraper
+on:
+  schedule:
+    - cron: '0 12 * * *'  # Executa todos os dias às 12:00 UTC
+  workflow_dispatch:  # Permite execução manual
+permissions:
+  contents: write
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+        
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          
+      - name: Configurar Chrome
+        uses: browser-actions/setup-chrome@latest
+        
+      - name: Instalar dependências
+        run: |
+          pip install selenium webdriver-manager pandas openpyxl selenium-stealth plotly numpy
+          
+      - name: Criar diretórios para logs e saída
+        run: |
+          mkdir -p logs
+          mkdir -p relatorios
+          
+      - name: Executar script principal
+        run: |
+          python main.py 2>&1 | tee output.log
+        continue-on-error: true
+        
+      - name: Verificar falhas na execução
+        run: |
+          if cat output.log | grep -q "Falha no scraper\|Falha no reporter\|ERRO FATAL"; then
+            echo "::warning::Falhas detectadas na execução!"
+            grep -A 10 "Falha\|ERRO" output.log || true
+            echo "SCRAPING_FALHOU=true" >> $GITHUB_ENV
+          else
+            echo "Nenhuma falha detectada na execução."
+          fi
+      
+      - name: Encontrar relatório mais recente
+        id: find_report
+        run: |
+          if [ -d "relatorios" ]; then
+            LATEST_REPORT=$(ls -t relatorios/*.html 2>/dev/null | head -1)
+            if [ -n "$LATEST_REPORT" ]; then
+              echo "report_path=$LATEST_REPORT" >> $GITHUB_OUTPUT
+              echo "Relatório mais recente encontrado: $LATEST_REPORT"
+            else
+              echo "Nenhum relatório encontrado na pasta relatorios"
+            fi
+          else
+            echo "Pasta relatorios não existe"
+          fi
+      
+      # Usando SendGrid para enviar email sem necessidade de senha
+      - name: Enviar relatório por email
+        if: steps.find_report.outputs.report_path != ''
+        uses: rjstone/discord-webhook-notify@v1
+        with:
+          severity: info
+          username: ${{ secrets.EMAIL_USERNAME }}
+          color: '#47B581'
+          text: Relatório Livelo Partners gerado
+          details: O relatório da Livelo está disponível para visualização no repositório.
+          avatarUrl: https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png
+          webhook_url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      
+      - name: Configurar Git para commit
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+          
+      - name: Commit e push dos novos dados
+        run: |
+          # Copiar logs
+          if [ -f "output.log" ]; then
+            cp output.log logs/scraper_$(date +%Y%m%d_%H%M%S).log
+          fi
+          
+          # Adicionar diretórios
+          if [ -d "logs" ]; then
+            git add logs/ || echo "Não foi possível adicionar logs/"
+          fi
+          
+          if [ -d "relatorios" ]; then
+            git add relatorios/ || echo "Não foi possível adicionar relatorios/"
+          fi
+          
+          # Adicionar o arquivo Excel se existir
+          if [ -f "livelo_parceiros.xlsx" ]; then
+            git add livelo_parceiros.xlsx || echo "Não foi possível adicionar livelo_parceiros.xlsx"
+          fi
+          
+          # Tentar commit com verificação se há algo para comitar
+          git diff --staged --quiet || git commit -m "Atualização automática [$(date)]"
+          
+          # Push com tratamento de erro
+          git push || echo "Falha ao fazer push, verifique os logs para mais detalhes"
