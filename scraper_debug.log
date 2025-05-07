@@ -4,7 +4,7 @@ Configurações do Chrome:
   User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) ...
   Window size: 1920x1080
 Iniciando novo processo do Chrome...
-Chrome iniciado com sucesso. Sessão ID: 7679c31605b097f28bcd514971c08f9d
+Chrome iniciado com sucesso. Sessão ID: 232ffc9e5e83d533032c45218964c502
 Navegando para o site da Livelo...
 Tentativa 1/5: Acessando URL...
 Aguardando carregamento básico da página...
@@ -80,7 +80,7 @@ Extraído 46: Cambio Online | Não | R$ | Valor: 5.0 | Pontos: 1
 Extraído 47: Camicado | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 48: CARE Natural Beauty | Não | R$ | Valor: 1.0 | Pontos: 4
 Extraído 49: Carrefour Mercado | Sim | R$ | Valor: 1.0 | Pontos: 4
-Extraído 50: Carrefour Shopping | Sim | R$ | Valor: 1.0 | Pontos: 3
+Extraído 50: Carrefour Shopping | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 51: Casa MinD | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 52: Casas Bahia | Sim | R$ | Valor: 1.0 | Pontos: 5
 Extraído 53: CEA | Não | R$ | Valor: 1.0 | Pontos: 2
@@ -119,7 +119,7 @@ Extraído 85: EDP | Não | R$ | Valor: 1.0 | Pontos: 6
 Extraído 86: elbo | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 87: Ellus | Sim | R$ | Valor: 1.0 | Pontos: 4
 Extraído 88: Epoca cosmesticos | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 89: eSim Travelex | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 89: eSim Travelex | Não | U$ | Valor: 1.0 | Pontos: 20
 Extraído 90: Estoque | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 91: Eudora | Sim | R$ | Valor: 1.0 | Pontos: 6
 Extraído 92: Euro | Sim | R$ | Valor: 1.0 | Pontos: 6
@@ -194,7 +194,7 @@ Extraído 160: Luck Receptivo Maceio | Sim | R$ | Valor: 1.0 | Pontos: 3
 Extraído 161: Luck Receptivo Natal | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 162: Luxury Loyalty | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 163: Madesa | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 164: Magalu | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 164: Magalu | Sim | R$ | Valor: 1.0 | Pontos: 4
 Extraído 165: Malwee | Sim | R$ | Valor: 1.0 | Pontos: 10
 Extraído 166: MAPFRE Seguro Auto | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 167: Max Titanium | Não | R$ | Valor: 1.0 | Pontos: 1
@@ -210,7 +210,7 @@ Extraído 176: Mobills | Não | R$ | Valor: 1.0 | Pontos: 10
 Extraído 177: Mobly | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 178: Mondaine | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 179: Monica Sanches | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 180: Monte Carlo | Sim | R$ | Valor: 1.0 | Pontos: 13
+Extraído 180: Monte Carlo | Sim | R$ | Valor: 1.0 | Pontos: 6
 Extraído 181: Morana | Sim | R$ | Valor: 1.0 | Pontos: 8
 Extraído 182: Movida | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 183: Mycon Consorcio Digital | Não | R$ | Valor: 1.0 | Pontos: 32
@@ -219,7 +219,7 @@ Extraído 185: Natura | Sim | R$ | Valor: 1.0 | Pontos: 10
 Extraído 186: Netshoes | Sim | R$ | Valor: 1.0 | Pontos: 5
 Extraído 187: New Balance | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 188: Next Seguro Viagem | Não | R$ | Valor: 1.0 | Pontos: 7
-Extraído 189: Nike | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 189: Nike | Sim | R$ | Valor: 1.0 | Pontos: 5
 Extraído 190: Nomad Trips | Não | R$ | Valor: 1.0 | Pontos: 3
 Extraído 191: Nova Era | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 192: Nutty Bavarian | Não | R$ | Valor: 1.0 | Pontos: 1
@@ -271,7 +271,7 @@ Extraído 237: Salinas | Sim | R$ | Valor: 1.0 | Pontos: 4
 Extraído 238: Sam's Club | Não | R$ | Valor: 1.0 | Pontos: 14
 Extraído 239: Sam's Club - E-commerce | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 240: Samsonite  | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 241: Sebastian Coffee | Sim | R$ | Valor: 1.0 | Pontos: 11
+Extraído 241: Sebastian Coffee | Sim | R$ | Valor: 1.0 | Pontos: 10
 Extraído 242: Seculus | Sim | R$ | Valor: 1.0 | Pontos: 17
 Extraído 243: Seguro Residencial MAPFRE | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 244: Seguro Viagem Bradesco | Não | R$ | Valor: 1.0 | Pontos: 15
@@ -288,7 +288,7 @@ Extraído 254: Speedo | Não | R$ | Valor: 1.0 | Pontos: 4
 Extraído 255: Spicy | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 256: Studio Z | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 257: SulAmerica Plano Odonto | Sim | R$ | Valor: 1.0 | Pontos: 8
-Extraído 258: SulAmerica Seguro Viagem | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 258: SulAmerica Seguro Viagem | Não | R$ | Valor: 1.0 | Pontos: 6
 Extraído 259: Summerville | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 260: Supernosso | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 261: Tailors Mind  | Não | R$ | Valor: 1.0 | Pontos: 4
@@ -304,7 +304,7 @@ Extraído 270: TripChip | Não | R$ | Valor: 1.0 | Pontos: 6
 Extraído 271: Trocafy | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 272: Truss | Sim | R$ | Valor: 1.0 | Pontos: 10
 Extraído 273: Umbro | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 274: Under Armour | Sim | R$ | Valor: 1.0 | Pontos: 10
+Extraído 274: Under Armour | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 275: Unidas | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 276: Universal Assistance – Seguro Viagem | Sim | R$ | Valor: 1.0 | Pontos: 12
 Extraído 277: Utilplast | Não | R$ | Valor: 1.0 | Pontos: 1
@@ -316,10 +316,12 @@ Extraído 282: Vult | Não | R$ | Valor: 1.0 | Pontos: 3
 Extraído 283: Wise UP | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 284: Yvy | Não | R$ | Valor: 1.0 | Pontos: 3
 Extraído 285: Zattini | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 286: Zissou | Não | R$ | Valor: 1.0 | Pontos: 3
-Total de parceiros encontrados: 286
+Extraído 286: Zee.Dog | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 287: Zee.Now | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 288: Zissou | Não | R$ | Valor: 1.0 | Pontos: 3
+Total de parceiros encontrados: 288
 Arquivo /home/runner/work/livelo_scraper/livelo_scraper/livelo_parceiros.xlsx encontrado. Verificando dados existentes...
-Não foram encontrados dados do dia 2025-05-06. Adicionando novos dados...
+Não foram encontrados dados do dia 2025-05-07. Adicionando novos dados...
 Dados salvos no arquivo: /home/runner/work/livelo_scraper/livelo_scraper/livelo_parceiros.xlsx
 Cópia salva em: output/livelo_parceiros.xlsx
 Encerrando driver do Selenium...
