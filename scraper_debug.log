@@ -4,7 +4,7 @@ Configurações do Chrome:
   User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) ...
   Window size: 1920x1080
 Iniciando novo processo do Chrome...
-Chrome iniciado com sucesso. Sessão ID: 232ffc9e5e83d533032c45218964c502
+Chrome iniciado com sucesso. Sessão ID: 1242f2b66de9f5b8ae14b1e21707dcc3
 Navegando para o site da Livelo...
 Tentativa 1/5: Acessando URL...
 Aguardando carregamento básico da página...
@@ -13,7 +13,7 @@ Verificando elementos principais...
 Tentando XPath: /html/body/div[4]/main/div[1]/div[37]/div/div/div[2]/section/div[2]/div[3]/div[1]
 ✓ Encontrados 1 elementos com XPath: /html/body/div[4]/main/div[1]/div[37]/div/div/div[2]/section/div[2]/div[3]/div[1]
 Rolando a página para carregar todos os elementos...
-Altura da página: 34031px
+Altura da página: 33588px
 Rolando para posição: 400px
 Rolando para posição: 800px
 Rolando para posição: 1200px
@@ -31,15 +31,15 @@ Verificando elementos após rolagem...
 Página carregada com sucesso!
 Iniciando extração de dados...
 Iniciando extração de dados por XPath...
-Extraído 1: ABC da Construcao | Sim | R$ | Valor: 1.0 | Pontos: 10
+Extraído 1: ABC da Construcao | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 2: Abelha Rainha | Não | R$ | Valor: 1.0 | Pontos: 3
 Extraído 3: ADCOS | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 4: Aguativa Resort | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 5: Aliexpress | Não | U$ | Valor: 1.0 | Pontos: 3
 Extraído 6: Allianz | Não | R$ | Valor: 1.0 | Pontos: 4
 Extraído 7: Allugator | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 8: Amazon | Sim | R$ | Valor: 1.0 | Pontos: 4
-Extraído 9: AMOBELEZA | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 8: Amazon | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 9: AMOBELEZA | Sim | R$ | Valor: 1.0 | Pontos: 10
 Extraído 10: Angeloni | Sim | R$ | Valor: 1.0 | Pontos: 3
 Extraído 11: Aramis | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 12: Asics | Não | R$ | Valor: 1.0 | Pontos: 1
@@ -47,22 +47,22 @@ Extraído 13: Assist Card Seguros | Não | R$ | Valor: 1.0 | Pontos: 10
 Extraído 14: Atalaia Noronha | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 15: avis | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 16: Avon | Não | R$ | Valor: 1.0 | Pontos: 6
-Extraído 17: Azul Viagens | Sim | R$ | Valor: 1.0 | Pontos: 5
+Extraído 17: Azul Viagens | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 18: Bagaggio | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 19: Baianao | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 20: Basicamente | Não | R$ | Valor: 1.0 | Pontos: 4
 Extraído 21: Basico.com | Não | R$ | Valor: 1.0 | Pontos: 3
-Extraído 22: Beach Park Hospedagens | Sim | R$ | Valor: 1.0 | Pontos: 6
+Extraído 22: Beach Park Hospedagens | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 23: Beach Park Ingressos | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 24: Beep | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 25: Beleza na web | Sim | R$ | Valor: 1.0 | Pontos: 10
 Extraído 26: Beleza na Web PRO | Não | R$ | Valor: 1.0 | Pontos: 3
 Extraído 27: Beto Carrero World | Sim | R$ | Valor: 1.0 | Pontos: 5
 Extraído 28: Beyoung | Não | R$ | Valor: 1.0 | Pontos: 3
-Extraído 29: Bibi | Sim | R$ | Valor: 1.0 | Pontos: 5
-Extraído 30: BoBo | Sim | R$ | Valor: 1.0 | Pontos: 7
-Extraído 31: Bobstore | Sim | R$ | Valor: 1.0 | Pontos: 4
-Extraído 32: Bombay Herbs & Spices | Sim | R$ | Valor: 1.0 | Pontos: 6
+Extraído 29: Bibi | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 30: BO.BO | Sim | R$ | Valor: 1.0 | Pontos: 7
+Extraído 31: Bobstore | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 32: Bombay Herbs & Spices | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 33: Bonjour Lingerie | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 34: Booking.com | Não | U$ | Valor: 1.0 | Pontos: 4
 Extraído 35: Bradesco Capitalizacao | Não | R$ | Valor: 1.0 | Pontos: 2
@@ -79,21 +79,21 @@ Extraído 45: Caffeine Army | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 46: Cambio Online | Não | R$ | Valor: 5.0 | Pontos: 1
 Extraído 47: Camicado | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 48: CARE Natural Beauty | Não | R$ | Valor: 1.0 | Pontos: 4
-Extraído 49: Carrefour Mercado | Sim | R$ | Valor: 1.0 | Pontos: 4
-Extraído 50: Carrefour Shopping | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 49: Carrefour Mercado | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 50: Carrefour Shopping | Sim | R$ | Valor: 1.0 | Pontos: 6
 Extraído 51: Casa MinD | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 52: Casas Bahia | Sim | R$ | Valor: 1.0 | Pontos: 5
 Extraído 53: CEA | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 54: Centauro | Sim | R$ | Valor: 1.0 | Pontos: 5
 Extraído 55: Cervejabox | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 56: Cestas Michelli | Sim | R$ | Valor: 1.0 | Pontos: 8
+Extraído 56: Cestas Michelli | Sim | R$ | Valor: 1.0 | Pontos: 6
 Extraído 57: Chico Rei | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 58: Ciclic Seguros – Bike | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 59: Ciclic Seguros – Celular | Sim | R$ | Valor: 1.0 | Pontos: 6
-Extraído 60: Ciclic Seguros – Viagem | Sim | R$ | Valor: 1.0 | Pontos: 18
+Extraído 60: Ciclic Seguros – Viagem | Sim | R$ | Valor: 1.0 | Pontos: 15
 Extraído 61: Claro | Não | R$ | Valor: 1.0 | Pontos: 6
 Extraído 62: ClickBus | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 63: Coffee Mais | Sim | R$ | Valor: 1.0 | Pontos: 10
+Extraído 63: Coffee Mais | Sim | R$ | Valor: 1.0 | Pontos: 11
 Extraído 64: Colcci | Sim | R$ | Valor: 1.0 | Pontos: 10
 Extraído 65: Coliseu | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 66: Consorcio Magalu | Não | R$ | Valor: 1.0 | Pontos: 10
@@ -104,7 +104,7 @@ Extraído 70: Crocs | Sim | R$ | Valor: 1.0 | Pontos: 8
 Extraído 71: Cruzeiros Agaxtur | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 72: Dafiti | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 73: Dako | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 74: Darkness | Sim | R$ | Valor: 1.0 | Pontos: 5
+Extraído 74: Darkness | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 75: Decathlon | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 76: Decolar | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 77: Democrata | Não | R$ | Valor: 1.0 | Pontos: 1
@@ -113,20 +113,20 @@ Extraído 79: DPaschoal | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 80: Dr Jones | Não | R$ | Valor: 1.0 | Pontos: 3
 Extraído 81: Drogaria Sao Paulo | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 82: Drogarias Pacheco | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 83: Dudalina | Sim | R$ | Valor: 1.0 | Pontos: 8
+Extraído 83: Dudalina | Não | R$ | Valor: 1.0 | Pontos: 3
 Extraído 84: Easy Live | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 85: EDP | Não | R$ | Valor: 1.0 | Pontos: 6
 Extraído 86: elbo | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 87: Ellus | Sim | R$ | Valor: 1.0 | Pontos: 4
+Extraído 87: Ellus | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 88: Epoca cosmesticos | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 89: eSim Travelex | Não | U$ | Valor: 1.0 | Pontos: 20
 Extraído 90: Estoque | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 91: Eudora | Sim | R$ | Valor: 1.0 | Pontos: 6
+Extraído 91: Eudora | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 92: Euro | Sim | R$ | Valor: 1.0 | Pontos: 6
 Extraído 93: Extra | Sim | R$ | Valor: 1.0 | Pontos: 4
 Extraído 94: Faber-Castell | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 95: Farmacias App | Não | R$ | Valor: 1.0 | Pontos: 6
-Extraído 96: Fast Shop | Sim | R$ | Valor: 1.0 | Pontos: 5
+Extraído 95: Farmacias App | Sim | R$ | Valor: 1.0 | Pontos: 15
+Extraído 96: Fast Shop | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 97: Fila | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 98: Flormel | Não | R$ | Valor: 1.0 | Pontos: 3
 Extraído 99: Foco | Não | R$ | Valor: 1.0 | Pontos: 2
@@ -134,194 +134,189 @@ Extraído 100: Forever Liss | Sim | R$ | Valor: 1.0 | Pontos: 10
 Extraído 101: Fossil | Sim | R$ | Valor: 1.0 | Pontos: 10
 Extraído 102: Frigelar  | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 103: Gazin | Sim | R$ | Valor: 1.0 | Pontos: 3
-Extraído 104: Giuliana Flores | Sim | R$ | Valor: 1.0 | Pontos: 8
+Extraído 104: Giuliana Flores | Sim | R$ | Valor: 1.0 | Pontos: 6
 Extraído 105: Go case | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 106: Granado | Sim | R$ | Valor: 1.0 | Pontos: 8
+Extraído 106: Granado | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 107: Grupo Dreams | Não | R$ | Valor: 1.0 | Pontos: 4
 Extraído 108: Guess  | Não | R$ | Valor: 1.0 | Pontos: 2
 Extraído 109: Guldi | Não | R$ | Valor: 1.0 | Pontos: 1
 Extraído 110: Havaianas | Sim | R$ | Valor: 1.0 | Pontos: 10
 Extraído 111: Hering | Não | R$ | Valor: 1.0 | Pontos: 3
-Extraído 112: Hering Outlet | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 112: Hering Outlet | Sim | R$ | Valor: 1.0 | Pontos: 8
 Extraído 113: HERO SEGUROS | Não | R$ | Valor: 1.0 | Pontos: 8
 Extraído 114: Hertz Internacional | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 115: Highstil  | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 116: Home Angels | Não | R$ | Valor: 10.0 | Pontos: 1
-Extraído 117: Hope | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 118: Hope Resort | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 119: Hopper Nutrition | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 120: Horas Magicas | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 121: Hot Beach | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 122: Hoteis Deville | Não | R$ | Valor: 3.0 | Pontos: 1
-Extraído 123: Hoteis Windsor | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 124: Hoteis.com | Sim | R$ | Valor: 1.0 | Pontos: 10
-Extraído 125: Hotel Gran Marquise | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 126: Hotel Nacional | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 127: Imaginarium | Sim | R$ | Valor: 1.0 | Pontos: 7
-Extraído 128: Imperio | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 129: Individual | Sim | R$ | Valor: 1.0 | Pontos: 11
-Extraído 130: Infinix | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 131: Insider Store | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 132: IntegralMedica | Sim | R$ | Valor: 1.0 | Pontos: 5
-Extraído 133: John John | Sim | R$ | Valor: 1.0 | Pontos: 8
-Extraído 134: Julio Okubo | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 135: Kaligo | Não | U$ | Valor: 1.0 | Pontos: 15
-Extraído 136: Key Design | Não | R$ | Valor: 1.0 | Pontos: 3
-Extraído 137: Klabin ForYou | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 138: Lacoste | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 139: LE LIS | Sim | R$ | Valor: 1.0 | Pontos: 11
-Extraído 140: LEGO | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 141: Liga Vitoria - Seguro de Viagem | Não | R$ | Valor: 1.0 | Pontos: 3
-Extraído 142: Liga Vitoria Consorcio | Não | R$ | Valor: 1.0 | Pontos: 30
-Extraído 143: Liga Vitoria Seguro Auto | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 144: Liga Vitoria Seguro de Vida | Não | R$ | Valor: 1.0 | Pontos: 3
-Extraído 145: Liga Vitoria Seguro Moto | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 146: Liga Vitoria Seguro Residencial | Não | R$ | Valor: 1.0 | Pontos: 3
-Extraído 147: LIVE! | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 148: Liz | Sim | R$ | Valor: 1.0 | Pontos: 8
-Extraído 149: Localiza | Não | U$ | Valor: 1.0 | Pontos: 5
-Extraído 150: Localiza | Não | R$ | Valor: 1.0 | Pontos: 4
-Extraído 151: Localiza Meoo | Não | R$ | Valor: 1.0 | Pontos: 4
-Extraído 152: Loccitane | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 153: Loccitane au Bresil | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 154: Lolita | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 155: Lord Perfumaria | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 156: Loungerie | Sim | R$ | Valor: 1.0 | Pontos: 6
-Extraído 157: Luck Receptivo (Joao Pessoa) | Não | R$ | Valor: 1.0 | Pontos: 3
-Extraído 158: Luck Receptivo (Salvador) | Não | R$ | Valor: 1.0 | Pontos: 3
-Extraído 159: Luck Receptivo - Recife | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 160: Luck Receptivo Maceio | Sim | R$ | Valor: 1.0 | Pontos: 3
-Extraído 161: Luck Receptivo Natal | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 162: Luxury Loyalty | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 163: Madesa | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 164: Magalu | Sim | R$ | Valor: 1.0 | Pontos: 4
-Extraído 165: Malwee | Sim | R$ | Valor: 1.0 | Pontos: 10
-Extraído 166: MAPFRE Seguro Auto | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 167: Max Titanium | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 168: MaxRacer | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 169: MedSenior | Não | R$ | Valor: 1.0 | Pontos: 7
-Extraído 170: Meia Sola | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 171: MeuCopo | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 172: Mevo Farma | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 173: Midea | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 174: Mistral | Sim | R$ | Valor: 1.0 | Pontos: 10
-Extraído 175: Mizuno | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 176: Mobills | Não | R$ | Valor: 1.0 | Pontos: 10
-Extraído 177: Mobly | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 178: Mondaine | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 179: Monica Sanches | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 180: Monte Carlo | Sim | R$ | Valor: 1.0 | Pontos: 6
-Extraído 181: Morana | Sim | R$ | Valor: 1.0 | Pontos: 8
-Extraído 182: Movida | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 183: Mycon Consorcio Digital | Não | R$ | Valor: 1.0 | Pontos: 32
-Extraído 184: Nars | Não | R$ | Valor: 1.0 | Pontos: 3
-Extraído 185: Natura | Sim | R$ | Valor: 1.0 | Pontos: 10
-Extraído 186: Netshoes | Sim | R$ | Valor: 1.0 | Pontos: 5
-Extraído 187: New Balance | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 188: Next Seguro Viagem | Não | R$ | Valor: 1.0 | Pontos: 7
-Extraído 189: Nike | Sim | R$ | Valor: 1.0 | Pontos: 5
-Extraído 190: Nomad Trips | Não | R$ | Valor: 1.0 | Pontos: 3
-Extraído 191: Nova Era | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 192: Nutty Bavarian | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 193: O Boticario | Não | R$ | Valor: 1.0 | Pontos: 3
-Extraído 194: O.U.i Paris | Sim | R$ | Valor: 1.0 | Pontos: 10
-Extraído 195: Oceane | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 196: Oficina Reserva | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 197: Olympikus | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 198: Ondas Praia Resort | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 199: Osklen | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 200: Oster | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 201: Oxford | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 202: Pado | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 203: Panvel | Sim | R$ | Valor: 1.0 | Pontos: 10
-Extraído 204: PerfectDraft (Ambev) | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 205: Pet Paluche | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 206: Pet Paluche Box | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 207: Petlove | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 208: Petlove Saude | Sim | R$ | Valor: 1.0 | Pontos: 30
-Extraído 209: Petz | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 210: Piatan Natural | Não | R$ | Valor: 1.0 | Pontos: 3
-Extraído 211: Pipooh  | Não | R$ | Valor: 1.0 | Pontos: 4
-Extraído 212: PneuStore | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 213: Pontofrio | Sim | R$ | Valor: 1.0 | Pontos: 5
-Extraído 214: Portal das Malas | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 215: Portallar | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 216: Porto Faz | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 217: Posthaus | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 218: Prive Hoteis e Parques | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 219: Probiotica | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 220: Puket | Sim | R$ | Valor: 1.0 | Pontos: 7
-Extraído 221: Qcompra | Não | R$ | Valor: 1.0 | Pontos: 3
-Extraído 222: Quem Disse, Berenice? | Sim | R$ | Valor: 1.0 | Pontos: 7
-Extraído 223: Quero Passagem | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 224: Quero-Quero | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 225: Quintess | Não | R$ | Valor: 1.0 | Pontos: 3
-Extraído 226: RDC Viagens | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 227: Re Petit | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 228: Renner | Sim | R$ | Valor: 1.0 | Pontos: 8
-Extraído 229: Rentalcars | Não | U$ | Valor: 1.0 | Pontos: 6
-Extraído 230: Rentcars | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 231: Reserva | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 232: Reservecar | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 233: Riachuelo | Sim | R$ | Valor: 1.0 | Pontos: 5
-Extraído 234: Richards | Sim | R$ | Valor: 1.0 | Pontos: 4
-Extraído 235: ropo®️ | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 236: Saint Paul | Não | R$ | Valor: 1.0 | Pontos: 4
-Extraído 237: Salinas | Sim | R$ | Valor: 1.0 | Pontos: 4
-Extraído 238: Sam's Club | Não | R$ | Valor: 1.0 | Pontos: 14
-Extraído 239: Sam's Club - E-commerce | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 240: Samsonite  | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 241: Sebastian Coffee | Sim | R$ | Valor: 1.0 | Pontos: 10
-Extraído 242: Seculus | Sim | R$ | Valor: 1.0 | Pontos: 17
-Extraído 243: Seguro Residencial MAPFRE | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 244: Seguro Viagem Bradesco | Não | R$ | Valor: 1.0 | Pontos: 15
-Extraído 245: Sephora | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 246: Seus Ingressos | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 247: Shiseido | Não | R$ | Valor: 1.0 | Pontos: 3
-Extraído 248: Shoestock | Não | R$ | Valor: 1.0 | Pontos: 3
-Extraído 249: Shopee | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 250: Simple Organic | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 251: Sioux Seguro Celular | Não | R$ | Valor: 1.0 | Pontos: 4
-Extraído 252: Sixt | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 253: Sottile | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 254: Speedo | Não | R$ | Valor: 1.0 | Pontos: 4
-Extraído 255: Spicy | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 256: Studio Z | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 257: SulAmerica Plano Odonto | Sim | R$ | Valor: 1.0 | Pontos: 8
-Extraído 258: SulAmerica Seguro Viagem | Não | R$ | Valor: 1.0 | Pontos: 6
-Extraído 259: Summerville | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 260: Supernosso | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 261: Tailors Mind  | Não | R$ | Valor: 1.0 | Pontos: 4
-Extraído 262: Technos | Sim | R$ | Valor: 1.0 | Pontos: 8
-Extraído 263: Thule | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 264: Tia Sonia | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 265: TIM | Não | R$ | Valor: 1.0 | Pontos: 6
-Extraído 266: Tokio Marine Seguros | Não | R$ | Valor: 1.0 | Pontos: 10
-Extraído 267: Top Moveis | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 268: Travel 365 | Não | R$ | Valor: 1.0 | Pontos: 3
-Extraído 269: Travelex | Não | U$ | Valor: 1.0 | Pontos: 1
-Extraído 270: TripChip | Não | R$ | Valor: 1.0 | Pontos: 6
-Extraído 271: Trocafy | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 272: Truss | Sim | R$ | Valor: 1.0 | Pontos: 10
-Extraído 273: Umbro | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 274: Under Armour | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 275: Unidas | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 276: Universal Assistance – Seguro Viagem | Sim | R$ | Valor: 1.0 | Pontos: 12
-Extraído 277: Utilplast | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 278: Viacao Garcia | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 279: Viajar | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 280: Vivara | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 281: VR Collezioni | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 282: Vult | Não | R$ | Valor: 1.0 | Pontos: 3
-Extraído 283: Wise UP | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 284: Yvy | Não | R$ | Valor: 1.0 | Pontos: 3
-Extraído 285: Zattini | Não | R$ | Valor: 1.0 | Pontos: 2
-Extraído 286: Zee.Dog | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 287: Zee.Now | Não | R$ | Valor: 1.0 | Pontos: 1
-Extraído 288: Zissou | Não | R$ | Valor: 1.0 | Pontos: 3
-Total de parceiros encontrados: 288
+Extraído 115: Home Angels | Não | R$ | Valor: 10.0 | Pontos: 1
+Extraído 116: Hope | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 117: Hope Resort | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 118: Hopper Nutrition | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 119: Horas Magicas | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 120: Hot Beach | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 121: Hoteis Deville | Não | R$ | Valor: 3.0 | Pontos: 1
+Extraído 122: Hoteis Windsor | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 123: Hoteis.com | Sim | R$ | Valor: 1.0 | Pontos: 10
+Extraído 124: Hotel Gran Marquise | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 125: Hotel Nacional | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 126: Imaginarium | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 127: Imperio | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 128: Individual | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 129: Infinix | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 130: Insider Store | Sim | R$ | Valor: 1.0 | Pontos: 11
+Extraído 131: IntegralMedica | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 132: John John | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 133: Julio Okubo | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 134: Kaligo | Não | U$ | Valor: 1.0 | Pontos: 15
+Extraído 135: Key Design | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 136: Klabin ForYou | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 137: Lacoste | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 138: LE LIS | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 139: LEGO | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 140: Liga Vitoria - Seguro de Viagem | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 141: Liga Vitoria Consorcio | Não | R$ | Valor: 1.0 | Pontos: 30
+Extraído 142: Liga Vitoria Seguro Auto | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 143: Liga Vitoria Seguro de Vida | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 144: Liga Vitoria Seguro Moto | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 145: Liga Vitoria Seguro Residencial | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 146: LIVE! | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 147: Liz | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 148: Localiza | Não | U$ | Valor: 1.0 | Pontos: 5
+Extraído 149: Localiza | Não | R$ | Valor: 1.0 | Pontos: 4
+Extraído 150: Localiza Meoo | Não | R$ | Valor: 1.0 | Pontos: 4
+Extraído 151: Loccitane | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 152: Loccitane au Bresil | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 153: Lolita | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 154: Lord Perfumaria | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 155: Loungerie | Sim | R$ | Valor: 1.0 | Pontos: 10
+Extraído 156: Luck Receptivo (Salvador) | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 157: Luck Receptivo - Recife | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 158: Luck Receptivo Maceio | Sim | R$ | Valor: 1.0 | Pontos: 3
+Extraído 159: Luck Receptivo Natal | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 160: Luxury Loyalty | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 161: Madesa | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 162: Magalu | Sim | R$ | Valor: 1.0 | Pontos: 4
+Extraído 163: Malwee | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 164: MAPFRE Seguro Auto | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 165: Max Titanium | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 166: MaxRacer | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 167: MedSenior | Não | R$ | Valor: 1.0 | Pontos: 7
+Extraído 168: Meia Sola | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 169: MeuCopo | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 170: Mevo Farma | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 171: Midea | Sim | R$ | Valor: 1.0 | Pontos: 5
+Extraído 172: Mistral | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 173: Mizuno | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 174: Mobills | Não | R$ | Valor: 1.0 | Pontos: 10
+Extraído 175: Mobly | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 176: Mondaine | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 177: Monica Sanches | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 178: Monte Carlo | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 179: Morana | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 180: Movida | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 181: Mycon Consorcio Digital | Não | R$ | Valor: 1.0 | Pontos: 32
+Extraído 182: Nars | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 183: Netshoes | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 184: New Balance | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 185: Next Seguro Viagem | Não | R$ | Valor: 1.0 | Pontos: 7
+Extraído 186: Nike | Sim | R$ | Valor: 1.0 | Pontos: 5
+Extraído 187: Nomad Trips | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 188: Nova Era | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 189: Nutty Bavarian | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 190: O Boticario | Sim | R$ | Valor: 1.0 | Pontos: 10
+Extraído 191: O.U.i Paris | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 192: Oceane | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 193: Oficina Reserva | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 194: Olympikus | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 195: Ondas Praia Resort | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 196: Osklen | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 197: Oster | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 198: Oxford | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 199: Pado | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 200: Panvel | Sim | R$ | Valor: 1.0 | Pontos: 3
+Extraído 201: PerfectDraft (Ambev) | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 202: Pet Paluche | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 203: Pet Paluche Box | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 204: Petlove | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 205: Petlove Saude | Não | R$ | Valor: 1.0 | Pontos: 6
+Extraído 206: Petz | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 207: Piatan Natural | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 208: PneuStore | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 209: Pontofrio | Sim | R$ | Valor: 1.0 | Pontos: 5
+Extraído 210: Portal das Malas | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 211: Portallar | Sim | R$ | Valor: 1.0 | Pontos: 6
+Extraído 212: Porto Faz | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 213: Posthaus | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 214: Prive Hoteis e Parques | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 215: Probiotica | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 216: Puket | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 217: Qcompra | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 218: Quem Disse, Berenice? | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 219: Quero Passagem | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 220: Quero-Quero | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 221: Quintess | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 222: RDC Viagens | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 223: Re Petit | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 224: Renner | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 225: Rentalcars | Não | U$ | Valor: 1.0 | Pontos: 6
+Extraído 226: Rentcars | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 227: Reserva | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 228: Reservecar | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 229: Riachuelo | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 230: Richards | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 231: ropo®️ | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 232: Saint Paul | Não | R$ | Valor: 1.0 | Pontos: 4
+Extraído 233: Salinas | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 234: Sam's Club | Não | R$ | Valor: 1.0 | Pontos: 14
+Extraído 235: Sam's Club - E-commerce | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 236: Samsonite  | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 237: Sebastian Coffee | Sim | R$ | Valor: 1.0 | Pontos: 10
+Extraído 238: Seculus | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 239: Seguro Residencial MAPFRE | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 240: Seguro Viagem Bradesco | Sim | R$ | Valor: 1.0 | Pontos: 15
+Extraído 241: Sephora | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 242: Seus Ingressos | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 243: Shiseido | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 244: Shoestock | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 245: Shopee | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 246: Simple Organic | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 247: Sioux Seguro Celular | Não | R$ | Valor: 1.0 | Pontos: 4
+Extraído 248: Sixt | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 249: Sottile | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 250: Speedo | Não | R$ | Valor: 1.0 | Pontos: 4
+Extraído 251: Spicy | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 252: Studio Z | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 253: SulAmerica Plano Odonto | Sim | R$ | Valor: 1.0 | Pontos: 8
+Extraído 254: SulAmerica Seguro Viagem | Não | R$ | Valor: 1.0 | Pontos: 6
+Extraído 255: Summerville | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 256: Supernosso | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 257: Tailors Mind  | Não | R$ | Valor: 1.0 | Pontos: 4
+Extraído 258: Technos | Sim | R$ | Valor: 1.0 | Pontos: 8
+Extraído 259: Thule | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 260: Tia Sonia | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 261: TIM | Não | R$ | Valor: 1.0 | Pontos: 6
+Extraído 262: Tokio Marine Seguros | Não | R$ | Valor: 1.0 | Pontos: 10
+Extraído 263: Top Moveis | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 264: Travelex | Não | U$ | Valor: 1.0 | Pontos: 1
+Extraído 265: TripChip | Não | R$ | Valor: 1.0 | Pontos: 6
+Extraído 266: Trocafy | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 267: Truss | Não | R$ | Valor: 1.0 | Pontos: 4
+Extraído 268: Umbro | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 269: Under Armour | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 270: Unidas | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 271: Universal Assistance – Seguro Viagem | Sim | R$ | Valor: 1.0 | Pontos: 12
+Extraído 272: Utilplast | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 273: Viacao Garcia | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 274: Viajar | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 275: Vivara | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 276: VR Collezioni | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 277: Vult | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 278: Wise UP | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 279: Yvy | Não | R$ | Valor: 1.0 | Pontos: 3
+Extraído 280: Zattini | Não | R$ | Valor: 1.0 | Pontos: 2
+Extraído 281: Zee.Dog | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 282: Zee.Now | Não | R$ | Valor: 1.0 | Pontos: 1
+Extraído 283: Zissou | Não | R$ | Valor: 1.0 | Pontos: 3
+Total de parceiros encontrados: 283
 Arquivo /home/runner/work/livelo_scraper/livelo_scraper/livelo_parceiros.xlsx encontrado. Verificando dados existentes...
-Não foram encontrados dados do dia 2025-05-07. Adicionando novos dados...
+Não foram encontrados dados do dia 2025-05-08. Adicionando novos dados...
 Dados salvos no arquivo: /home/runner/work/livelo_scraper/livelo_scraper/livelo_parceiros.xlsx
 Cópia salva em: output/livelo_parceiros.xlsx
 Encerrando driver do Selenium...
