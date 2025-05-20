@@ -4,7 +4,7 @@ Configurações do Chrome:
   User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) ...
   Window size: 1920x1080
 Iniciando novo processo do Chrome...
-Chrome iniciado com sucesso. Sessão ID: fb6d4946f832f7c0d3d353439b1de712
+Chrome iniciado com sucesso. Sessão ID: 0641e352024ae5861c77ceaeb22bc523
 Navegando para o site da Livelo...
 Tentativa 1/5: Acessando URL...
 Aguardando carregamento básico da página...
@@ -16,9 +16,9 @@ Tentando XPath: //div[contains(@class, 'parity_card')]
 Tentando XPath: //img[@id='img-parityImg']
 Tentando XPath: //span[@id='info__club-parity']
 ⚠️ Nenhum elemento principal encontrado. Salvando HTML para análise...
-⚠️ Possível captcha ou verificação detectada!
+Página carregada, mas elementos não encontrados. Tentando mesmo assim...
 Rolando a página para carregar todos os elementos...
-Altura da página: 33063px
+Altura da página: 1447px
 Rolando para posição: 400px
 Rolando para posição: 800px
 Rolando para posição: 1200px
@@ -46,9 +46,9 @@ Tentando XPath: //div[contains(@class, 'parity_card')]
 Tentando XPath: //img[@id='img-parityImg']
 Tentando XPath: //span[@id='info__club-parity']
 ⚠️ Nenhum elemento principal encontrado. Salvando HTML para análise...
-⚠️ Possível captcha ou verificação detectada!
+Página carregada, mas elementos não encontrados. Tentando mesmo assim...
 Rolando a página para carregar todos os elementos...
-Altura da página: 33063px
+Altura da página: 1447px
 Rolando para posição: 400px
 Rolando para posição: 800px
 Rolando para posição: 1200px
@@ -76,9 +76,9 @@ Tentando XPath: //div[contains(@class, 'parity_card')]
 Tentando XPath: //img[@id='img-parityImg']
 Tentando XPath: //span[@id='info__club-parity']
 ⚠️ Nenhum elemento principal encontrado. Salvando HTML para análise...
-⚠️ Possível captcha ou verificação detectada!
+Página carregada, mas elementos não encontrados. Tentando mesmo assim...
 Rolando a página para carregar todos os elementos...
-Altura da página: 33063px
+Altura da página: 1447px
 Rolando para posição: 400px
 Rolando para posição: 800px
 Rolando para posição: 1200px
@@ -106,9 +106,9 @@ Tentando XPath: //div[contains(@class, 'parity_card')]
 Tentando XPath: //img[@id='img-parityImg']
 Tentando XPath: //span[@id='info__club-parity']
 ⚠️ Nenhum elemento principal encontrado. Salvando HTML para análise...
-⚠️ Possível captcha ou verificação detectada!
+Página carregada, mas elementos não encontrados. Tentando mesmo assim...
 Rolando a página para carregar todos os elementos...
-Altura da página: 33063px
+Altura da página: 1447px
 Rolando para posição: 400px
 Rolando para posição: 800px
 Rolando para posição: 1200px
@@ -136,9 +136,9 @@ Tentando XPath: //div[contains(@class, 'parity_card')]
 Tentando XPath: //img[@id='img-parityImg']
 Tentando XPath: //span[@id='info__club-parity']
 ⚠️ Nenhum elemento principal encontrado. Salvando HTML para análise...
-⚠️ Possível captcha ou verificação detectada!
+Página carregada, mas elementos não encontrados. Tentando mesmo assim...
 Rolando a página para carregar todos os elementos...
-Altura da página: 33063px
+Altura da página: 1447px
 Rolando para posição: 400px
 Rolando para posição: 800px
 Rolando para posição: 1200px
