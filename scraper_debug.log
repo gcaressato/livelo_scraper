@@ -4,7 +4,7 @@ Configurações do Chrome:
   User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) ...
   Window size: 1920x1080
 Iniciando novo processo do Chrome...
-Chrome iniciado com sucesso. Sessão ID: f463c1ac51d60fe72e54b69478df0e04
+Chrome iniciado com sucesso. Sessão ID: 3f2c5b9dde4e43ff10cb6c98f364b277
 Navegando para o site da Livelo...
 Tentativa 1/5: Acessando URL...
 Aguardando carregamento básico da página...
@@ -18,7 +18,7 @@ Tentando XPath: //span[@id='info__club-parity']
 ⚠️ Nenhum elemento principal encontrado. Salvando HTML para análise...
 ⚠️ Possível captcha ou verificação detectada!
 Rolando a página para carregar todos os elementos...
-Altura da página: 30915px
+Altura da página: 30867px
 Rolando para posição: 400px
 Rolando para posição: 800px
 Rolando para posição: 1200px
@@ -48,7 +48,7 @@ Tentando XPath: //span[@id='info__club-parity']
 ⚠️ Nenhum elemento principal encontrado. Salvando HTML para análise...
 ⚠️ Possível captcha ou verificação detectada!
 Rolando a página para carregar todos os elementos...
-Altura da página: 30921px
+Altura da página: 30873px
 Rolando para posição: 400px
 Rolando para posição: 800px
 Rolando para posição: 1200px
@@ -78,7 +78,7 @@ Tentando XPath: //span[@id='info__club-parity']
 ⚠️ Nenhum elemento principal encontrado. Salvando HTML para análise...
 ⚠️ Possível captcha ou verificação detectada!
 Rolando a página para carregar todos os elementos...
-Altura da página: 30921px
+Altura da página: 30873px
 Rolando para posição: 400px
 Rolando para posição: 800px
 Rolando para posição: 1200px
@@ -108,7 +108,7 @@ Tentando XPath: //span[@id='info__club-parity']
 ⚠️ Nenhum elemento principal encontrado. Salvando HTML para análise...
 ⚠️ Possível captcha ou verificação detectada!
 Rolando a página para carregar todos os elementos...
-Altura da página: 30921px
+Altura da página: 30873px
 Rolando para posição: 400px
 Rolando para posição: 800px
 Rolando para posição: 1200px
@@ -138,7 +138,7 @@ Tentando XPath: //span[@id='info__club-parity']
 ⚠️ Nenhum elemento principal encontrado. Salvando HTML para análise...
 ⚠️ Possível captcha ou verificação detectada!
 Rolando a página para carregar todos os elementos...
-Altura da página: 30921px
+Altura da página: 30873px
 Rolando para posição: 400px
 Rolando para posição: 800px
 Rolando para posição: 1200px
