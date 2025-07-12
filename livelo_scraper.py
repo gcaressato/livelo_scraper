@@ -99,7 +99,7 @@ class LiveloScraper:
             try:
                 # Navega para o site
                 print(f"Tentativa {tentativa}/{max_tentativas}: Acessando URL...")
-                self.driver.get("https://www.livelo.com.br/ganhe-pontos-compre-e-pontue")
+                self.driver.get("https://www.livelo.com.br/juntar-pontos/todos-os-parceiros")
                 
                 # Aguarda o carregamento básico da página
                 print("Aguardando carregamento básico da página...")
@@ -119,7 +119,8 @@ class LiveloScraper:
                     "//div[contains(@class, 'parity__card')]",
                     "//div[contains(@class, 'parity_card')]",
                     "//img[@id='img-parityImg']",
-                    "//span[@id='info__club-parity']"
+                    "//span[@id='info__club-parity']",
+                    "/html/body/div[1]/div[5]/div[2]/div[1]"
                 ]
                 
                 # Tenta cada XPath possível
