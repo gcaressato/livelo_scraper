@@ -4,7 +4,7 @@ Configurações do Chrome:
   User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) ...
   Window size: 1920x1080
 Iniciando novo processo do Chrome...
-Chrome iniciado com sucesso. Sessão ID: f854b54e32ea8cfda4a8046fe9fe6a0e
+Chrome iniciado com sucesso. Sessão ID: 960017a059bb21109d4a1df60d92ed64
 Navegando para o site da Livelo...
 Tentativa 1/5: Acessando URL...
 Aguardando carregamento básico da página...
@@ -16,10 +16,9 @@ Tentando XPath: //div[contains(@class, 'parity_card')]
 Tentando XPath: //img[@id='img-parityImg']
 Tentando XPath: //span[@id='info__club-parity']
 Tentando XPath: /html/body/div[1]/div[5]/div[2]/div[1]
-⚠️ Nenhum elemento principal encontrado. Salvando HTML para análise...
-⚠️ Possível captcha ou verificação detectada!
+✓ Encontrados 1 elementos com XPath: /html/body/div[1]/div[5]/div[2]/div[1]
 Rolando a página para carregar todos os elementos...
-Altura da página: 31289px
+Altura da página: 31494px
 Rolando para posição: 400px
 Rolando para posição: 800px
 Rolando para posição: 1200px
@@ -33,135 +32,12 @@ Rolando para posição: 4000px
 Rolando até o final da página
 Rolando de volta para o topo
 Verificando elementos após rolagem...
-Tentativa 1/5 falhou: Elementos principais não encontrados mesmo após rolagem
-Screenshot salvo em: debug_screenshot_tentativa_1.png
-HTML salvo em: debug_html_tentativa_1.txt
-Recarregando página. Aguardando 15 segundos antes da próxima tentativa...
-Tentativa 2/5: Acessando URL...
-Aguardando carregamento básico da página...
-Aguardando 10 segundos para carregamento completo...
-Verificando elementos principais...
-Tentando XPath: /html/body/div[4]/main/div[1]/div[37]/div/div/div[2]/section/div[2]/div[3]/div[1]
-Tentando XPath: //div[contains(@class, 'parity__card')]
-Tentando XPath: //div[contains(@class, 'parity_card')]
-Tentando XPath: //img[@id='img-parityImg']
-Tentando XPath: //span[@id='info__club-parity']
-Tentando XPath: /html/body/div[1]/div[5]/div[2]/div[1]
-⚠️ Nenhum elemento principal encontrado. Salvando HTML para análise...
-⚠️ Possível captcha ou verificação detectada!
-Rolando a página para carregar todos os elementos...
-Altura da página: 31295px
-Rolando para posição: 400px
-Rolando para posição: 800px
-Rolando para posição: 1200px
-Rolando para posição: 1600px
-Rolando para posição: 2000px
-Rolando para posição: 2400px
-Rolando para posição: 2800px
-Rolando para posição: 3200px
-Rolando para posição: 3600px
-Rolando para posição: 4000px
-Rolando até o final da página
-Rolando de volta para o topo
-Verificando elementos após rolagem...
-Tentativa 2/5 falhou: Elementos principais não encontrados mesmo após rolagem
-Screenshot salvo em: debug_screenshot_tentativa_2.png
-HTML salvo em: debug_html_tentativa_2.txt
-Recarregando página. Aguardando 15 segundos antes da próxima tentativa...
-Tentativa 3/5: Acessando URL...
-Aguardando carregamento básico da página...
-Aguardando 10 segundos para carregamento completo...
-Verificando elementos principais...
-Tentando XPath: /html/body/div[4]/main/div[1]/div[37]/div/div/div[2]/section/div[2]/div[3]/div[1]
-Tentando XPath: //div[contains(@class, 'parity__card')]
-Tentando XPath: //div[contains(@class, 'parity_card')]
-Tentando XPath: //img[@id='img-parityImg']
-Tentando XPath: //span[@id='info__club-parity']
-Tentando XPath: /html/body/div[1]/div[5]/div[2]/div[1]
-⚠️ Nenhum elemento principal encontrado. Salvando HTML para análise...
-⚠️ Possível captcha ou verificação detectada!
-Rolando a página para carregar todos os elementos...
-Altura da página: 31295px
-Rolando para posição: 400px
-Rolando para posição: 800px
-Rolando para posição: 1200px
-Rolando para posição: 1600px
-Rolando para posição: 2000px
-Rolando para posição: 2400px
-Rolando para posição: 2800px
-Rolando para posição: 3200px
-Rolando para posição: 3600px
-Rolando para posição: 4000px
-Rolando até o final da página
-Rolando de volta para o topo
-Verificando elementos após rolagem...
-Tentativa 3/5 falhou: Elementos principais não encontrados mesmo após rolagem
-Screenshot salvo em: debug_screenshot_tentativa_3.png
-HTML salvo em: debug_html_tentativa_3.txt
-Recarregando página. Aguardando 15 segundos antes da próxima tentativa...
-Tentativa 4/5: Acessando URL...
-Aguardando carregamento básico da página...
-Aguardando 10 segundos para carregamento completo...
-Verificando elementos principais...
-Tentando XPath: /html/body/div[4]/main/div[1]/div[37]/div/div/div[2]/section/div[2]/div[3]/div[1]
-Tentando XPath: //div[contains(@class, 'parity__card')]
-Tentando XPath: //div[contains(@class, 'parity_card')]
-Tentando XPath: //img[@id='img-parityImg']
-Tentando XPath: //span[@id='info__club-parity']
-Tentando XPath: /html/body/div[1]/div[5]/div[2]/div[1]
-⚠️ Nenhum elemento principal encontrado. Salvando HTML para análise...
-⚠️ Possível captcha ou verificação detectada!
-Rolando a página para carregar todos os elementos...
-Altura da página: 31295px
-Rolando para posição: 400px
-Rolando para posição: 800px
-Rolando para posição: 1200px
-Rolando para posição: 1600px
-Rolando para posição: 2000px
-Rolando para posição: 2400px
-Rolando para posição: 2800px
-Rolando para posição: 3200px
-Rolando para posição: 3600px
-Rolando para posição: 4000px
-Rolando até o final da página
-Rolando de volta para o topo
-Verificando elementos após rolagem...
-Tentativa 4/5 falhou: Elementos principais não encontrados mesmo após rolagem
-Screenshot salvo em: debug_screenshot_tentativa_4.png
-HTML salvo em: debug_html_tentativa_4.txt
-Recarregando página. Aguardando 15 segundos antes da próxima tentativa...
-Tentativa 5/5: Acessando URL...
-Aguardando carregamento básico da página...
-Aguardando 10 segundos para carregamento completo...
-Verificando elementos principais...
-Tentando XPath: /html/body/div[4]/main/div[1]/div[37]/div/div/div[2]/section/div[2]/div[3]/div[1]
-Tentando XPath: //div[contains(@class, 'parity__card')]
-Tentando XPath: //div[contains(@class, 'parity_card')]
-Tentando XPath: //img[@id='img-parityImg']
-Tentando XPath: //span[@id='info__club-parity']
-Tentando XPath: /html/body/div[1]/div[5]/div[2]/div[1]
-⚠️ Nenhum elemento principal encontrado. Salvando HTML para análise...
-⚠️ Possível captcha ou verificação detectada!
-Rolando a página para carregar todos os elementos...
-Altura da página: 31295px
-Rolando para posição: 400px
-Rolando para posição: 800px
-Rolando para posição: 1200px
-Rolando para posição: 1600px
-Rolando para posição: 2000px
-Rolando para posição: 2400px
-Rolando para posição: 2800px
-Rolando para posição: 3200px
-Rolando para posição: 3600px
-Rolando para posição: 4000px
-Rolando até o final da página
-Rolando de volta para o topo
-Verificando elementos após rolagem...
-Tentativa 5/5 falhou: Elementos principais não encontrados mesmo após rolagem
-Screenshot salvo em: debug_screenshot_tentativa_5.png
-HTML salvo em: debug_html_tentativa_5.txt
-Número máximo de tentativas alcançado. Não foi possível carregar a página.
-Falha ao navegar para o site. Abortando.
+✓ Encontrados 1 elementos com XPath: /html/body/div[1]/div[5]/div[2]/div[1] após rolagem
+Página carregada com sucesso!
+Iniciando extração de dados...
+Iniciando extração de dados por XPath...
+Total de parceiros encontrados: 0
+Nenhum dado foi extraído. Abortando.
 Encerrando driver do Selenium...
 Driver encerrado com sucesso.
 Encerramento completo.
