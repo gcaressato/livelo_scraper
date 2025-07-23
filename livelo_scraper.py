@@ -16,6 +16,7 @@ class LiveloScraper:
         self.driver = None
         self.wait = None
         self.debug = debug
+        self.url_atual = None  # Adicionado para rastrear qual URL está sendo usada
         
     def iniciar_navegador(self):
         """Inicia um novo processo Chrome usando o ChromeDriver otimizado para GitHub Actions"""
@@ -89,17 +90,17 @@ class LiveloScraper:
             print(f"Erro ao encerrar navegador: {e}")
             print("Continuando mesmo assim.")
             return False
-            
-    def navegar_para_site(self):
-        """Navega para o site da Livelo com retentativas e tratamento de erros melhorado"""
-        print("Navegando para o site da Livelo...")
+    
+    def tentar_carregar_url(self, url, nome_url):
+        """Tenta carregar uma URL específica e verifica se os elementos estão presentes"""
+        print(f"Tentando carregar {nome_url}: {url}")
         
-        max_tentativas = 5
+        max_tentativas = 3
         for tentativa in range(1, max_tentativas + 1):
             try:
                 # Navega para o site
-                print(f"Tentativa {tentativa}/{max_tentativas}: Acessando URL...")
-                self.driver.get("https://www.livelo.com.br/juntar-pontos/todos-os-parceiros")
+                print(f"Tentativa {tentativa}/{max_tentativas}: Acessando {nome_url}...")
+                self.driver.get(url)
                 
                 # Aguarda o carregamento básico da página
                 print("Aguardando carregamento básico da página...")
@@ -115,12 +116,12 @@ class LiveloScraper:
                 
                 # Lista de possíveis XPaths para detectar elementos na página
                 xpaths_possiveis = [
-                    "/html/body/div[4]/main/div[1]/div[37]/div/div/div[2]/section/div[2]/div[3]/div[1]",
+                    "/html/body/div[1]/div[6]/div[2]/div[1]",  # Novo XPath principal
+                    "/html/body/div[4]/main/div[1]/div[37]/div/div/div[2]/section/div[2]/div[3]/div[1]",  # XPath antigo
                     "//div[contains(@class, 'parity__card')]",
                     "//div[contains(@class, 'parity_card')]",
                     "//img[@id='img-parityImg']",
-                    "//span[@id='info__club-parity']",
-                    "/html/body/div[1]/div[5]/div[2]/div[1]"
+                    "//span[@id='info__club-parity']"
                 ]
                 
                 # Tenta cada XPath possível
@@ -137,9 +138,9 @@ class LiveloScraper:
                 
                 # Se não encontrar nenhum elemento, tenta salvar o HTML para análise
                 if not elementos_encontrados:
-                    print("⚠️ Nenhum elemento principal encontrado. Salvando HTML para análise...")
+                    print(f"⚠️ Nenhum elemento principal encontrado em {nome_url}. Salvando HTML para análise...")
                     html = self.driver.page_source
-                    with open(f"debug_pagina_tentativa_{tentativa}.html", "w", encoding="utf-8") as f:
+                    with open(f"debug_{nome_url}_tentativa_{tentativa}.html", "w", encoding="utf-8") as f:
                         f.write(html)
                     
                     # Verificar se estamos em uma página de bloqueio ou captcha
@@ -189,33 +190,25 @@ class LiveloScraper:
                         pass
                 
                 if elementos_encontrados or elementos_encontrados_apos_rolagem:
-                    print("Página carregada com sucesso!")
+                    print(f"Página {nome_url} carregada com sucesso!")
+                    self.url_atual = url  # Salva qual URL funcionou
                     return True
                 else:
                     raise Exception("Elementos principais não encontrados mesmo após rolagem")
                 
             except Exception as e:
-                print(f"Tentativa {tentativa}/{max_tentativas} falhou: {e}")
+                print(f"Tentativa {tentativa}/{max_tentativas} falhou para {nome_url}: {e}")
                 
                 # Salvar screenshot para diagnóstico
                 try:
-                    screenshot_path = f"debug_screenshot_tentativa_{tentativa}.png"
+                    screenshot_path = f"debug_{nome_url}_screenshot_tentativa_{tentativa}.png"
                     self.driver.save_screenshot(screenshot_path)
                     print(f"Screenshot salvo em: {screenshot_path}")
                 except Exception as ss_error:
                     print(f"Erro ao salvar screenshot: {ss_error}")
                 
-                # Salvar HTML para diagnóstico
-                try:
-                    html_path = f"debug_html_tentativa_{tentativa}.txt"
-                    with open(html_path, "w", encoding="utf-8") as f:
-                        f.write(self.driver.page_source)
-                    print(f"HTML salvo em: {html_path}")
-                except Exception as html_error:
-                    print(f"Erro ao salvar HTML: {html_error}")
-                
                 if tentativa < max_tentativas:
-                    print(f"Recarregando página. Aguardando 15 segundos antes da próxima tentativa...")
+                    print(f"Recarregando página. Aguardando 10 segundos antes da próxima tentativa...")
                     
                     # Simula Ctrl+F5 usando JavaScript
                     try:
@@ -224,12 +217,31 @@ class LiveloScraper:
                         # Método alternativo se execute_script falhar
                         self.driver.refresh()
                     
-                    time.sleep(15)  # Aguarda mais tempo antes da próxima tentativa
-                else:
-                    print("Número máximo de tentativas alcançado. Não foi possível carregar a página.")
-                    return False
+                    time.sleep(10)  # Aguarda antes da próxima tentativa
         
-        return False  # Não deveria chegar aqui, mas por segurança
+        print(f"Não foi possível carregar {nome_url} após {max_tentativas} tentativas.")
+        return False
+            
+    def navegar_para_site(self):
+        """Navega para o site da Livelo tentando duas URLs diferentes"""
+        print("Iniciando navegação para o site da Livelo...")
+        
+        # Lista de URLs para tentar (primeira e segunda opção)
+        urls = [
+            ("https://www.livelo.com.br/juntar-pontos/todos-os-parceiros", "URL_Principal"),
+            ("https://www.livelo.com.br/juntar-pontos/todos-os-parceiros", "URL_Alternativa")  # Você pode mudar esta se tiver uma URL diferente
+        ]
+        
+        for url, nome in urls:
+            print(f"\n--- Tentando {nome} ---")
+            if self.tentar_carregar_url(url, nome):
+                print(f"✓ Sucesso com {nome}: {url}")
+                return True
+            else:
+                print(f"✗ Falha com {nome}: {url}")
+        
+        print("❌ Todas as URLs falharam. Não foi possível carregar o site.")
+        return False
     
     def formatar_valor(self, valor_texto):
         """Formata o valor como número, sem o símbolo da moeda"""
@@ -277,16 +289,51 @@ class LiveloScraper:
             
             print("Iniciando extração de dados por XPath...")
             
+            # Determina qual XPath usar baseado na URL que funcionou
+            if self.url_atual:
+                print(f"Usando estratégia de extração para URL: {self.url_atual}")
+                # Sempre usar o novo XPath primeiro
+                xpath_template = "/html/body/div[1]/div[6]/div[2]/div[{x}]"
+                xpath_alternativo = "/html/body/div[4]/main/div[1]/div[37]/div/div/div[2]/section/div[2]/div[3]/div[{x}]"
+            else:
+                # Fallback para XPath padrão
+                xpath_template = "/html/body/div[1]/div[6]/div[2]/div[{x}]"
+                xpath_alternativo = "/html/body/div[4]/main/div[1]/div[37]/div/div/div[2]/section/div[2]/div[3]/div[{x}]"
+            
             # Contador para o índice X no XPath
             x = 1
             total_parceiros = 0
             elementos_nao_encontrados = 0
             max_elementos_nao_encontrados = 10  # Limite para assumir que acabou
             
+            # Tenta primeiro o novo XPath, depois o antigo se não funcionar
+            xpaths_para_testar = [xpath_template, xpath_alternativo]
+            xpath_funcionando = None
+            
+            print("Testando qual XPath funciona...")
+            for xpath_teste in xpaths_para_testar:
+                try:
+                    xpath_teste_formatado = xpath_teste.format(x=1)
+                    print(f"Testando XPath: {xpath_teste_formatado}")
+                    elemento_teste = self.driver.find_element(By.XPATH, xpath_teste_formatado)
+                    if elemento_teste:
+                        xpath_funcionando = xpath_teste
+                        print(f"✓ XPath funcionando: {xpath_teste}")
+                        break
+                except:
+                    print(f"✗ XPath não funcionou: {xpath_teste}")
+                    continue
+            
+            if not xpath_funcionando:
+                print("❌ Nenhum XPath funcionou. Abortando extração.")
+                return []
+            
+            print(f"Usando XPath: {xpath_funcionando}")
+            
             # Loop até não encontrar mais elementos
             while True:
                 try:
-                    xpath_base = f"/html/body/div[4]/main/div[1]/div[37]/div/div/div[2]/section/div[2]/div[3]/div[{x}]"
+                    xpath_base = xpath_funcionando.format(x=x)
                     
                     # Verifica se o elemento existe
                     card = self.driver.find_element(By.XPATH, xpath_base)
@@ -297,7 +344,12 @@ class LiveloScraper:
                         img = card.find_element(By.XPATH, ".//img[@id='img-parityImg']")
                         parceiro = img.get_attribute('alt')
                     except:
-                        parceiro = f"Parceiro {x}"
+                        # Tenta buscar img com alt attribute
+                        try:
+                            img = card.find_element(By.XPATH, ".//img[@alt]")
+                            parceiro = img.get_attribute('alt')
+                        except:
+                            parceiro = f"Parceiro {x}"
                     
                     # Verifica se existe uma tag de oferta
                     oferta = "Não"
@@ -305,6 +357,11 @@ class LiveloScraper:
                         oferta_elements = card.find_elements(By.XPATH, ".//div[contains(@class, 'parity__card-tag-offer')]")
                         if oferta_elements and len(oferta_elements) > 0:
                             oferta = "Sim"
+                        else:
+                            # Tenta outros seletores para oferta
+                            oferta_elements = card.find_elements(By.XPATH, ".//div[contains(@class, 'tag-offer')] | .//span[contains(@class, 'offer')] | .//div[contains(text(), 'Oferta')] | .//span[contains(text(), 'Oferta')]")
+                            if oferta_elements and len(oferta_elements) > 0:
+                                oferta = "Sim"
                     except:
                         pass
                     
@@ -399,6 +456,25 @@ class LiveloScraper:
                         except Exception as e:
                             if self.debug:
                                 print(f"Erro ao processar texto estendido: {e}")
+                    
+                    # MÉTODO 5: Busca genérica por números no texto do card
+                    if valor == "N/A" or pontos == "N/A":
+                        try:
+                            texto_completo = card.text
+                            if self.debug:
+                                print(f"Texto completo do card: '{texto_completo}'")
+                            
+                            # Busca por padrões de pontos comuns
+                            matches_pontos = re.findall(r'(\d+)\s*[Pp]ontos?', texto_completo)
+                            if matches_pontos:
+                                pontos = matches_pontos[-1]  # Pega o último encontrado
+                                if valor == "N/A":
+                                    valor = "1"  # Valor padrão
+                                if self.debug:
+                                    print(f"Pontos encontrados via regex: {pontos}")
+                        except Exception as e:
+                            if self.debug:
+                                print(f"Erro na busca genérica: {e}")
                     
                     # Formata os valores
                     valor_formatado = self.formatar_valor(valor)
