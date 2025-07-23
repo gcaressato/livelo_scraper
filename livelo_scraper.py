@@ -139,6 +139,9 @@ class LiveloScraper:
     def buscar_elementos_genericos(self):
         """Busca por elementos usando seletores mais genéricos"""
         seletores_genericos = [
+            # Nova estrutura com data-testid
+            'div[data-testid="div_PartnerCard"]',
+            'img[data-testid="img_PartnerCard_partnerImage"]',
             # Busca por divs que possam conter cards de parceiros
             "div[class*='card']",
             "div[class*='partner']", 
@@ -320,7 +323,18 @@ class LiveloScraper:
         return False
     
     def encontrar_xpath_funcionando(self):
-        """Encontra qual XPath funciona para extrair dados"""
+        """Encontra qual estratégia funciona para extrair dados"""
+        # Primeira prioridade: buscar pelos novos data-testid
+        print("Testando data-testid (nova estrutura)...")
+        try:
+            elementos = self.driver.find_elements(By.CSS_SELECTOR, 'div[data-testid="div_PartnerCard"]')
+            if elementos and len(elementos) > 0:
+                print(f"✓ Encontrados {len(elementos)} elementos com data-testid=div_PartnerCard")
+                return "css:div[data-testid='div_PartnerCard']"
+        except:
+            pass
+        
+        # XPaths antigos como fallback
         xpaths_para_testar = [
             "/html/body/div[1]/div[6]/div[2]/div[{x}]",  # Novo XPath
             "/html/body/div[4]/main/div[1]/div[37]/div/div/div[2]/section/div[2]/div[3]/div[{x}]",  # XPath antigo
@@ -330,7 +344,7 @@ class LiveloScraper:
             "//div[contains(@class, 'partner')][{x}]"
         ]
         
-        print("Testando qual XPath funciona...")
+        print("Testando XPaths antigos...")
         for xpath_template in xpaths_para_testar:
             try:
                 xpath_teste = xpath_template.format(x=1)
@@ -342,8 +356,8 @@ class LiveloScraper:
             except:
                 print(f"✗ XPath não funcionou: {xpath_template}")
         
-        # Se nenhum XPath específico funcionar, tenta CSS selectors
-        print("XPaths específicos falharam. Tentando CSS selectors...")
+        # CSS selectors genéricos como último recurso
+        print("XPaths específicos falharam. Tentando CSS selectors genéricos...")
         css_selectors = [
             "div[class*='parity'] div[class*='card']",
             "div[class*='card']",
@@ -421,35 +435,44 @@ class LiveloScraper:
             elementos_nao_encontrados = 0
             max_elementos_nao_encontrados = 10
             
-            # Se for CSS selector
+            # Se for CSS selector para nova estrutura
             if xpath_funcionando.startswith("css:"):
                 css_selector = xpath_funcionando[4:]  # Remove "css:"
                 try:
                     elementos = self.driver.find_elements(By.CSS_SELECTOR, css_selector)
                     print(f"Encontrados {len(elementos)} elementos via CSS")
                     
-                    for i, card in enumerate(elementos[:50], 1):  # Limita a 50 para não demorar muito
+                    # Limita a quantidade para evitar loops infinitos, mas permite mais elementos
+                    limite_elementos = min(len(elementos), 200)  # Aumentado de 50 para 200
+                    
+                    for i, card in enumerate(elementos[:limite_elementos], 1):
                         try:
-                            # Extração genérica de dados
+                            # Extração usando os novos métodos
                             parceiro = self.extrair_nome_parceiro(card, i)
                             oferta = self.extrair_oferta(card)
                             valor, pontos, moeda = self.extrair_valores_pontos(card)
                             
-                            resultados.append({
-                                'Timestamp': timestamp,
-                                'Parceiro': parceiro,
-                                'Oferta': oferta,
-                                'Moeda': moeda,
-                                'Valor': self.formatar_valor(valor),
-                                'Pontos': self.formatar_pontos(pontos)
-                            })
-                            
-                            total_parceiros += 1
-                            print(f"Extraído {total_parceiros}: {parceiro} | {oferta} | {moeda} | Valor: {valor} | Pontos: {pontos}")
+                            # Só adiciona se conseguiu extrair dados válidos
+                            if parceiro and parceiro != f"Parceiro {i}":
+                                resultados.append({
+                                    'Timestamp': timestamp,
+                                    'Parceiro': parceiro,
+                                    'Oferta': oferta,
+                                    'Moeda': moeda,
+                                    'Valor': self.formatar_valor(valor),
+                                    'Pontos': self.formatar_pontos(pontos)
+                                })
+                                
+                                total_parceiros += 1
+                                print(f"Extraído {total_parceiros}: {parceiro} | {oferta} | {moeda} | Valor: {valor} | Pontos: {pontos}")
+                            else:
+                                if self.debug:
+                                    print(f"Elemento {i} ignorado - dados insuficientes: {parceiro}")
                             
                         except Exception as e:
                             if self.debug:
                                 print(f"Erro ao extrair dados do elemento {i}: {e}")
+                            continue
                 
                 except Exception as e:
                     print(f"Erro na extração via CSS: {e}")
@@ -463,22 +486,28 @@ class LiveloScraper:
                         card = self.driver.find_element(By.XPATH, xpath_base)
                         elementos_nao_encontrados = 0
                         
-                        # Extração de dados
+                        # Extração de dados usando os novos métodos
                         parceiro = self.extrair_nome_parceiro(card, x)
                         oferta = self.extrair_oferta(card)
                         valor, pontos, moeda = self.extrair_valores_pontos(card)
                         
-                        resultados.append({
-                            'Timestamp': timestamp,
-                            'Parceiro': parceiro,
-                            'Oferta': oferta,
-                            'Moeda': moeda,
-                            'Valor': self.formatar_valor(valor),
-                            'Pontos': self.formatar_pontos(pontos)
-                        })
+                        # Só adiciona se conseguiu extrair dados válidos
+                        if parceiro and parceiro != f"Parceiro {x}":
+                            resultados.append({
+                                'Timestamp': timestamp,
+                                'Parceiro': parceiro,
+                                'Oferta': oferta,
+                                'Moeda': moeda,
+                                'Valor': self.formatar_valor(valor),
+                                'Pontos': self.formatar_pontos(pontos)
+                            })
+                            
+                            total_parceiros += 1
+                            print(f"Extraído {total_parceiros}: {parceiro} | {oferta} | {moeda} | Valor: {valor} | Pontos: {pontos}")
+                        else:
+                            if self.debug:
+                                print(f"Elemento {x} ignorado - dados insuficientes: {parceiro}")
                         
-                        total_parceiros += 1
-                        print(f"Extraído {total_parceiros}: {parceiro} | {oferta} | {moeda} | Valor: {valor} | Pontos: {pontos}")
                         x += 1
                         
                     except NoSuchElementException:
@@ -487,7 +516,8 @@ class LiveloScraper:
                         if elementos_nao_encontrados >= max_elementos_nao_encontrados:
                             break
                     except Exception as e:
-                        print(f"Erro ao extrair elemento {x}: {e}")
+                        if self.debug:
+                            print(f"Erro ao extrair elemento {x}: {e}")
                         x += 1
                         elementos_nao_encontrados += 1
                         if elementos_nao_encontrados >= max_elementos_nao_encontrados:
@@ -501,16 +531,27 @@ class LiveloScraper:
             return []
     
     def extrair_nome_parceiro(self, card, indice):
-        """Extrai o nome do parceiro de várias formas"""
+        """Extrai o nome do parceiro usando a nova estrutura"""
         try:
-            # Método 1: img com id específico
+            # Método 1: img com data-testid específico (nova estrutura)
+            img = card.find_element(By.CSS_SELECTOR, 'img[data-testid="img_PartnerCard_partnerImage"]')
+            alt = img.get_attribute('alt')
+            if alt and alt.strip():
+                # Remove "Logo " do início se existir
+                nome = alt.replace("Logo ", "").strip()
+                return nome if nome else alt
+        except:
+            pass
+        
+        try:
+            # Método 2: img com id específico (estrutura antiga)
             img = card.find_element(By.XPATH, ".//img[@id='img-parityImg']")
             return img.get_attribute('alt')
         except:
             pass
         
         try:
-            # Método 2: qualquer img com alt
+            # Método 3: qualquer img com alt
             img = card.find_element(By.XPATH, ".//img[@alt]")
             alt = img.get_attribute('alt')
             if alt and alt.strip():
@@ -519,7 +560,7 @@ class LiveloScraper:
             pass
         
         try:
-            # Método 3: img com src que contenha logo
+            # Método 4: img com src que contenha logo
             img = card.find_element(By.XPATH, ".//img[contains(@src, 'logo')]")
             alt = img.get_attribute('alt')
             if alt and alt.strip():
@@ -528,7 +569,7 @@ class LiveloScraper:
             pass
         
         try:
-            # Método 4: texto do card
+            # Método 5: texto do card
             texto = card.text.strip()
             if texto:
                 # Pega a primeira linha não vazia
@@ -541,9 +582,19 @@ class LiveloScraper:
         return f"Parceiro {indice}"
     
     def extrair_oferta(self, card):
-        """Extrai informação sobre oferta"""
+        """Extrai informação sobre oferta/promoção usando a nova estrutura"""
         try:
-            # Busca por elementos que indiquem oferta
+            # Método 1: Busca pela nova tag de promoção
+            promocao_element = card.find_element(By.CSS_SELECTOR, 'span[data-testid="span_PartnerCard_promotionTag"]')
+            if promocao_element:
+                texto = promocao_element.text.strip().lower()
+                if "promoção" in texto or "promocao" in texto:
+                    return "Sim"
+        except:
+            pass
+        
+        try:
+            # Método 2: Busca por elementos que indiquem oferta (estrutura antiga)
             oferta_elements = card.find_elements(By.XPATH, ".//div[contains(@class, 'offer')] | .//span[contains(@class, 'offer')] | .//*[contains(text(), 'Oferta')] | .//*[contains(text(), 'OFERTA')]")
             if oferta_elements:
                 return "Sim"
@@ -551,9 +602,9 @@ class LiveloScraper:
             pass
         
         try:
-            # Busca no texto completo
+            # Método 3: Busca no texto completo
             texto = card.text.lower()
-            if "oferta" in texto or "promoção" in texto or "desconto" in texto:
+            if any(palavra in texto for palavra in ["oferta", "promoção", "promocao", "desconto"]):
                 return "Sim"
         except:
             pass
@@ -561,7 +612,7 @@ class LiveloScraper:
         return "Não"
     
     def extrair_valores_pontos(self, card):
-        """Extrai valores e pontos de várias formas"""
+        """Extrai valores e pontos usando a nova estrutura com dois padrões"""
         valor = "N/A"
         pontos = "N/A"
         moeda = "R$"
@@ -570,63 +621,663 @@ class LiveloScraper:
             html_content = card.get_attribute('outerHTML')
             texto_completo = card.text
             
+            if self.debug:
+                print(f"HTML do card: {html_content[:200]}...")
+                print(f"Texto do card: {texto_completo}")
+            
             # Detecta moeda primeiro
             if "U$" in html_content or "U$" in texto_completo:
                 moeda = "U$"
             
-            # Método 1: Spans específicos
+            # Verifica se tem promoção para decidir qual seção usar
+            tem_promocao = False
             try:
-                info_spans = card.find_elements(By.XPATH, ".//span[@id='info__club-parity']")
-                if info_spans:
-                    texto = info_spans[0].text
-                    match = re.search(r'([RU]\$) ?(\d+) até (\d+)', texto)
-                    if match:
-                        moeda = match.group(1)
-                        valor = match.group(2)
-                        pontos = match.group(3)
-                        return valor, pontos, moeda
+                promocao_element = card.find_element(By.CSS_SELECTOR, 'span[data-testid="span_PartnerCard_promotionTag"]')
+                if promocao_element:
+                    tem_promocao = True
+                    if self.debug:
+                        print("Card com promoção detectado - buscando dados na seção clube")
             except:
                 pass
             
-            # Método 2: Busca por padrões de texto
+            # MÉTODO 1: Nova estrutura - cards com promoção (seção clube)
+            if tem_promocao:
+                try:
+                    # Busca na seção do clube (css-1oy391r)
+                    clube_section = card.find_element(By.CSS_SELECTOR, 'div[data-testid="Text_ParityText"].css-1oy391r')
+                    
+                    # Extrai pontos
+                    pontos_elements = clube_section.find_elements(By.CSS_SELECTOR, 'div[data-testid="Text_Typography"].css-1hpqutd')
+                    if pontos_elements and len(pontos_elements) >= 1:
+                        pontos_texto = pontos_elements[0].text.strip()
+                        if pontos_texto.isdigit():
+                            pontos = pontos_texto
+                            valor = "1"  # Padrão para cards com clube
+                            
+                            if self.debug:
+                                print(f"Dados clube extraídos: {pontos} pontos por R$ {valor}")
+                            
+                            return valor, pontos, moeda
+                except Exception as e:
+                    if self.debug:
+                        print(f"Erro ao extrair dados do clube: {e}")
+            
+            # MÉTODO 2: Nova estrutura - cards sem promoção (seção normal)
+            else:
+                try:
+                    # Busca na seção normal (css-nrcx9i)
+                    normal_section = card.find_element(By.CSS_SELECTOR, 'div[data-testid="Text_ParityText"].css-nrcx9i')
+                    
+                    # Extrai pontos
+                    pontos_elements = normal_section.find_elements(By.CSS_SELECTOR, 'div[data-testid="Text_Typography"].css-11bajl2')
+                    if pontos_elements and len(pontos_elements) >= 1:
+                        pontos_texto = pontos_elements[0].text.strip()
+                        if pontos_texto.isdigit():
+                            pontos = pontos_texto
+                            valor = "1"  # Padrão
+                            
+                            if self.debug:
+                                print(f"Dados normais extraídos: {pontos} pontos por R$ {valor}")
+                            
+                            return valor, pontos, moeda
+                except Exception as e:
+                    if self.debug:
+                        print(f"Erro ao extrair dados normais: {e}")
+            
+            # MÉTODO 3: Fallback - busca genérica por data-testid
             try:
-                # Padrões comuns: "1 real = 3 pontos", "U$ 1 até 3 pontos", etc.
+                parity_texts = card.find_elements(By.CSS_SELECTOR, 'div[data-testid="Text_ParityText"]')
+                for parity_text in parity_texts:
+                    try:
+                        typography_elements = parity_text.find_elements(By.CSS_SELECTOR, 'div[data-testid="Text_Typography"]')
+                        if typography_elements and len(typography_elements) >= 1:
+                            primeiro_numero = typography_elements[0].text.strip()
+                            if primeiro_numero.isdigit():
+                                pontos = primeiro_numero
+                                valor = "1"
+                                
+                                if self.debug:
+                                    print(f"Dados fallback extraídos: {pontos} pontos por R$ {valor}")
+                                
+                                return valor, pontos, moeda
+                    except:
+                        continue
+            except Exception as e:
+                if self.debug:
+                    print(f"Erro no fallback genérico: {e}")
+            
+            # MÉTODO 4: Estrutura antiga - Verificar spans com id específico
+            try:
+                info_club_elements = card.find_elements(By.XPATH, ".//span[@id='info__club-parity']")
+                if info_club_elements and len(info_club_elements) > 0:
+                    info_club_text = info_club_elements[0].text
+                    
+                    if self.debug:
+                        print(f"Texto do span info__club-parity: '{info_club_text}'")
+                    
+                    # Verifica se contém U$ explicitamente
+                    moeda = self.detectar_moeda(info_club_text)
+                    
+                    # Regex melhorado para capturar padrões como "U$ 1 até 3 pontos"
+                    match = re.search(r'([RU]\$) ?(\d+) até (\d+)', info_club_text)
+                    if match:
+                        moeda = match.group(1)  # Captura R$ ou U$
+                        valor = match.group(2)
+                        pontos = match.group(3)
+                        
+                        if self.debug:
+                            print(f"Regex match estrutura antiga: moeda={moeda}, valor={valor}, pontos={pontos}")
+                        
+                        return valor, pontos, moeda
+            except Exception as e:
+                if self.debug:
+                    print(f"Erro ao extrair estrutura antiga: {e}")
+            
+            # MÉTODO 5: Busca por padrões de texto usando regex
+            try:
+                # Padrões comuns: "8 pontos por R$ 1", "12 pontos por R$ 1", etc.
                 patterns = [
-                    r'([RU]\$) ?(\d+) até (\d+)',
-                    r'(\d+) real[s]? = (\d+) ponto[s]?',
-                    r'(\d+) = (\d+) ponto[s]?',
-                    r'(\d+) ponto[s]? por ([RU]\$) ?(\d+)',
+                    r'(\d+)\s*pontos?\s*por\s*([RU]\$)\s*(\d+)',
+                    r'([RU]\$)\s*(\d+)\s*até\s*(\d+)',
+                    r'(\d+)\s*real[s]?\s*=\s*(\d+)\s*ponto[s]?',
+                    r'(\d+)\s*=\s*(\d+)\s*ponto[s]?',
                 ]
                 
                 for pattern in patterns:
                     match = re.search(pattern, texto_completo)
                     if match:
                         groups = match.groups()
-                        if len(groups) >= 2:
-                            if "R$" in groups[0] or "U$" in groups[0]:
-                                moeda = groups[0]
-                                valor = groups[1] if len(groups) > 1 else "1"
-                                pontos = groups[2] if len(groups) > 2 else groups[1]
-                            else:
-                                valor = groups[0]
-                                pontos = groups[1]
-                        return valor, pontos, moeda
+                        if len(groups) >= 3:
+                            # Padrão: pontos, moeda, valor
+                            if groups[1] in ['R
+    
+    def salvar_dados_excel(self, dados):
+        """Salva os dados extraídos em um arquivo Excel"""
+        if not dados:
+            print("Não há dados para salvar.")
+            return False
+        
+        try:
+            novo_df = pd.DataFrame(dados)
+            novo_df['Data'] = pd.to_datetime(novo_df['Timestamp']).dt.date
+            data_atual = novo_df['Data'].iloc[0]
+            
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            nome_arquivo = os.path.join(script_dir, "livelo_parceiros.xlsx")
+            
+            if os.path.exists(nome_arquivo):
+                print(f"Arquivo {nome_arquivo} encontrado. Verificando dados existentes...")
+                try:
+                    df_existente = pd.read_excel(nome_arquivo)
+                    
+                    if 'Timestamp' in df_existente.columns:
+                        df_existente['Data'] = pd.to_datetime(df_existente['Timestamp']).dt.date
+                        
+                        if data_atual in df_existente['Data'].values:
+                            print(f"Substituindo dados do dia {data_atual}...")
+                            df_existente = df_existente[df_existente['Data'] != data_atual]
+                            df_final = pd.concat([df_existente, novo_df], ignore_index=True)
+                        else:
+                            print(f"Adicionando novos dados do dia {data_atual}...")
+                            df_final = pd.concat([df_existente, novo_df], ignore_index=True)
+                    else:
+                        df_final = pd.concat([df_existente, novo_df], ignore_index=True)
+                    
+                    if 'Data' in df_final.columns:
+                        df_final = df_final.drop(columns=['Data'])
+                        
+                except Exception as e:
+                    print(f"Erro ao ler arquivo existente: {e}")
+                    if 'Data' in novo_df.columns:
+                        novo_df = novo_df.drop(columns=['Data'])
+                    df_final = novo_df
+            else:
+                if 'Data' in novo_df.columns:
+                    novo_df = novo_df.drop(columns=['Data'])
+                df_final = novo_df
+            
+            df_final.to_excel(nome_arquivo, index=False)
+            print(f"Dados salvos no arquivo: {nome_arquivo}")
+            
+            os.makedirs("output", exist_ok=True)
+            df_final.to_excel(os.path.join("output", "livelo_parceiros.xlsx"), index=False)
+            print(f"Cópia salva em: output/livelo_parceiros.xlsx")
+            
+            return True
+        except Exception as e:
+            print(f"Erro ao salvar dados em Excel: {e}")
+            return False
+    
+    def encerrar_navegador(self):
+        """Encerra o navegador e limpa recursos"""
+        try:
+            if self.driver:
+                print("Encerrando driver do Selenium...")
+                try:
+                    self.driver.set_page_load_timeout(10)
+                    self.driver.quit()
+                    print("Driver encerrado com sucesso.")
+                except Exception as e:
+                    print(f"Aviso ao encerrar driver: {e}")
+                
+            self.driver = None
+            self.wait = None
+            import gc
+            gc.collect()
+            print("Encerramento completo.")
+            return True
+        except Exception as e:
+            print(f"Erro ao encerrar navegador: {e}")
+            return False
+    
+    def executar_scraping(self):
+        """Executa todo o processo de scraping"""
+        try:
+            if not self.iniciar_navegador():
+                print("Falha ao iniciar o navegador. Abortando.")
+                return False
+            
+            if not self.navegar_para_site():
+                print("Falha ao navegar para o site. Abortando.")
+                self.encerrar_navegador()
+                return False
+            
+            print("Iniciando extração de dados...")
+            dados = self.extrair_dados_parceiros()
+            
+            if not dados:
+                print("Nenhum dado foi extraído. Abortando.")
+                self.encerrar_navegador()
+                return False
+            
+            if not self.salvar_dados_excel(dados):
+                print("Falha ao salvar os dados. Abortando.")
+                self.encerrar_navegador()
+                return False
+            
+            self.encerrar_navegador()
+            print("Processo de scraping concluído com sucesso!")
+            return True
+        except Exception as e:
+            print(f"Erro durante o processo de scraping: {e}")
+            try:
+                self.encerrar_navegador()
             except:
                 pass
+            return False
+
+# Executa o script
+if __name__ == "__main__":
+    # Ativando debug para ver mais detalhes da extração
+    scraper = LiveloScraper(debug=True)
+    scraper.executar_scraping(), 'U
+    
+    def salvar_dados_excel(self, dados):
+        """Salva os dados extraídos em um arquivo Excel"""
+        if not dados:
+            print("Não há dados para salvar.")
+            return False
+        
+        try:
+            novo_df = pd.DataFrame(dados)
+            novo_df['Data'] = pd.to_datetime(novo_df['Timestamp']).dt.date
+            data_atual = novo_df['Data'].iloc[0]
             
-            # Método 3: Busca por números isolados
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            nome_arquivo = os.path.join(script_dir, "livelo_parceiros.xlsx")
+            
+            if os.path.exists(nome_arquivo):
+                print(f"Arquivo {nome_arquivo} encontrado. Verificando dados existentes...")
+                try:
+                    df_existente = pd.read_excel(nome_arquivo)
+                    
+                    if 'Timestamp' in df_existente.columns:
+                        df_existente['Data'] = pd.to_datetime(df_existente['Timestamp']).dt.date
+                        
+                        if data_atual in df_existente['Data'].values:
+                            print(f"Substituindo dados do dia {data_atual}...")
+                            df_existente = df_existente[df_existente['Data'] != data_atual]
+                            df_final = pd.concat([df_existente, novo_df], ignore_index=True)
+                        else:
+                            print(f"Adicionando novos dados do dia {data_atual}...")
+                            df_final = pd.concat([df_existente, novo_df], ignore_index=True)
+                    else:
+                        df_final = pd.concat([df_existente, novo_df], ignore_index=True)
+                    
+                    if 'Data' in df_final.columns:
+                        df_final = df_final.drop(columns=['Data'])
+                        
+                except Exception as e:
+                    print(f"Erro ao ler arquivo existente: {e}")
+                    if 'Data' in novo_df.columns:
+                        novo_df = novo_df.drop(columns=['Data'])
+                    df_final = novo_df
+            else:
+                if 'Data' in novo_df.columns:
+                    novo_df = novo_df.drop(columns=['Data'])
+                df_final = novo_df
+            
+            df_final.to_excel(nome_arquivo, index=False)
+            print(f"Dados salvos no arquivo: {nome_arquivo}")
+            
+            os.makedirs("output", exist_ok=True)
+            df_final.to_excel(os.path.join("output", "livelo_parceiros.xlsx"), index=False)
+            print(f"Cópia salva em: output/livelo_parceiros.xlsx")
+            
+            return True
+        except Exception as e:
+            print(f"Erro ao salvar dados em Excel: {e}")
+            return False
+    
+    def encerrar_navegador(self):
+        """Encerra o navegador e limpa recursos"""
+        try:
+            if self.driver:
+                print("Encerrando driver do Selenium...")
+                try:
+                    self.driver.set_page_load_timeout(10)
+                    self.driver.quit()
+                    print("Driver encerrado com sucesso.")
+                except Exception as e:
+                    print(f"Aviso ao encerrar driver: {e}")
+                
+            self.driver = None
+            self.wait = None
+            import gc
+            gc.collect()
+            print("Encerramento completo.")
+            return True
+        except Exception as e:
+            print(f"Erro ao encerrar navegador: {e}")
+            return False
+    
+    def executar_scraping(self):
+        """Executa todo o processo de scraping"""
+        try:
+            if not self.iniciar_navegador():
+                print("Falha ao iniciar o navegador. Abortando.")
+                return False
+            
+            if not self.navegar_para_site():
+                print("Falha ao navegar para o site. Abortando.")
+                self.encerrar_navegador()
+                return False
+            
+            print("Iniciando extração de dados...")
+            dados = self.extrair_dados_parceiros()
+            
+            if not dados:
+                print("Nenhum dado foi extraído. Abortando.")
+                self.encerrar_navegador()
+                return False
+            
+            if not self.salvar_dados_excel(dados):
+                print("Falha ao salvar os dados. Abortando.")
+                self.encerrar_navegador()
+                return False
+            
+            self.encerrar_navegador()
+            print("Processo de scraping concluído com sucesso!")
+            return True
+        except Exception as e:
+            print(f"Erro durante o processo de scraping: {e}")
+            try:
+                self.encerrar_navegador()
+            except:
+                pass
+            return False
+
+# Executa o script
+if __name__ == "__main__":
+    # Para debugging detalhado, defina debug=True
+    scraper = LiveloScraper(debug=False)
+    scraper.executar_scraping()]:
+                                pontos = groups[0]
+                                moeda = groups[1]
+                                valor = groups[2]
+                            else:
+                                pontos = groups[2]
+                                moeda = groups[0] if groups[0] in ['R
+    
+    def salvar_dados_excel(self, dados):
+        """Salva os dados extraídos em um arquivo Excel"""
+        if not dados:
+            print("Não há dados para salvar.")
+            return False
+        
+        try:
+            novo_df = pd.DataFrame(dados)
+            novo_df['Data'] = pd.to_datetime(novo_df['Timestamp']).dt.date
+            data_atual = novo_df['Data'].iloc[0]
+            
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            nome_arquivo = os.path.join(script_dir, "livelo_parceiros.xlsx")
+            
+            if os.path.exists(nome_arquivo):
+                print(f"Arquivo {nome_arquivo} encontrado. Verificando dados existentes...")
+                try:
+                    df_existente = pd.read_excel(nome_arquivo)
+                    
+                    if 'Timestamp' in df_existente.columns:
+                        df_existente['Data'] = pd.to_datetime(df_existente['Timestamp']).dt.date
+                        
+                        if data_atual in df_existente['Data'].values:
+                            print(f"Substituindo dados do dia {data_atual}...")
+                            df_existente = df_existente[df_existente['Data'] != data_atual]
+                            df_final = pd.concat([df_existente, novo_df], ignore_index=True)
+                        else:
+                            print(f"Adicionando novos dados do dia {data_atual}...")
+                            df_final = pd.concat([df_existente, novo_df], ignore_index=True)
+                    else:
+                        df_final = pd.concat([df_existente, novo_df], ignore_index=True)
+                    
+                    if 'Data' in df_final.columns:
+                        df_final = df_final.drop(columns=['Data'])
+                        
+                except Exception as e:
+                    print(f"Erro ao ler arquivo existente: {e}")
+                    if 'Data' in novo_df.columns:
+                        novo_df = novo_df.drop(columns=['Data'])
+                    df_final = novo_df
+            else:
+                if 'Data' in novo_df.columns:
+                    novo_df = novo_df.drop(columns=['Data'])
+                df_final = novo_df
+            
+            df_final.to_excel(nome_arquivo, index=False)
+            print(f"Dados salvos no arquivo: {nome_arquivo}")
+            
+            os.makedirs("output", exist_ok=True)
+            df_final.to_excel(os.path.join("output", "livelo_parceiros.xlsx"), index=False)
+            print(f"Cópia salva em: output/livelo_parceiros.xlsx")
+            
+            return True
+        except Exception as e:
+            print(f"Erro ao salvar dados em Excel: {e}")
+            return False
+    
+    def encerrar_navegador(self):
+        """Encerra o navegador e limpa recursos"""
+        try:
+            if self.driver:
+                print("Encerrando driver do Selenium...")
+                try:
+                    self.driver.set_page_load_timeout(10)
+                    self.driver.quit()
+                    print("Driver encerrado com sucesso.")
+                except Exception as e:
+                    print(f"Aviso ao encerrar driver: {e}")
+                
+            self.driver = None
+            self.wait = None
+            import gc
+            gc.collect()
+            print("Encerramento completo.")
+            return True
+        except Exception as e:
+            print(f"Erro ao encerrar navegador: {e}")
+            return False
+    
+    def executar_scraping(self):
+        """Executa todo o processo de scraping"""
+        try:
+            if not self.iniciar_navegador():
+                print("Falha ao iniciar o navegador. Abortando.")
+                return False
+            
+            if not self.navegar_para_site():
+                print("Falha ao navegar para o site. Abortando.")
+                self.encerrar_navegador()
+                return False
+            
+            print("Iniciando extração de dados...")
+            dados = self.extrair_dados_parceiros()
+            
+            if not dados:
+                print("Nenhum dado foi extraído. Abortando.")
+                self.encerrar_navegador()
+                return False
+            
+            if not self.salvar_dados_excel(dados):
+                print("Falha ao salvar os dados. Abortando.")
+                self.encerrar_navegador()
+                return False
+            
+            self.encerrar_navegador()
+            print("Processo de scraping concluído com sucesso!")
+            return True
+        except Exception as e:
+            print(f"Erro durante o processo de scraping: {e}")
+            try:
+                self.encerrar_navegador()
+            except:
+                pass
+            return False
+
+# Executa o script
+if __name__ == "__main__":
+    # Para debugging detalhado, defina debug=True
+    scraper = LiveloScraper(debug=False)
+    scraper.executar_scraping(), 'U
+    
+    def salvar_dados_excel(self, dados):
+        """Salva os dados extraídos em um arquivo Excel"""
+        if not dados:
+            print("Não há dados para salvar.")
+            return False
+        
+        try:
+            novo_df = pd.DataFrame(dados)
+            novo_df['Data'] = pd.to_datetime(novo_df['Timestamp']).dt.date
+            data_atual = novo_df['Data'].iloc[0]
+            
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            nome_arquivo = os.path.join(script_dir, "livelo_parceiros.xlsx")
+            
+            if os.path.exists(nome_arquivo):
+                print(f"Arquivo {nome_arquivo} encontrado. Verificando dados existentes...")
+                try:
+                    df_existente = pd.read_excel(nome_arquivo)
+                    
+                    if 'Timestamp' in df_existente.columns:
+                        df_existente['Data'] = pd.to_datetime(df_existente['Timestamp']).dt.date
+                        
+                        if data_atual in df_existente['Data'].values:
+                            print(f"Substituindo dados do dia {data_atual}...")
+                            df_existente = df_existente[df_existente['Data'] != data_atual]
+                            df_final = pd.concat([df_existente, novo_df], ignore_index=True)
+                        else:
+                            print(f"Adicionando novos dados do dia {data_atual}...")
+                            df_final = pd.concat([df_existente, novo_df], ignore_index=True)
+                    else:
+                        df_final = pd.concat([df_existente, novo_df], ignore_index=True)
+                    
+                    if 'Data' in df_final.columns:
+                        df_final = df_final.drop(columns=['Data'])
+                        
+                except Exception as e:
+                    print(f"Erro ao ler arquivo existente: {e}")
+                    if 'Data' in novo_df.columns:
+                        novo_df = novo_df.drop(columns=['Data'])
+                    df_final = novo_df
+            else:
+                if 'Data' in novo_df.columns:
+                    novo_df = novo_df.drop(columns=['Data'])
+                df_final = novo_df
+            
+            df_final.to_excel(nome_arquivo, index=False)
+            print(f"Dados salvos no arquivo: {nome_arquivo}")
+            
+            os.makedirs("output", exist_ok=True)
+            df_final.to_excel(os.path.join("output", "livelo_parceiros.xlsx"), index=False)
+            print(f"Cópia salva em: output/livelo_parceiros.xlsx")
+            
+            return True
+        except Exception as e:
+            print(f"Erro ao salvar dados em Excel: {e}")
+            return False
+    
+    def encerrar_navegador(self):
+        """Encerra o navegador e limpa recursos"""
+        try:
+            if self.driver:
+                print("Encerrando driver do Selenium...")
+                try:
+                    self.driver.set_page_load_timeout(10)
+                    self.driver.quit()
+                    print("Driver encerrado com sucesso.")
+                except Exception as e:
+                    print(f"Aviso ao encerrar driver: {e}")
+                
+            self.driver = None
+            self.wait = None
+            import gc
+            gc.collect()
+            print("Encerramento completo.")
+            return True
+        except Exception as e:
+            print(f"Erro ao encerrar navegador: {e}")
+            return False
+    
+    def executar_scraping(self):
+        """Executa todo o processo de scraping"""
+        try:
+            if not self.iniciar_navegador():
+                print("Falha ao iniciar o navegador. Abortando.")
+                return False
+            
+            if not self.navegar_para_site():
+                print("Falha ao navegar para o site. Abortando.")
+                self.encerrar_navegador()
+                return False
+            
+            print("Iniciando extração de dados...")
+            dados = self.extrair_dados_parceiros()
+            
+            if not dados:
+                print("Nenhum dado foi extraído. Abortando.")
+                self.encerrar_navegador()
+                return False
+            
+            if not self.salvar_dados_excel(dados):
+                print("Falha ao salvar os dados. Abortando.")
+                self.encerrar_navegador()
+                return False
+            
+            self.encerrar_navegador()
+            print("Processo de scraping concluído com sucesso!")
+            return True
+        except Exception as e:
+            print(f"Erro durante o processo de scraping: {e}")
+            try:
+                self.encerrar_navegador()
+            except:
+                pass
+            return False
+
+# Executa o script
+if __name__ == "__main__":
+    # Para debugging detalhado, defina debug=True
+    scraper = LiveloScraper(debug=False)
+    scraper.executar_scraping()] else "R$"
+                                valor = groups[1]
+                        elif len(groups) >= 2:
+                            pontos = groups[1] if groups[1].isdigit() else groups[0]
+                            valor = groups[0] if groups[0].isdigit() else groups[1]
+                        
+                        if self.debug:
+                            print(f"Regex pattern match: valor={valor}, pontos={pontos}, moeda={moeda}")
+                        
+                        return valor, pontos, moeda
+            except Exception as e:
+                if self.debug:
+                    print(f"Erro na busca por padrões regex: {e}")
+            
+            # MÉTODO 6: Busca por números isolados como último recurso
             try:
                 numeros = re.findall(r'\d+', texto_completo)
-                if numeros and len(numeros) >= 2:
-                    valor = numeros[0]
-                    pontos = numeros[-1]  # Último número geralmente são os pontos
+                if numeros and len(numeros) >= 1:
+                    # Assume que o primeiro número relevante são os pontos
+                    for numero in numeros:
+                        if int(numero) > 0 and int(numero) < 100:  # Filtro básico
+                            pontos = numero
+                            valor = "1"
+                            break
+                    
+                    if self.debug:
+                        print(f"Números encontrados como último recurso: valor={valor}, pontos={pontos}")
+                    
                     return valor, pontos, moeda
-            except:
-                pass
+            except Exception as e:
+                if self.debug:
+                    print(f"Erro na busca por números: {e}")
         
         except Exception as e:
             if self.debug:
-                print(f"Erro ao extrair valores: {e}")
+                print(f"Erro geral ao extrair valores: {e}")
+        
+        if self.debug:
+            print(f"Nenhum método funcionou. Retornando valores padrão: valor={valor}, pontos={pontos}, moeda={moeda}")
         
         return valor, pontos, moeda
     
