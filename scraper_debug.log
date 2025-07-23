@@ -1,39 +1,4 @@
-Iniciando Chrome com configurações anti-detecção...
-User-Agent selecionado: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36
-Iniciando novo processo do Chrome...
-Chrome iniciado com sucesso. Sessão ID: f047b889c5fcdb1ddf973d6b998999f5
-Iniciando navegação para o site da Livelo...
-
---- Tentando URL_Principal ---
-Tentando carregar URL_Principal: https://www.livelo.com.br/juntar-pontos/todos-os-parceiros
-Tentativa 1/2: Acessando URL_Principal...
-Aguardando carregamento dinâmico...
-Verificando elementos principais...
-✓ Encontrados 44 elementos com seletor: img[src*='logo']
-✓ Elementos genéricos encontrados com: img[src*='logo']
-✓ Encontrados 2 elementos com XPath: //div[contains(@class, 'card')]
-Elementos encontrados! Rolando página para carregar tudo...
-Altura da página: 30899px
-✓ Página URL_Principal carregada com sucesso!
-Iniciando extração de dados...
-Iniciando extração de dados...
-Testando qual XPath funciona...
-Testando: /html/body/div[1]/div[6]/div[2]/div[1]
-✗ XPath não funcionou: /html/body/div[1]/div[6]/div[2]/div[{x}]
-Testando: /html/body/div[4]/main/div[1]/div[37]/div/div/div[2]/section/div[2]/div[3]/div[1]
-✗ XPath não funcionou: /html/body/div[4]/main/div[1]/div[37]/div/div/div[2]/section/div[2]/div[3]/div[{x}]
-Testando: //div[contains(@class, 'parity__card')][1]
-✗ XPath não funcionou: //div[contains(@class, 'parity__card')][{x}]
-Testando: //div[contains(@class, 'card')][1]
-✓ XPath funcionando: //div[contains(@class, 'card')][{x}]
-Usando estratégia: //div[contains(@class, 'card')][{x}]
-Extraído 1: Festival de Pontos está incrível com muitas ofertas para você pontuar ainda mais | Sim | R$ | Valor: N/A | Pontos: N/A
-Total de parceiros extraídos: 1
-Arquivo /home/runner/work/livelo_scraper/livelo_scraper/livelo_parceiros.xlsx encontrado. Verificando dados existentes...
-Adicionando novos dados do dia 2025-07-23...
-Dados salvos no arquivo: /home/runner/work/livelo_scraper/livelo_scraper/livelo_parceiros.xlsx
-Cópia salva em: output/livelo_parceiros.xlsx
-Encerrando driver do Selenium...
-Driver encerrado com sucesso.
-Encerramento completo.
-Processo de scraping concluído com sucesso!
+  File "/home/runner/work/livelo_scraper/livelo_scraper/livelo_scraper.py", line 752
+    if groups[1] in ['R
+                     ^
+SyntaxError: unterminated string literal (detected at line 752)
