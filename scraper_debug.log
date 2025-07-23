@@ -1,4 +1,232 @@
-  File "/home/runner/work/livelo_scraper/livelo_scraper/livelo_scraper.py", line 752
-    if groups[1] in ['R
-                     ^
-SyntaxError: unterminated string literal (detected at line 752)
+Iniciando Chrome com configurações anti-detecção...
+User-Agent selecionado: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36
+Iniciando novo processo do Chrome...
+Chrome iniciado com sucesso. Sessão ID: 8ec81461e8911679beda45d90030a880
+Iniciando navegação para o site da Livelo...
+
+--- Tentando URL_Principal ---
+Tentando carregar URL_Principal: https://www.livelo.com.br/juntar-pontos/todos-os-parceiros
+Tentativa 1/2: Acessando URL_Principal...
+Aguardando carregamento dinâmico...
+Verificando elementos principais...
+✓ Encontrados 274 elementos com seletor: div[data-testid="div_PartnerCard"]
+✓ Elementos genéricos encontrados com: div[data-testid="div_PartnerCard"]
+✓ Encontrados 2 elementos com XPath: //div[contains(@class, 'card')]
+Elementos encontrados! Rolando página para carregar tudo...
+Altura da página: 30899px
+✓ Página URL_Principal carregada com sucesso!
+Iniciando extração de dados...
+Iniciando extração de dados...
+Testando data-testid (nova estrutura)...
+✓ Encontrados 274 elementos com data-testid=div_PartnerCard
+Usando estratégia: css:div[data-testid='div_PartnerCard']
+Encontrados 274 elementos via CSS
+Extraído 1: Hoteis.com | Não | R$ | Valor: N/A | Pontos: N/A
+Extraído 2: Azul Viagens | Não | R$ | Valor: N/A | Pontos: N/A
+Extraído 3: Localiza | Não | U$ | Valor: N/A | Pontos: N/A
+Extraído 4: Booking.com | Não | U$ | Valor: N/A | Pontos: N/A
+Extraído 5: Buser | Não | R$ | Valor: N/A | Pontos: N/A
+Extraído 6: Hoteis.com | Não | R$ | Valor: N/A | Pontos: N/A
+Extraído 7: Azul Viagens | Não | R$ | Valor: N/A | Pontos: N/A
+Extraído 8: Localiza | Não | U$ | Valor: N/A | Pontos: N/A
+Extraído 9: Booking.com | Não | U$ | Valor: N/A | Pontos: N/A
+Extraído 10: Buser | Não | R$ | Valor: N/A | Pontos: N/A
+Extraído 11: Hoteis.com | Não | R$ | Valor: 1 | Pontos: 3
+Extraído 12: Azul Viagens | Não | R$ | Valor: 1 | Pontos: 3
+Extraído 13: Localiza | Não | U$ | Valor: 1 | Pontos: 10
+Extraído 14: Booking.com | Não | U$ | Valor: N/A | Pontos: N/A
+Extraído 15: Buser | Não | R$ | Valor: N/A | Pontos: N/A
+Extraído 16: ABC da Construcao | Sim | R$ | Valor: 1 | Pontos: 12
+Extraído 17: PerfectDraft (Ambev) | Sim | R$ | Valor: 1 | Pontos: 4
+Extraído 18: ASICS | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 19: Angeloni | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 20: Divvino | Sim | R$ | Valor: 1 | Pontos: 8
+Extraído 21: Cruzeiros Agaxtur | Não | R$ | Valor: 1 | Pontos: 2
+Extraído 22: Aliexpress | Sim | U$ | Valor: 1 | Pontos: 15
+Extraído 23: Trocafy | Não | R$ | Valor: 1 | Pontos: 2
+Extraído 24: Havaianas | Não | R$ | Valor: 1 | Pontos: 2
+Extraído 25: Allianz | Não | R$ | Valor: 1 | Pontos: 4
+Extraído 26: AMOBELEZA | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 27: Tia Sônia | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 28: Amazon | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 29: Aramis | Não | R$ | Valor: 1 | Pontos: 2
+Extraído 30: Assist Card Seguros | Sim | R$ | Valor: 1 | Pontos: 12
+Extraído 31: Universal Assistance – Seguro Viagem | Sim | R$ | Valor: 1 | Pontos: 12
+Extraído 32: Azul Viagens | Sim | R$ | Valor: 1 | Pontos: 3
+Extraído 33: Avon | Sim | R$ | Valor: 1 | Pontos: 10
+Extraído 34: Bagaggio | Sim | R$ | Valor: 1 | Pontos: 4
+Extraído 35: Bibi | Sim | R$ | Valor: 1 | Pontos: 11
+Extraído 36: Bombay Herbs & Spices | Sim | R$ | Valor: 1 | Pontos: 11
+Extraído 37: MaxRacer | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 38: Buddha Spa | Não | R$ | Valor: 1 | Pontos: 2
+Extraído 39: Beep | Sim | R$ | Valor: 1 | Pontos: 9
+Extraído 40: Beach Park Ingressos | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 41: Bonjour Lingerie | Sim | R$ | Valor: 1 | Pontos: 8
+Extraído 42: Bulbe Energia | Não | R$ | Valor: 1 | Pontos: 12
+Extraído 43: Abelha Rainha | Não | R$ | Valor: 1 | Pontos: 3
+Extraído 44: Beleza na web | Sim | R$ | Valor: 1 | Pontos: 12
+Extraído 45: Baianão | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 46: Booking.com | Não | U$ | Valor: 1 | Pontos: 4
+Extraído 47: O Boticario | Sim | R$ | Valor: 1 | Pontos: 6
+Extraído 48: Beach Park Hospedagens | Sim | R$ | Valor: 1 | Pontos: 6
+Extraído 49: Basico.com | Sim | R$ | Valor: 1 | Pontos: 10
+Extraído 50: Basicamente | Sim | R$ | Valor: 1 | Pontos: 10
+Extraído 51: Buser | Não | R$ | Valor: 1 | Pontos: 2
+Extraído 52: Seguro Viagem Bradesco | Não | R$ | Valor: 1 | Pontos: 10
+Extraído 53: Beyoung | Não | R$ | Valor: 1 | Pontos: 3
+Extraído 54: Cervejabox | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 55: Converse | Sim | R$ | Valor: 1 | Pontos: 3
+Extraído 56: CEA | Sim | R$ | Valor: 1 | Pontos: 10
+Extraído 57: Ciclic Seguros – Celular | Sim | R$ | Valor: 1 | Pontos: 6
+Extraído 58: Centauro | Sim | R$ | Valor: 1 | Pontos: 5
+Extraído 59: Coffee Mais | Sim | R$ | Valor: 1 | Pontos: 11
+Extraído 60: Café Orfeu | Sim | R$ | Valor: 1 | Pontos: 11
+Extraído 61: Granado | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 62: Ciclic Seguros – Bike | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 63: Ciclic Seguros – Viagem | Sim | R$ | Valor: 1 | Pontos: 18
+Extraído 64: Claro | Não | R$ | Valor: 1 | Pontos: 6
+Extraído 65: Hero Seguro Celular | Sim | R$ | Valor: 1 | Pontos: 5
+Extraído 66: ClickBus | Não | R$ | Valor: 1 | Pontos: 2
+Extraído 67: Coliseu | Não | R$ | Valor: 1 | Pontos: 2
+Extraído 68: Bradesco Capitalização | Não | R$ | Valor: 1 | Pontos: 2
+Extraído 69: Camicado | Não | R$ | Valor: 1 | Pontos: 2
+Extraído 70: Liz | Não | R$ | Valor: 1 | Pontos: 3
+Extraído 71: CARE Natural Beauty | Não | R$ | Valor: 1 | Pontos: 4
+Extraído 72: Cook Eletroraro | Sim | R$ | Valor: 1 | Pontos: 3
+Extraído 73: PneuStore | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 74: Creditas | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 75: Carrefour Shopping | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 76: Clima Rio | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 77: Carrefour Mercado | Sim | R$ | Valor: 1 | Pontos: 3
+Extraído 78: Crocs | Sim | R$ | Valor: 1 | Pontos: 6
+Extraído 79: Coris | Não | R$ | Valor: 1 | Pontos: 5
+Extraído 80: Casas Bahia | Sim | R$ | Valor: 1 | Pontos: 6
+Extraído 81: Dafiti | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 82: Darkness | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 83: Decathlon | Sim | R$ | Valor: 1 | Pontos: 6
+Extraído 84: Decolar | Sim | R$ | Valor: 1 | Pontos: 5
+Extraído 85: Dudalina | Não | R$ | Valor: 1 | Pontos: 3
+Extraído 86: Dako | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 87: Democrata | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 88: Drogarias Pacheco | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 89: Drogaria Sao Paulo | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 90: Dr Jones | Sim | R$ | Valor: 1 | Pontos: 10
+Extraído 91: Grupo Dreams | Não | R$ | Valor: 1 | Pontos: 4
+Extraído 92: Dufrio | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 93: Hoteis Deville | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 94: Sam's Club - E-commerce | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 95: EDP | Não | R$ | Valor: 1 | Pontos: 6
+Extraído 96: elbo | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 97: Ellus | Sim | R$ | Valor: 1 | Pontos: 11
+Extraído 98: Época cosmésticos | Não | R$ | Valor: 1 | Pontos: 2
+Extraído 99: Easy Live | Sim | R$ | Valor: 1 | Pontos: 15
+Extraído 100: Eudora | Sim | R$ | Valor: 1 | Pontos: 6
+Extraído 101: Euro | Sim | R$ | Valor: 1 | Pontos: 6
+Extraído 102: Extra | Sim | R$ | Valor: 1 | Pontos: 5
+Extraído 103: Faber-Castell | Não | R$ | Valor: 1 | Pontos: 2
+Extraído 104: Umbro | Sim | R$ | Valor: 1 | Pontos: 8
+Extraído 105: Fila | Sim | R$ | Valor: 1 | Pontos: 4
+Extraído 106: Foco | Não | R$ | Valor: 1 | Pontos: 2
+Extraído 107: Frigelar | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 108: Câmbio Online | Não | U$ | Valor: 1 | Pontos: 1
+Extraído 109: Fast Shop | Sim | R$ | Valor: 1 | Pontos: 6
+Extraído 110: Colcci | Sim | R$ | Valor: 1 | Pontos: 5
+Extraído 111: Go case | Não | R$ | Valor: 1 | Pontos: 2
+Extraído 112: Giuliana Flores | Sim | R$ | Valor: 1 | Pontos: 11
+Extraído 113: Globoplay | Não | R$ | Valor: 1 | Pontos: 8
+Extraído 114: Cabana Magazine | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 115: Guess | Não | R$ | Valor: 1 | Pontos: 2
+Extraído 116: Guldi | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 117: Gazin | Não | R$ | Valor: 1 | Pontos: 2
+Extraído 118: Hot Beach | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 119: Horas Magicas | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 120: Hopper Nutrition | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 121: Hope | Não | R$ | Valor: 1 | Pontos: 2
+Extraído 122: Hering | Sim | R$ | Valor: 1 | Pontos: 6
+Extraído 123: HERO SEGURO VIAGEM | Sim | R$ | Valor: 1 | Pontos: 18
+Extraído 124: Hoteis.com | Sim | R$ | Valor: 1 | Pontos: 3
+Extraído 125: Bobstore | Sim | R$ | Valor: 1 | Pontos: 11
+Extraído 126: Imaginarium | Sim | R$ | Valor: 1 | Pontos: 8
+Extraído 127: Individual | Sim | R$ | Valor: 1 | Pontos: 10
+Extraído 128: Insider Store | Sim | R$ | Valor: 1 | Pontos: 11
+Extraído 129: Richards | Sim | R$ | Valor: 1 | Pontos: 11
+Extraído 130: IntegralMedica | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 131: Beto Carrero World | Sim | R$ | Valor: 1 | Pontos: 4
+Extraído 132: John John | Sim | R$ | Valor: 1 | Pontos: 10
+Extraído 133: Julio Okubo | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 134: Klabin ForYou | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 135: Kaligo | Não | U$ | Valor: 1 | Pontos: 15
+Extraído 136: Loccitane au Bresil | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 137: Localiza | Sim | U$ | Valor: 1 | Pontos: 10
+Extraído 138: Localiza | Sim | R$ | Valor: 1 | Pontos: 7
+Extraído 139: Lacoste | Não | R$ | Valor: 1 | Pontos: 2
+Extraído 140: LEGO | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 141: Localiza Meoo | Sim | R$ | Valor: 1 | Pontos: 10
+Extraído 142: Loungerie | Não | R$ | Valor: 1 | Pontos: 2
+Extraído 143: Quintess | Sim | R$ | Valor: 1 | Pontos: 6
+Extraído 144: LE LIS | Sim | R$ | Valor: 1 | Pontos: 11
+Extraído 145: Luxury Loyalty | Sim | R$ | Valor: 1 | Pontos: 10
+Extraído 146: Lolita | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 147: Quero-Quero | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 148: Liga Vitória Seguro Auto | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 149: Liga Vitória - Seguro de Viagem | Não | R$ | Valor: 1 | Pontos: 3
+Extraído 150: Liga Vitória Seguro Moto | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 151: Liga Vitória Seguro Residencial | Não | R$ | Valor: 1 | Pontos: 3
+Extraído 152: Forever Liss | Sim | R$ | Valor: 1 | Pontos: 12
+Extraído 153: Liga Vitória Seguro de Vida | Não | R$ | Valor: 1 | Pontos: 3
+Extraído 154: Liga Vitória Consórcio | Sim | R$ | Valor: 1 | Pontos: 60
+Extraído 155: LIVE! | Sim | R$ | Valor: 1 | Pontos: 7
+Extraído 156: Mobills | Não | R$ | Valor: 1 | Pontos: 10
+Extraído 157: Mobly | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 158: Spicy | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 159: Cestas Michelli | Sim | R$ | Valor: 1 | Pontos: 11
+Extraído 160: Monte Carlo | Sim | R$ | Valor: 1 | Pontos: 6
+Extraído 161: Midea | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 162: Mondaine | Sim | R$ | Valor: 1 | Pontos: 15
+Extraído 163: MedSênior | Não | R$ | Valor: 1 | Pontos: 7
+Extraído 164: Império | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 165: Mevo Farma | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 166: Consorcio Magalu | Sim | R$ | Valor: 1 | Pontos: 20
+Extraído 167: Mistral | Sim | R$ | Valor: 1 | Pontos: 10
+Extraído 168: Malwee | Sim | R$ | Valor: 1 | Pontos: 8
+Extraído 169: Nova Era | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 170: Movida | Não | R$ | Valor: 1 | Pontos: 2
+Extraído 171: MAPFRE Seguro Auto | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 172: Morana | Não | R$ | Valor: 1 | Pontos: 3
+Extraído 173: Meia Sola | Não | R$ | Valor: 1 | Pontos: 2
+Extraído 174: Seguro Residencial MAPFRE | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 175: Mycon Consórcio Digital | Sim | R$ | Valor: 1 | Pontos: 51
+Extraído 176: Magalu | Sim | R$ | Valor: 1 | Pontos: 3
+Extraído 177: Nutty Bavarian | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 178: Farmacias App | Não | R$ | Valor: 1 | Pontos: 4
+Extraído 179: Nike | Não | R$ | Valor: 1 | Pontos: 2
+Extraído 180: Nomad Trips | Não | R$ | Valor: 1 | Pontos: 3
+Extraído 181: Nars | Não | R$ | Valor: 1 | Pontos: 3
+Extraído 182: Shoestock | Não | R$ | Valor: 1 | Pontos: 2
+Extraído 183: Natura | Não | R$ | Valor: 1 | Pontos: 2
+Extraído 184: Netshoes | Não | R$ | Valor: 1 | Pontos: 2
+Extraído 185: New Balance | Não | R$ | Valor: 1 | Pontos: 2
+Extraído 186: Next Seguro Viagem | Não | R$ | Valor: 1 | Pontos: 3
+Extraído 187: Oceane | Não | R$ | Valor: 1 | Pontos: 2
+Extraído 188: Osklen | Não | R$ | Valor: 1 | Pontos: 2
+Extraído 189: Oster | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 190: O.U.i Paris | Sim | R$ | Valor: 1 | Pontos: 8
+Extraído 191: Hering Outlet | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 192: Olympikus | Sim | R$ | Valor: 1 | Pontos: 8
+Extraído 193: Oxford | Não | R$ | Valor: 1 | Pontos: 2
+Extraído 194: Piatan Natural | Não | R$ | Valor: 1 | Pontos: 3
+Extraído 195: Probiótica | Sim | R$ | Valor: 1 | Pontos: 5
+Extraído 196: Portal das Malas | Não | R$ | Valor: 1 | Pontos: 1
+Extraído 197: Pado | Não | R$ | Valor: 1 | Pontos: 2
+Extraído 198: Shopee | Não | R$ | Valor: 1 | Pontos: 2
+Extraído 199: Puket | Sim | R$ | Valor: 1 | Pontos: 5
+Extraído 200: Portallar | Sim | R$ | Valor: 1 | Pontos: 11
+Total de parceiros extraídos: 200
+Arquivo /home/runner/work/livelo_scraper/livelo_scraper/livelo_parceiros.xlsx encontrado. Verificando dados existentes...
+Substituindo dados do dia 2025-07-23...
+Dados salvos no arquivo: /home/runner/work/livelo_scraper/livelo_scraper/livelo_parceiros.xlsx
+Cópia salva em: output/livelo_parceiros.xlsx
+Encerrando driver do Selenium...
+Driver encerrado com sucesso.
+Encerramento completo.
+Processo de scraping concluído com sucesso!
