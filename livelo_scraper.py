@@ -96,22 +96,25 @@ class LiveloScraper:
             return False
     
     def simular_comportamento_humano(self):
-        """Simula comportamento humano para evitar detecção"""
+        """Simula comportamento humano para evitar detecção - versão mais segura"""
         try:
             actions = ActionChains(self.driver)
             
-            # Simula movimentos aleatórios
-            for _ in range(3):
-                x = random.randint(100, 800)
-                y = random.randint(100, 600)
+            # Movimentos mais conservadores para evitar "out of bounds"
+            for _ in range(2):  # Menos movimentos
+                x = random.randint(50, 400)  # Range menor e mais seguro
+                y = random.randint(50, 300)  # Range menor e mais seguro
                 actions.move_by_offset(x, y)
-                time.sleep(random.uniform(0.5, 1.5))
+                time.sleep(random.uniform(0.3, 0.8))  # Tempos menores
             
             actions.perform()
-            time.sleep(random.uniform(2, 5))
+            time.sleep(random.uniform(1, 3))  # Tempo menor
             
         except Exception as e:
-            print(f"Erro ao simular comportamento humano: {e}")
+            if self.debug:
+                print(f"Erro ao simular comportamento humano: {e}")
+            # Continue mesmo se der erro - não é crítico
+            time.sleep(2)
     
     def aguardar_carregamento_dinamico(self, timeout=30):
         """Aguarda o carregamento dinâmico da página"""
@@ -205,6 +208,7 @@ class LiveloScraper:
                     print("Elementos encontrados! Rolando página para carregar TODOS os elementos...")
                     
                     try:
+                        # Rolagem mais agressiva para garantir que carregue todos os 259 parceiros
                         print("Iniciando rolagem completa da página...")
                         
                         # Primeiro, vai até o final rapidamente
@@ -335,11 +339,11 @@ class LiveloScraper:
         return False
     
     def encontrar_xpath_funcionando(self):
-        """Usa APENAS o XPath específico fornecido pelo usuário"""
-        # XPath específico fornecido pelo usuário - PRIORIDADE ABSOLUTA
-        xpath_especifico = "/html/body/div[1]/div[6]/div[2]/div[{x}]"
+        """Usa a estratégia que está funcionando - já detectamos 274 elementos"""
+        print("Verificando se o XPath específico funciona...")
         
-        print("Testando XPath específico fornecido...")
+        # XPath específico fornecido pelo usuário - tenta primeiro
+        xpath_especifico = "/html/body/div[1]/div[6]/div[2]/div[{x}]"
         try:
             xpath_teste = xpath_especifico.format(x=1)
             print(f"Testando XPath principal: {xpath_teste}")
@@ -350,9 +354,8 @@ class LiveloScraper:
         except Exception as e:
             print(f"✗ XPath principal falhou: {e}")
         
-        # XPath de fallback APENAS se o principal falhar
+        # XPath de fallback
         xpath_fallback = "/html/body/div[4]/main/div[1]/div[37]/div/div/div[2]/section/div[2]/div[3]/div[{x}]"
-        print("Testando XPath de fallback...")
         try:
             xpath_teste = xpath_fallback.format(x=1)
             print(f"Testando XPath fallback: {xpath_teste}")
@@ -363,7 +366,17 @@ class LiveloScraper:
         except Exception as e:
             print(f"✗ XPath fallback falhou: {e}")
         
-        print("❌ Nenhum XPath funcionou")
+        # Se XPaths falharam, usa o data-testid que está funcionando
+        print("XPaths falharam. Usando data-testid que detectou 274 elementos...")
+        try:
+            elementos = self.driver.find_elements(By.CSS_SELECTOR, 'div[data-testid="div_PartnerCard"]')
+            if elementos and len(elementos) > 0:
+                print(f"✓ Usando data-testid com {len(elementos)} elementos detectados")
+                return "css:div[data-testid='div_PartnerCard']"
+        except Exception as e:
+            print(f"✗ Data-testid também falhou: {e}")
+        
+        print("❌ Nenhuma estratégia funcionou")
         return None
     
     def extrair_nome_parceiro(self, card, indice):
@@ -682,93 +695,135 @@ class LiveloScraper:
         return "R$"
     
     def extrair_dados_parceiros(self):
-        """Extrai os dados usando APENAS o XPath específico fornecido"""
+        """Extrai os dados usando XPath ou data-testid - todos os elementos disponíveis"""
         try:
             resultados = []
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             
             print("Iniciando extração de dados...")
             
-            xpath_funcionando = self.encontrar_xpath_funcionando()
+            estrategia_funcionando = self.encontrar_xpath_funcionando()
             
-            if not xpath_funcionando:
-                print("❌ XPath específico não funcionou.")
+            if not estrategia_funcionando:
+                print("❌ Nenhuma estratégia de extração funcionou.")
                 return []
             
-            print(f"Usando XPath específico: {xpath_funcionando}")
+            print(f"Usando estratégia: {estrategia_funcionando}")
             
             total_parceiros = 0
-            elementos_nao_encontrados_consecutivos = 0
-            max_elementos_nao_encontrados_consecutivos = 15  # Mais tolerante para páginas grandes
             
-            # APENAS XPath - remove toda lógica de CSS
-            x = 1
-            print(f"Iniciando extração do elemento 1 até encontrar o último...")
-            
-            while True:
+            # Se for CSS selector (data-testid)
+            if estrategia_funcionando.startswith("css:"):
+                css_selector = estrategia_funcionando[4:]  # Remove "css:"
                 try:
-                    xpath_base = xpath_funcionando.format(x=x)
+                    elementos = self.driver.find_elements(By.CSS_SELECTOR, css_selector)
+                    total_elementos_encontrados = len(elementos)
+                    print(f"✓ Encontrados {total_elementos_encontrados} elementos via CSS selector")
                     
-                    if self.debug:
-                        print(f"Tentando buscar elemento {x}: {xpath_base}")
-                    
-                    card = self.driver.find_element(By.XPATH, xpath_base)
-                    elementos_nao_encontrados_consecutivos = 0  # Reset contador
-                    
-                    # Extração de dados usando os métodos específicos para nova estrutura
-                    parceiro = self.extrair_nome_parceiro(card, x)
-                    oferta = self.extrair_oferta(card)
-                    valor, pontos, moeda = self.extrair_valores_pontos(card)
-                    
-                    # Adiciona TODOS os elementos encontrados (remove filtro restritivo)
-                    resultados.append({
-                        'Timestamp': timestamp,
-                        'Parceiro': parceiro,
-                        'Oferta': oferta,
-                        'Moeda': moeda,
-                        'Valor': self.formatar_valor(valor),
-                        'Pontos': self.formatar_pontos(pontos)
-                    })
-                    
-                    total_parceiros += 1
-                    
-                    # Log mais enxuto - só mostra nome do parceiro
-                    print(f"Extraído {total_parceiros}: {parceiro}")
-                    
-                    if self.debug and total_parceiros <= 5:  # Debug detalhado apenas para os primeiros 5
-                        print(f"  ↳ Detalhes: {oferta} | {moeda} | Valor: {valor} | Pontos: {pontos}")
-                    
-                    x += 1
-                    
-                except NoSuchElementException:
-                    elementos_nao_encontrados_consecutivos += 1
-                    
-                    if self.debug:
-                        print(f"Elemento {x} não encontrado. Consecutivos: {elementos_nao_encontrados_consecutivos}")
-                    
-                    if elementos_nao_encontrados_consecutivos >= max_elementos_nao_encontrados_consecutivos:
-                        print(f"✓ Fim da extração alcançado. Não foram encontrados {max_elementos_nao_encontrados_consecutivos} elementos consecutivos.")
-                        break
-                    
-                    x += 1
-                    
+                    for i, card in enumerate(elementos, 1):
+                        try:
+                            # Extração de dados
+                            parceiro = self.extrair_nome_parceiro(card, i)
+                            oferta = self.extrair_oferta(card)
+                            valor, pontos, moeda = self.extrair_valores_pontos(card)
+                            
+                            resultados.append({
+                                'Timestamp': timestamp,
+                                'Parceiro': parceiro,
+                                'Oferta': oferta,
+                                'Moeda': moeda,
+                                'Valor': self.formatar_valor(valor),
+                                'Pontos': self.formatar_pontos(pontos)
+                            })
+                            
+                            total_parceiros += 1
+                            
+                            # Log de progresso mais inteligente
+                            if total_parceiros <= 10 or total_parceiros % 50 == 0 or total_parceiros == total_elementos_encontrados:
+                                print(f"Extraído {total_parceiros}/{total_elementos_encontrados}: {parceiro}")
+                            
+                        except Exception as e:
+                            if self.debug:
+                                print(f"Erro ao extrair dados do elemento {i}: {e}")
+                            continue
+                
                 except Exception as e:
-                    elementos_nao_encontrados_consecutivos += 1
-                    
-                    if self.debug:
-                        print(f"Erro ao extrair elemento {x}: {e}")
-                    
-                    if elementos_nao_encontrados_consecutivos >= max_elementos_nao_encontrados_consecutivos:
-                        print(f"✓ Fim da extração por erros consecutivos. Elementos processados: {total_parceiros}")
-                        break
-                    
-                    x += 1
+                    print(f"Erro na extração via CSS: {e}")
+                    return []
+            
+            else:
+                # XPath tradicional - vai do 1 até o final
+                x = 1
+                elementos_nao_encontrados_consecutivos = 0
+                max_elementos_nao_encontrados_consecutivos = 15
+                
+                print(f"Iniciando extração via XPath do elemento 1 até o último...")
+                
+                while True:
+                    try:
+                        xpath_base = estrategia_funcionando.format(x=x)
+                        
+                        if self.debug:
+                            print(f"Tentando buscar elemento {x}: {xpath_base}")
+                        
+                        card = self.driver.find_element(By.XPATH, xpath_base)
+                        elementos_nao_encontrados_consecutivos = 0  # Reset contador
+                        
+                        # Extração de dados
+                        parceiro = self.extrair_nome_parceiro(card, x)
+                        oferta = self.extrair_oferta(card)
+                        valor, pontos, moeda = self.extrair_valores_pontos(card)
+                        
+                        resultados.append({
+                            'Timestamp': timestamp,
+                            'Parceiro': parceiro,
+                            'Oferta': oferta,
+                            'Moeda': moeda,
+                            'Valor': self.formatar_valor(valor),
+                            'Pontos': self.formatar_pontos(pontos)
+                        })
+                        
+                        total_parceiros += 1
+                        
+                        # Log de progresso
+                        if total_parceiros <= 10 or total_parceiros % 50 == 0:
+                            print(f"Extraído {total_parceiros}: {parceiro}")
+                        
+                        x += 1
+                        
+                    except NoSuchElementException:
+                        elementos_nao_encontrados_consecutivos += 1
+                        
+                        if self.debug:
+                            print(f"Elemento {x} não encontrado. Consecutivos: {elementos_nao_encontrados_consecutivos}")
+                        
+                        if elementos_nao_encontrados_consecutivos >= max_elementos_nao_encontrados_consecutivos:
+                            print(f"✓ Fim da extração alcançado. Não foram encontrados {max_elementos_nao_encontrados_consecutivos} elementos consecutivos.")
+                            break
+                        
+                        x += 1
+                        
+                    except Exception as e:
+                        elementos_nao_encontrados_consecutivos += 1
+                        
+                        if self.debug:
+                            print(f"Erro ao extrair elemento {x}: {e}")
+                        
+                        if elementos_nao_encontrados_consecutivos >= max_elementos_nao_encontrados_consecutivos:
+                            print(f"✓ Fim da extração por erros consecutivos. Elementos processados: {total_parceiros}")
+                            break
+                        
+                        x += 1
             
             print(f"🎉 Total de parceiros extraídos: {total_parceiros}")
             
-            if total_parceiros < 250:  # Aviso se extrair menos que o esperado
-                print(f"⚠️ ATENÇÃO: Foram extraídos apenas {total_parceiros} parceiros.")
-                print("⚠️ Verifique se a página carregou completamente ou se o XPath mudou.")
+            # Verificações de qualidade
+            if total_parceiros == 0:
+                print("❌ ERRO: Nenhum parceiro foi extraído!")
+            elif total_parceiros < 200:
+                print(f"⚠️ ATENÇÃO: Foram extraídos apenas {total_parceiros} parceiros. Esperados ~259.")
+            elif total_parceiros >= 250:
+                print(f"✅ SUCESSO: {total_parceiros} parceiros extraídos - dentro do esperado!")
             
             return resultados
             
@@ -893,6 +948,6 @@ class LiveloScraper:
 
 # Executa o script
 if __name__ == "__main__":
-    # Debug desativado por padrão, mas com logs informativos
-    scraper = LiveloScraper(debug=False)
+    # Debug ativado para diagnóstico
+    scraper = LiveloScraper(debug=True)
     scraper.executar_scraping()
