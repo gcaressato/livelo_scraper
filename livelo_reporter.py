@@ -48,17 +48,34 @@ class LiveloAnalytics:
     
     def _preparar_dados(self):
         """Prepara e limpa os dados"""
+        inicial = len(self.df_completo)
+        print(f"📋 Dados iniciais: {inicial} registros")
+        
         # Converter valores para numérico
         self.df_completo['Valor'] = pd.to_numeric(self.df_completo['Valor'], errors='coerce')
         self.df_completo['Pontos'] = pd.to_numeric(self.df_completo['Pontos'], errors='coerce')
         
-        # Remover registros inválidos (mas manter N/A para análise)
-        inicial = len(self.df_completo)
-        self.df_completo = self.df_completo.dropna(subset=['Parceiro'])
+        # Verificar duplicatas
+        duplicatas = self.df_completo[self.df_completo.duplicated(subset=['Parceiro'], keep=False)]
+        if len(duplicatas) > 0:
+            print(f"⚠️ Encontradas {len(duplicatas)} entradas duplicadas:")
+            for parceiro in duplicatas['Parceiro'].unique():
+                print(f"   - {parceiro}: {len(duplicatas[duplicatas['Parceiro'] == parceiro])} registros")
         
-        # Filtrar apenas registros com pontos válidos para análise principal
+        # Remover registros sem parceiro
+        antes_parceiro = len(self.df_completo)
+        self.df_completo = self.df_completo.dropna(subset=['Parceiro'])
+        removidos_parceiro = antes_parceiro - len(self.df_completo)
+        if removidos_parceiro > 0:
+            print(f"📝 Removidos {removidos_parceiro} registros sem nome de parceiro")
+        
+        # Filtrar apenas registros com pontos válidos
+        antes_pontos = len(self.df_completo)
         df_validos = self.df_completo.dropna(subset=['Pontos', 'Valor'])
         df_validos = df_validos[df_validos['Pontos'] > 0]
+        removidos_pontos = antes_pontos - len(df_validos)
+        if removidos_pontos > 0:
+            print(f"📝 Removidos {removidos_pontos} registros com pontos/valores inválidos")
         
         print(f"✓ {len(df_validos)} registros válidos de {inicial} totais")
         
@@ -71,13 +88,30 @@ class LiveloAnalytics:
         # Ordenar cronologicamente
         self.df_completo = self.df_completo.sort_values(['Parceiro', 'Timestamp'])
         
+        # Verificar parceiros únicos
+        parceiros_unicos = self.df_completo['Parceiro'].nunique()
+        print(f"📊 Total de parceiros únicos: {parceiros_unicos}")
+        
         # Filtrar dados de hoje (data mais recente)
         data_mais_recente = self.df_completo['Timestamp'].max().date()
         self.df_hoje = self.df_completo[
             self.df_completo['Timestamp'].dt.date == data_mais_recente
         ].copy()
         
-        print(f"✓ {len(self.df_hoje)} registros atuais - Data: {data_mais_recente}")
+        parceiros_hoje = self.df_hoje['Parceiro'].nunique()
+        print(f"✓ {len(self.df_hoje)} registros atuais ({parceiros_hoje} parceiros únicos) - Data: {data_mais_recente}")
+        
+        if parceiros_hoje != len(self.df_hoje):
+            duplicatas_hoje = self.df_hoje[self.df_hoje.duplicated(subset=['Parceiro'], keep=False)]
+            if len(duplicatas_hoje) > 0:
+                print(f"⚠️ Duplicatas nos dados de hoje:")
+                for parceiro in duplicatas_hoje['Parceiro'].unique():
+                    registros = duplicatas_hoje[duplicatas_hoje['Parceiro'] == parceiro]
+                    print(f"   - {parceiro}: {len(registros)} registros")
+                    
+                # Manter apenas o último registro de cada parceiro
+                self.df_hoje = self.df_hoje.drop_duplicates(subset=['Parceiro'], keep='last')
+                print(f"✓ Duplicatas removidas. Restam {len(self.df_hoje)} registros únicos")
     
     def _calcular_tempo_casa(self, dias):
         """Calcula o status baseado no tempo de casa"""
@@ -110,9 +144,12 @@ class LiveloAnalytics:
         print("🔍 Analisando histórico completo...")
         
         resultados = []
+        parceiros_unicos = self.df_hoje['Parceiro'].unique()
+        print(f"📋 Processando {len(parceiros_unicos)} parceiros únicos...")
         
-        for parceiro in self.df_hoje['Parceiro'].unique():
-            dados_atual = self.df_hoje[self.df_hoje['Parceiro'] == parceiro].iloc[0]
+        for i, parceiro in enumerate(parceiros_unicos):
+            try:
+                dados_atual = self.df_hoje[self.df_hoje['Parceiro'] == parceiro].iloc[0]
             historico = self.df_completo[self.df_completo['Parceiro'] == parceiro].sort_values('Timestamp')
             
             # Dados básicos atuais
@@ -208,10 +245,17 @@ class LiveloAnalytics:
                 resultado['Gasto_Formatado'] = f"$ {resultado['Valor_Atual']:.2f}".replace('.', ',')
             
             resultados.append(resultado)
+            
+            except Exception as e:
+                print(f"⚠️ Erro ao processar {parceiro}: {e}")
+                continue
         
         # Converter para DataFrame
         self.analytics['dados_completos'] = pd.DataFrame(resultados)
+        
         print(f"✓ Análise concluída para {len(resultados)} parceiros")
+        if len(resultados) != len(parceiros_unicos):
+            print(f"⚠️ ATENÇÃO: {len(parceiros_unicos)} parceiros únicos, mas {len(resultados)} analisados com sucesso")
         
         return self.analytics['dados_completos']
     
@@ -324,6 +368,25 @@ class LiveloAnalytics:
                 font=dict(color=LIVELO_AZUL)
             )
             graficos['variacoes'] = fig4
+        else:
+            # Criar gráfico vazio com mensagem
+            fig4 = go.Figure()
+            fig4.add_annotation(
+                text="Nenhuma variação significativa detectada.<br>Isso é normal no primeiro dia de coleta.",
+                xref="paper", yref="paper",
+                x=0.5, y=0.5, xanchor='center', yanchor='middle',
+                showarrow=False,
+                font=dict(size=14, color=LIVELO_AZUL)
+            )
+            fig4.update_layout(
+                title='Maiores Variações de Pontos',
+                plot_bgcolor='white',
+                paper_bgcolor='white',
+                font=dict(color=LIVELO_AZUL),
+                xaxis=dict(visible=False),
+                yaxis=dict(visible=False)
+            )
+            graficos['variacoes'] = fig4
         
         # 5. Sazonalidade (Alta/Média/Baixa)
         dados['Nivel_Sazonalidade'] = dados['Sazonalidade'].str.split(' -').str[0]
@@ -369,6 +432,7 @@ class LiveloAnalytics:
         # Preparar dados para JavaScript
         dados_json = dados.to_json(orient='records', date_format='iso')
         parceiros_lista = sorted(dados['Parceiro'].unique().tolist())
+        print(f"📊 Preparando {len(parceiros_lista)} parceiros para interface")
         
         html = f"""
 <!DOCTYPE html>
@@ -529,10 +593,18 @@ class LiveloAnalytics:
         
         .sort-indicator {{
             margin-left: 5px;
-            opacity: 0.5;
+            opacity: 0.3;
+            transition: all 0.2s ease;
         }}
         
-        .sort-indicator.active {{ opacity: 1; }}
+        .sort-indicator.active {{ 
+            opacity: 1; 
+            color: var(--livelo-rosa) !important;
+        }}
+        
+        .table th:hover .sort-indicator {{
+            opacity: 0.7;
+        }}
         
         .table-responsive {{ border-radius: 12px; }}
         
@@ -720,23 +792,64 @@ class LiveloAnalytics:
         }});
         
         // Ordenação da tabela
+        let ordemAtual = {{}; // Armazena a ordem atual de cada coluna
+        
         function ordenarTabela(coluna, tipo) {{
             const tbody = document.querySelector('#tabelaAnalise tbody');
+            if (!tbody) return;
+            
             const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            // Determinar se deve ser crescente ou decrescente
+            const atual = ordemAtual[coluna] || 'asc';
+            const novaOrdem = atual === 'asc' ? 'desc' : 'asc';
+            ordemAtual[coluna] = novaOrdem;
+            
+            // Atualizar indicadores visuais
+            document.querySelectorAll('.sort-indicator').forEach(el => {{
+                el.className = 'bi bi-arrows-expand sort-indicator';
+            }});
+            
+            const header = document.querySelectorAll('#tabelaAnalise th')[coluna];
+            const indicator = header.querySelector('.sort-indicator');
+            indicator.className = `bi bi-arrow-${{novaOrdem === 'asc' ? 'up' : 'down'}} sort-indicator active`;
             
             rows.sort((a, b) => {{
                 let valorA = a.cells[coluna].textContent.trim();
                 let valorB = b.cells[coluna].textContent.trim();
                 
+                // Tratar badges (extrair só o texto)
+                if (valorA.includes('badge')) {{
+                    valorA = a.cells[coluna].querySelector('.badge').textContent.trim();
+                    valorB = b.cells[coluna].querySelector('.badge').textContent.trim();
+                }}
+                
+                // Remover símbolos de moeda e %
                 if (tipo === 'numero') {{
                     valorA = parseFloat(valorA.replace(/[^0-9.-]/g, '')) || 0;
                     valorB = parseFloat(valorB.replace(/[^0-9.-]/g, '')) || 0;
-                    return valorA - valorB;
+                    
+                    if (novaOrdem === 'asc') {{
+                        return valorA - valorB;
+                    }} else {{
+                        return valorB - valorA;
+                    }}
                 }} else {{
-                    return valorA.localeCompare(valorB);
+                    // Tratar texto
+                    if (valorA === 'Nunca') valorA = '9999-12-31';
+                    if (valorB === 'Nunca') valorB = '9999-12-31';
+                    if (valorA === '-') valorA = '';
+                    if (valorB === '-') valorB = '';
+                    
+                    if (novaOrdem === 'asc') {{
+                        return valorA.localeCompare(valorB);
+                    }} else {{
+                        return valorB.localeCompare(valorA);
+                    }}
                 }}
             }});
             
+            // Remover e adicionar linhas ordenadas
             rows.forEach(row => tbody.appendChild(row));
         }}
         
