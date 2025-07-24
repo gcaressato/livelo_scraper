@@ -133,31 +133,11 @@ class LiveloScraper:
         time.sleep(random.uniform(5, 10))
     
     def buscar_elementos_genericos(self):
-        """Busca por elementos usando seletores mais genéricos"""
+        """Busca APENAS pelos data-testid da nova estrutura"""
         seletores_genericos = [
-            # Nova estrutura com data-testid
+            # APENAS nova estrutura com data-testid - prioridade máxima
             'div[data-testid="div_PartnerCard"]',
             'img[data-testid="img_PartnerCard_partnerImage"]',
-            # Busca por divs que possam conter cards de parceiros
-            "div[class*='card']",
-            "div[class*='partner']", 
-            "div[class*='parity']",
-            "div[class*='parceiro']",
-            "div[class*='brand']",
-            "div[class*='company']",
-            # Busca por links ou imagens de parceiros
-            "a[href*='partner']",
-            "img[alt*='parceiro']",
-            "img[alt*='partner']",
-            "img[src*='partner']",
-            "img[src*='logo']",
-            # Busca por listas
-            "ul li",
-            "ol li",
-            # Busca por grids
-            "div[class*='grid'] > div",
-            "div[class*='row'] > div",
-            "div[class*='col'] > div"
         ]
         
         for seletor in seletores_genericos:
@@ -222,25 +202,75 @@ class LiveloScraper:
                 
                 # Se encontrou elementos por qualquer método, tenta rolar a página
                 if encontrou_genericos or elementos_xpath_encontrados:
-                    print("Elementos encontrados! Rolando página para carregar tudo...")
+                    print("Elementos encontrados! Rolando página para carregar TODOS os elementos...")
                     
                     try:
-                        altura_total = self.driver.execute_script("return document.body.scrollHeight")
-                        print(f"Altura da página: {altura_total}px")
+                        print("Iniciando rolagem completa da página...")
                         
-                        etapas = 20
-                        altura_por_etapa = altura_total // etapas
+                        # Primeiro, vai até o final rapidamente
+                        self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                        time.sleep(5)
+                        print("Primeira rolagem até o final concluída")
                         
+                        # Aguarda um pouco para carregar conteúdo adicional
+                        time.sleep(3)
+                        
+                        # Verifica se há mais conteúdo
+                        altura_anterior = 0
+                        altura_atual = self.driver.execute_script("return document.body.scrollHeight")
+                        tentativas_sem_mudanca = 0
+                        max_tentativas = 10
+                        
+                        print(f"Altura inicial da página: {altura_atual}px")
+                        
+                        # Loop para garantir que carregou todo o conteúdo
+                        while tentativas_sem_mudanca < max_tentativas:
+                            altura_anterior = altura_atual
+                            
+                            # Rola até o final
+                            self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                            time.sleep(2)
+                            
+                            # Simula scroll infinito - rola um pouco mais para baixo
+                            self.driver.execute_script("window.scrollBy(0, 1000);")
+                            time.sleep(2)
+                            
+                            # Verifica nova altura
+                            altura_atual = self.driver.execute_script("return document.body.scrollHeight")
+                            
+                            if altura_atual > altura_anterior:
+                                print(f"Conteúdo adicional carregado. Nova altura: {altura_atual}px")
+                                tentativas_sem_mudanca = 0
+                            else:
+                                tentativas_sem_mudanca += 1
+                                print(f"Nenhum conteúdo adicional. Tentativa {tentativas_sem_mudanca}/{max_tentativas}")
+                        
+                        print(f"Rolagem completa finalizada. Altura final: {altura_atual}px")
+                        
+                        # Agora faz uma rolagem suave do topo ao final para garantir que tudo foi carregado
+                        print("Fazendo rolagem suave final...")
+                        etapas = 50  # Mais etapas para melhor carregamento
+                        altura_por_etapa = altura_atual // etapas
+                        
+                        # Vai para o topo primeiro
+                        self.driver.execute_script("window.scrollTo(0, 0);")
+                        time.sleep(2)
+                        
+                        # Rolagem suave por etapas
                         for i in range(etapas):
                             posicao = (i + 1) * altura_por_etapa
                             self.driver.execute_script(f"window.scrollTo(0, {posicao});")
-                            time.sleep(random.uniform(0.5, 1.5))
+                            time.sleep(0.3)  # Tempo menor para não demorar muito
                         
+                        # Final: vai até o último pixel
                         self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                        time.sleep(3)
+                        time.sleep(2)
                         
+                        # Volta para o topo para começar a extração
                         self.driver.execute_script("window.scrollTo(0, 0);")
                         time.sleep(2)
+                        
+                        print("✓ Rolagem completa da página finalizada!")
                         
                     except Exception as e:
                         print(f"Erro ao rolar a página: {e}")
@@ -305,59 +335,39 @@ class LiveloScraper:
         return False
     
     def encontrar_xpath_funcionando(self):
-        """Encontra qual estratégia funciona para extrair dados"""
-        # Primeira prioridade: buscar pelos novos data-testid
-        print("Testando data-testid (nova estrutura)...")
+        """Usa APENAS o XPath específico fornecido pelo usuário"""
+        # XPath específico fornecido pelo usuário - PRIORIDADE ABSOLUTA
+        xpath_especifico = "/html/body/div[1]/div[6]/div[2]/div[{x}]"
+        
+        print("Testando XPath específico fornecido...")
         try:
-            elementos = self.driver.find_elements(By.CSS_SELECTOR, 'div[data-testid="div_PartnerCard"]')
-            if elementos and len(elementos) > 0:
-                print(f"✓ Encontrados {len(elementos)} elementos com data-testid=div_PartnerCard")
-                return "css:div[data-testid='div_PartnerCard']"
-        except:
-            pass
+            xpath_teste = xpath_especifico.format(x=1)
+            print(f"Testando XPath principal: {xpath_teste}")
+            elemento = self.driver.find_element(By.XPATH, xpath_teste)
+            if elemento:
+                print(f"✓ XPath principal funcionando: {xpath_especifico}")
+                return xpath_especifico
+        except Exception as e:
+            print(f"✗ XPath principal falhou: {e}")
         
-        # XPaths antigos como fallback
-        xpaths_para_testar = [
-            "/html/body/div[1]/div[6]/div[2]/div[{x}]",
-            "/html/body/div[4]/main/div[1]/div[37]/div/div/div[2]/section/div[2]/div[3]/div[{x}]",
-            "//div[contains(@class, 'parity__card')][{x}]",
-            "//div[contains(@class, 'card')][{x}]",
-            "//div[contains(@class, 'partner')][{x}]"
-        ]
+        # XPath de fallback APENAS se o principal falhar
+        xpath_fallback = "/html/body/div[4]/main/div[1]/div[37]/div/div/div[2]/section/div[2]/div[3]/div[{x}]"
+        print("Testando XPath de fallback...")
+        try:
+            xpath_teste = xpath_fallback.format(x=1)
+            print(f"Testando XPath fallback: {xpath_teste}")
+            elemento = self.driver.find_element(By.XPATH, xpath_teste)
+            if elemento:
+                print(f"✓ XPath fallback funcionando: {xpath_fallback}")
+                return xpath_fallback
+        except Exception as e:
+            print(f"✗ XPath fallback falhou: {e}")
         
-        print("Testando XPaths antigos...")
-        for xpath_template in xpaths_para_testar:
-            try:
-                xpath_teste = xpath_template.format(x=1)
-                print(f"Testando: {xpath_teste}")
-                elemento = self.driver.find_element(By.XPATH, xpath_teste)
-                if elemento:
-                    print(f"✓ XPath funcionando: {xpath_template}")
-                    return xpath_template
-            except:
-                print(f"✗ XPath não funcionou: {xpath_template}")
-        
-        # CSS selectors genéricos como último recurso
-        print("XPaths específicos falharam. Tentando CSS selectors genéricos...")
-        css_selectors = [
-            "div[class*='parity'] div[class*='card']",
-            "div[class*='card']",
-            "div[class*='partner']"
-        ]
-        
-        for css in css_selectors:
-            try:
-                elementos = self.driver.find_elements(By.CSS_SELECTOR, css)
-                if elementos and len(elementos) > 0:
-                    print(f"✓ CSS Selector funcionando: {css} ({len(elementos)} elementos)")
-                    return f"css:{css}"
-            except:
-                pass
-        
+        print("❌ Nenhum XPath funcionou")
         return None
     
     def extrair_nome_parceiro(self, card, indice):
-        """Extrai o nome do parceiro usando a nova estrutura"""
+        """Extrai o nome do parceiro usando a nova estrutura - mais permissivo"""
         try:
             # Método 1: img com data-testid específico (nova estrutura)
             img = card.find_element(By.CSS_SELECTOR, 'img[data-testid="img_PartnerCard_partnerImage"]')
@@ -372,7 +382,9 @@ class LiveloScraper:
         try:
             # Método 2: img com id específico (estrutura antiga)
             img = card.find_element(By.XPATH, ".//img[@id='img-parityImg']")
-            return img.get_attribute('alt')
+            alt = img.get_attribute('alt')
+            if alt and alt.strip():
+                return alt
         except:
             pass
         
@@ -386,24 +398,38 @@ class LiveloScraper:
             pass
         
         try:
-            # Método 4: img com src que contenha logo
-            img = card.find_element(By.XPATH, ".//img[contains(@src, 'logo')]")
-            alt = img.get_attribute('alt')
-            if alt and alt.strip():
-                return alt
+            # Método 4: img com src que contenha logo ou config
+            imgs = card.find_elements(By.XPATH, ".//img[contains(@src, 'logo') or contains(@src, 'config')]")
+            for img in imgs:
+                alt = img.get_attribute('alt')
+                if alt and alt.strip():
+                    return alt
         except:
             pass
         
         try:
-            # Método 5: texto do card
-            texto = card.text.strip()
-            if texto:
-                linhas = [l.strip() for l in texto.split('\n') if l.strip()]
-                if linhas:
-                    return linhas[0]
+            # Método 5: qualquer img dentro do card
+            imgs = card.find_elements(By.XPATH, ".//img")
+            for img in imgs:
+                alt = img.get_attribute('alt')
+                if alt and alt.strip() and len(alt) > 3:  # Nome mínimo de 3 caracteres
+                    return alt
         except:
             pass
         
+        try:
+            # Método 6: texto do card - pega linhas que não sejam números ou pontos
+            texto = card.text.strip()
+            if texto:
+                linhas = [l.strip() for l in texto.split('\n') if l.strip()]
+                for linha in linhas:
+                    # Ignora linhas que são apenas números ou contêm "pontos"
+                    if not linha.isdigit() and "ponto" not in linha.lower() and "R$" not in linha and len(linha) > 2:
+                        return linha
+        except:
+            pass
+        
+        # Se chegou até aqui, retorna nome genérico
         return f"Parceiro {indice}"
     
     def extrair_oferta(self, card):
@@ -656,7 +682,7 @@ class LiveloScraper:
         return "R$"
     
     def extrair_dados_parceiros(self):
-        """Extrai os dados usando a estratégia que funcionar"""
+        """Extrai os dados usando APENAS o XPath específico fornecido"""
         try:
             resultados = []
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -666,101 +692,84 @@ class LiveloScraper:
             xpath_funcionando = self.encontrar_xpath_funcionando()
             
             if not xpath_funcionando:
-                print("❌ Nenhuma estratégia de extração funcionou.")
+                print("❌ XPath específico não funcionou.")
                 return []
             
-            print(f"Usando estratégia: {xpath_funcionando}")
+            print(f"Usando XPath específico: {xpath_funcionando}")
             
             total_parceiros = 0
-            elementos_nao_encontrados = 0
-            max_elementos_nao_encontrados = 10
+            elementos_nao_encontrados_consecutivos = 0
+            max_elementos_nao_encontrados_consecutivos = 15  # Mais tolerante para páginas grandes
             
-            # Se for CSS selector para nova estrutura
-            if xpath_funcionando.startswith("css:"):
-                css_selector = xpath_funcionando[4:]
+            # APENAS XPath - remove toda lógica de CSS
+            x = 1
+            print(f"Iniciando extração do elemento 1 até encontrar o último...")
+            
+            while True:
                 try:
-                    elementos = self.driver.find_elements(By.CSS_SELECTOR, css_selector)
-                    print(f"Encontrados {len(elementos)} elementos via CSS")
+                    xpath_base = xpath_funcionando.format(x=x)
                     
-                    limite_elementos = min(len(elementos), 200)
+                    if self.debug:
+                        print(f"Tentando buscar elemento {x}: {xpath_base}")
                     
-                    for i, card in enumerate(elementos[:limite_elementos], 1):
-                        try:
-                            parceiro = self.extrair_nome_parceiro(card, i)
-                            oferta = self.extrair_oferta(card)
-                            valor, pontos, moeda = self.extrair_valores_pontos(card)
-                            
-                            # Só adiciona se conseguiu extrair dados válidos
-                            if parceiro and parceiro != f"Parceiro {i}":
-                                resultados.append({
-                                    'Timestamp': timestamp,
-                                    'Parceiro': parceiro,
-                                    'Oferta': oferta,
-                                    'Moeda': moeda,
-                                    'Valor': self.formatar_valor(valor),
-                                    'Pontos': self.formatar_pontos(pontos)
-                                })
-                                
-                                total_parceiros += 1
-                                print(f"Extraído {total_parceiros}: {parceiro} | {oferta} | {moeda} | Valor: {valor} | Pontos: {pontos}")
-                            else:
-                                if self.debug:
-                                    print(f"Elemento {i} ignorado - dados insuficientes: {parceiro}")
-                            
-                        except Exception as e:
-                            if self.debug:
-                                print(f"Erro ao extrair dados do elemento {i}: {e}")
-                            continue
-                
+                    card = self.driver.find_element(By.XPATH, xpath_base)
+                    elementos_nao_encontrados_consecutivos = 0  # Reset contador
+                    
+                    # Extração de dados usando os métodos específicos para nova estrutura
+                    parceiro = self.extrair_nome_parceiro(card, x)
+                    oferta = self.extrair_oferta(card)
+                    valor, pontos, moeda = self.extrair_valores_pontos(card)
+                    
+                    # Adiciona TODOS os elementos encontrados (remove filtro restritivo)
+                    resultados.append({
+                        'Timestamp': timestamp,
+                        'Parceiro': parceiro,
+                        'Oferta': oferta,
+                        'Moeda': moeda,
+                        'Valor': self.formatar_valor(valor),
+                        'Pontos': self.formatar_pontos(pontos)
+                    })
+                    
+                    total_parceiros += 1
+                    
+                    # Log mais enxuto - só mostra nome do parceiro
+                    print(f"Extraído {total_parceiros}: {parceiro}")
+                    
+                    if self.debug and total_parceiros <= 5:  # Debug detalhado apenas para os primeiros 5
+                        print(f"  ↳ Detalhes: {oferta} | {moeda} | Valor: {valor} | Pontos: {pontos}")
+                    
+                    x += 1
+                    
+                except NoSuchElementException:
+                    elementos_nao_encontrados_consecutivos += 1
+                    
+                    if self.debug:
+                        print(f"Elemento {x} não encontrado. Consecutivos: {elementos_nao_encontrados_consecutivos}")
+                    
+                    if elementos_nao_encontrados_consecutivos >= max_elementos_nao_encontrados_consecutivos:
+                        print(f"✓ Fim da extração alcançado. Não foram encontrados {max_elementos_nao_encontrados_consecutivos} elementos consecutivos.")
+                        break
+                    
+                    x += 1
+                    
                 except Exception as e:
-                    print(f"Erro na extração via CSS: {e}")
+                    elementos_nao_encontrados_consecutivos += 1
+                    
+                    if self.debug:
+                        print(f"Erro ao extrair elemento {x}: {e}")
+                    
+                    if elementos_nao_encontrados_consecutivos >= max_elementos_nao_encontrados_consecutivos:
+                        print(f"✓ Fim da extração por erros consecutivos. Elementos processados: {total_parceiros}")
+                        break
+                    
+                    x += 1
             
-            else:
-                # XPath tradicional
-                x = 1
-                while True:
-                    try:
-                        xpath_base = xpath_funcionando.format(x=x)
-                        card = self.driver.find_element(By.XPATH, xpath_base)
-                        elementos_nao_encontrados = 0
-                        
-                        parceiro = self.extrair_nome_parceiro(card, x)
-                        oferta = self.extrair_oferta(card)
-                        valor, pontos, moeda = self.extrair_valores_pontos(card)
-                        
-                        # Só adiciona se conseguiu extrair dados válidos
-                        if parceiro and parceiro != f"Parceiro {x}":
-                            resultados.append({
-                                'Timestamp': timestamp,
-                                'Parceiro': parceiro,
-                                'Oferta': oferta,
-                                'Moeda': moeda,
-                                'Valor': self.formatar_valor(valor),
-                                'Pontos': self.formatar_pontos(pontos)
-                            })
-                            
-                            total_parceiros += 1
-                            print(f"Extraído {total_parceiros}: {parceiro} | {oferta} | {moeda} | Valor: {valor} | Pontos: {pontos}")
-                        else:
-                            if self.debug:
-                                print(f"Elemento {x} ignorado - dados insuficientes: {parceiro}")
-                        
-                        x += 1
-                        
-                    except NoSuchElementException:
-                        elementos_nao_encontrados += 1
-                        x += 1
-                        if elementos_nao_encontrados >= max_elementos_nao_encontrados:
-                            break
-                    except Exception as e:
-                        if self.debug:
-                            print(f"Erro ao extrair elemento {x}: {e}")
-                        x += 1
-                        elementos_nao_encontrados += 1
-                        if elementos_nao_encontrados >= max_elementos_nao_encontrados:
-                            break
+            print(f"🎉 Total de parceiros extraídos: {total_parceiros}")
             
-            print(f"Total de parceiros extraídos: {total_parceiros}")
+            if total_parceiros < 250:  # Aviso se extrair menos que o esperado
+                print(f"⚠️ ATENÇÃO: Foram extraídos apenas {total_parceiros} parceiros.")
+                print("⚠️ Verifique se a página carregou completamente ou se o XPath mudou.")
+            
             return resultados
             
         except Exception as e:
@@ -884,5 +893,6 @@ class LiveloScraper:
 
 # Executa o script
 if __name__ == "__main__":
+    # Debug desativado por padrão, mas com logs informativos
     scraper = LiveloScraper(debug=False)
     scraper.executar_scraping()
