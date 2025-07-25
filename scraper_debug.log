@@ -33,6 +33,7 @@ Limpando e validando dados...
 ✓ Filtrados 0 registros com N/A
 ✓ Removidas 0 duplicatas completas
 ✓ Dataset final: 258 registros válidos
+Substituindo dados de 2025-07-25...
 ✓ Dados salvos: livelo_parceiros.xlsx
 ✓ Cópia salva: output/livelo_parceiros.xlsx
 ✓ Navegador encerrado
