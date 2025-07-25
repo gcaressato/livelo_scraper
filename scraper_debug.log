@@ -2,39 +2,37 @@
 Iniciando navegador...
 ✓ Navegador iniciado
 Acessando site da Livelo...
-✓ Site carregado - 274 elementos encontrados
+✓ Site carregado - 258 elementos encontrados
 Carregando página completa...
 ✓ Página carregada completamente
 Extraindo dados dos parceiros...
-Processando 274 elementos...
-○ 1/274: Hoteis.com
-○ 2/274: Azul Viagens
-○ 3/274: Localiza
-○ 4/274: Booking.com
-○ 5/274: Buser
-○ 6/274: Hoteis.com
-○ 7/274: Azul Viagens
-○ 8/274: Localiza
-○ 9/274: Booking.com
-○ 10/274: Buser
-✓ 11/274: Hoteis.com
-○ 12/274: Azul Viagens
-✓ 13/274: Localiza
-○ 14/274: Booking.com
-○ 15/274: Buser
-✓ 50/274: Basicamente
-✓ 100/274: Eudora
-✓ 150/274: Liga Vitória Seguro Moto
-✓ 200/274: Portallar
-✓ 250/274: Petlove Saúde
-✓ 274/274: Zattini
-✓ Extração bruta concluída: 274 elementos processados
+Processando 258 elementos...
+✓ 1/258: ABC da Construcao
+✓ 2/258: PerfectDraft (Ambev)
+✓ 3/258: ASICS
+✓ 4/258: Angeloni
+✓ 5/258: Divvino
+✓ 6/258: Cruzeiros Agaxtur
+✓ 7/258: Aliexpress
+✓ 8/258: Trocafy
+✓ 9/258: Havaianas
+✓ 10/258: Allianz
+✓ 11/258: AMOBELEZA
+✓ 12/258: Tia Sônia
+✓ 13/258: Amazon
+✓ 14/258: Aramis
+✓ 15/258: Assist Card Seguros
+✓ 50/258: ClickBus
+✓ 100/258: Guldi
+✓ 150/258: Consorcio Magalu
+✓ 200/258: Luck Receptivo - Recife
+✓ 250/258: Hotéis Windsor
+✓ 258/258: Zattini
+✓ Extração bruta concluída: 258 elementos processados
 Limpando e validando dados...
-✓ Filtrados 13 registros com N/A
+✓ Filtrados 0 registros com N/A
 ✓ Removidas 0 duplicatas completas
-✓ Resolvidas 2 duplicatas parciais (priorizando oferta 'Sim')
-✓ Dataset final: 259 registros válidos
-Substituindo dados de 2025-07-24...
+✓ Dataset final: 258 registros válidos
 ✓ Dados salvos: livelo_parceiros.xlsx
 ✓ Cópia salva: output/livelo_parceiros.xlsx
 ✓ Navegador encerrado
