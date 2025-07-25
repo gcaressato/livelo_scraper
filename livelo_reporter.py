@@ -21,6 +21,7 @@ class LiveloAnalytics:
         self.arquivo_entrada = arquivo_entrada
         self.df_completo = None
         self.df_hoje = None
+        self.df_ontem = None
         self.analytics = {}
         
     def carregar_dados(self):
@@ -47,7 +48,7 @@ class LiveloAnalytics:
             return False
     
     def _preparar_dados(self):
-        """Prepara e limpa os dados"""
+        """Prepara e limpa os dados - SEM REMOVER DUPLICATAS (já tratadas pelo scraper)"""
         inicial = len(self.df_completo)
         print(f"📋 Dados iniciais: {inicial} registros")
         
@@ -55,65 +56,46 @@ class LiveloAnalytics:
         self.df_completo['Valor'] = pd.to_numeric(self.df_completo['Valor'], errors='coerce')
         self.df_completo['Pontos'] = pd.to_numeric(self.df_completo['Pontos'], errors='coerce')
         
-        # Verificar duplicatas
-        duplicatas = self.df_completo[self.df_completo.duplicated(subset=['Parceiro'], keep=False)]
-        if len(duplicatas) > 0:
-            print(f"⚠️ Encontradas {len(duplicatas)} entradas duplicadas:")
-            for parceiro in duplicatas['Parceiro'].unique():
-                print(f"   - {parceiro}: {len(duplicatas[duplicatas['Parceiro'] == parceiro])} registros")
-        
-        # Remover registros sem parceiro
-        antes_parceiro = len(self.df_completo)
+        # Apenas remover registros claramente inválidos
+        antes_limpeza = len(self.df_completo)
         self.df_completo = self.df_completo.dropna(subset=['Parceiro'])
-        removidos_parceiro = antes_parceiro - len(self.df_completo)
-        if removidos_parceiro > 0:
-            print(f"📝 Removidos {removidos_parceiro} registros sem nome de parceiro")
+        self.df_completo = self.df_completo[(self.df_completo['Pontos'] > 0) | (self.df_completo['Valor'] > 0)]
+        removidos = antes_limpeza - len(self.df_completo)
+        if removidos > 0:
+            print(f"📝 Removidos {removidos} registros inválidos")
         
-        # Filtrar apenas registros com pontos válidos (mais flexível para não perder dados)
-        antes_pontos = len(self.df_completo)
-        df_validos = self.df_completo.dropna(subset=['Pontos', 'Valor'])
-        df_validos = df_validos[(df_validos['Pontos'] > 0) | (df_validos['Valor'] > 0)]
-        removidos_pontos = antes_pontos - len(df_validos)
-        if removidos_pontos > 0:
-            print(f"📝 Removidos {removidos_pontos} registros com pontos/valores inválidos")
+        print(f"✓ {len(self.df_completo)} registros válidos processados")
         
-        print(f"✓ {len(df_validos)} registros válidos de {inicial} totais")
-        
-        # Calcular pontos por moeda para registros válidos
-        df_validos['Pontos_por_Moeda'] = df_validos.apply(
+        # Calcular pontos por moeda
+        self.df_completo['Pontos_por_Moeda'] = self.df_completo.apply(
             lambda row: row['Pontos'] / row['Valor'] if row['Valor'] > 0 else 0, axis=1
         )
         
-        # Atualizar o dataframe principal
-        self.df_completo = df_validos
-        
         # Ordenar cronologicamente
-        self.df_completo = self.df_completo.sort_values(['Parceiro', 'Timestamp'])
+        self.df_completo = self.df_completo.sort_values(['Timestamp', 'Parceiro'])
         
-        # Verificar parceiros únicos
-        parceiros_unicos = self.df_completo['Parceiro'].nunique()
-        print(f"📊 Total de parceiros únicos: {parceiros_unicos}")
+        # Obter datas únicas
+        datas_unicas = sorted(self.df_completo['Timestamp'].dt.date.unique(), reverse=True)
+        print(f"📅 Datas disponíveis: {len(datas_unicas)} dias de coleta")
         
-        # Filtrar dados de hoje (data mais recente)
-        data_mais_recente = self.df_completo['Timestamp'].max().date()
+        # Dados de hoje (data mais recente) - TODOS OS PARCEIROS DO DIA
+        data_mais_recente = datas_unicas[0]
         self.df_hoje = self.df_completo[
             self.df_completo['Timestamp'].dt.date == data_mais_recente
         ].copy()
         
-        parceiros_hoje = self.df_hoje['Parceiro'].nunique()
-        print(f"✓ {len(self.df_hoje)} registros atuais ({parceiros_hoje} parceiros únicos) - Data: {data_mais_recente}")
+        print(f"✓ HOJE ({data_mais_recente}): {len(self.df_hoje)} parceiros no site")
         
-        if parceiros_hoje != len(self.df_hoje):
-            duplicatas_hoje = self.df_hoje[self.df_hoje.duplicated(subset=['Parceiro'], keep=False)]
-            if len(duplicatas_hoje) > 0:
-                print(f"⚠️ Duplicatas nos dados de hoje:")
-                for parceiro in duplicatas_hoje['Parceiro'].unique():
-                    registros = duplicatas_hoje[duplicatas_hoje['Parceiro'] == parceiro]
-                    print(f"   - {parceiro}: {len(registros)} registros")
-                    
-                # Manter apenas o último registro de cada parceiro (mais conservador)
-                self.df_hoje = self.df_hoje.drop_duplicates(subset=['Parceiro'], keep='last')
-                print(f"✓ Duplicatas removidas. Restam {len(self.df_hoje)} registros únicos")
+        # Dados de ontem (se existir)
+        if len(datas_unicas) > 1:
+            data_ontem = datas_unicas[1]
+            self.df_ontem = self.df_completo[
+                self.df_completo['Timestamp'].dt.date == data_ontem
+            ].copy()
+            print(f"✓ ONTEM ({data_ontem}): {len(self.df_ontem)} parceiros para comparação")
+        else:
+            self.df_ontem = pd.DataFrame()
+            print("⚠️ Apenas um dia de dados - sem comparação com ontem")
     
     def _calcular_tempo_casa(self, dias):
         """Calcula o status baseado no tempo de casa"""
@@ -141,17 +123,113 @@ class LiveloAnalytics:
         
         return f"{nivel} - AVG {media_pontos:.1f} pts"
     
+    def detectar_mudancas_ofertas(self):
+        """Detecta mudanças de status de ofertas entre ontem e hoje"""
+        mudancas = {
+            'ganharam_oferta': [],
+            'perderam_oferta': [],
+            'novos_parceiros': [],
+            'parceiros_sumidos': [],
+            'grandes_mudancas_pontos': []
+        }
+        
+        if self.df_ontem.empty:
+            print("⚠️ Sem dados de ontem - não é possível detectar mudanças")
+            return mudancas
+        
+        print("🔍 Detectando mudanças entre ontem e hoje...")
+        
+        # Preparar dados para comparação
+        hoje_dict = {}
+        for _, row in self.df_hoje.iterrows():
+            hoje_dict[row['Parceiro']] = {
+                'oferta': row['Oferta'] == 'Sim',
+                'pontos': row['Pontos'],
+                'valor': row['Valor']
+            }
+        
+        ontem_dict = {}
+        for _, row in self.df_ontem.iterrows():
+            ontem_dict[row['Parceiro']] = {
+                'oferta': row['Oferta'] == 'Sim',
+                'pontos': row['Pontos'],
+                'valor': row['Valor']
+            }
+        
+        # Detectar mudanças
+        for parceiro in hoje_dict:
+            if parceiro not in ontem_dict:
+                # Novo parceiro
+                mudancas['novos_parceiros'].append({
+                    'parceiro': parceiro,
+                    'pontos_hoje': hoje_dict[parceiro]['pontos'],
+                    'tem_oferta': hoje_dict[parceiro]['oferta']
+                })
+            else:
+                # Parceiro existente - verificar mudanças
+                hoje_data = hoje_dict[parceiro]
+                ontem_data = ontem_dict[parceiro]
+                
+                # Ganhou oferta
+                if hoje_data['oferta'] and not ontem_data['oferta']:
+                    mudancas['ganharam_oferta'].append({
+                        'parceiro': parceiro,
+                        'pontos_hoje': hoje_data['pontos'],
+                        'pontos_ontem': ontem_data['pontos']
+                    })
+                
+                # Perdeu oferta
+                elif not hoje_data['oferta'] and ontem_data['oferta']:
+                    mudancas['perderam_oferta'].append({
+                        'parceiro': parceiro,
+                        'pontos_hoje': hoje_data['pontos'],
+                        'pontos_ontem': ontem_data['pontos']
+                    })
+                
+                # Grandes mudanças de pontos (>20%)
+                if ontem_data['pontos'] > 0:
+                    variacao = ((hoje_data['pontos'] - ontem_data['pontos']) / ontem_data['pontos']) * 100
+                    if abs(variacao) >= 20:
+                        mudancas['grandes_mudancas_pontos'].append({
+                            'parceiro': parceiro,
+                            'pontos_hoje': hoje_data['pontos'],
+                            'pontos_ontem': ontem_data['pontos'],
+                            'variacao': variacao,
+                            'tipo': 'Aumento' if variacao > 0 else 'Diminuição'
+                        })
+        
+        # Parceiros que sumiram
+        for parceiro in ontem_dict:
+            if parceiro not in hoje_dict:
+                mudancas['parceiros_sumidos'].append({
+                    'parceiro': parceiro,
+                    'pontos_ontem': ontem_dict[parceiro]['pontos'],
+                    'tinha_oferta': ontem_dict[parceiro]['oferta']
+                })
+        
+        # Estatísticas
+        print(f"🎯 {len(mudancas['ganharam_oferta'])} parceiros ganharam oferta hoje")
+        print(f"📉 {len(mudancas['perderam_oferta'])} parceiros perderam oferta hoje")
+        print(f"🆕 {len(mudancas['novos_parceiros'])} novos parceiros detectados")
+        print(f"👻 {len(mudancas['parceiros_sumidos'])} parceiros sumiram do site")
+        print(f"⚡ {len(mudancas['grandes_mudancas_pontos'])} grandes mudanças de pontos")
+        
+        return mudancas
+    
     def analisar_historico_ofertas(self):
-        """Análise completa do histórico"""
+        """Análise completa do histórico - baseada em TODOS os parceiros de hoje"""
         print("🔍 Analisando histórico completo...")
         
         resultados = []
-        parceiros_unicos = self.df_hoje['Parceiro'].unique()
-        print(f"📋 Processando {len(parceiros_unicos)} parceiros únicos...")
+        parceiros_hoje = self.df_hoje['Parceiro'].unique()
+        print(f"📋 Processando {len(parceiros_hoje)} parceiros ativos hoje...")
         
-        for i, parceiro in enumerate(parceiros_unicos):
+        for i, parceiro in enumerate(parceiros_hoje):
             try:
+                # Dados atuais (de hoje)
                 dados_atual = self.df_hoje[self.df_hoje['Parceiro'] == parceiro].iloc[0]
+                
+                # Histórico completo do parceiro
                 historico = self.df_completo[self.df_completo['Parceiro'] == parceiro].sort_values('Timestamp')
                 
                 # Dados básicos atuais
@@ -174,7 +252,7 @@ class LiveloAnalytics:
                 resultado['Status_Casa'] = status_casa
                 resultado['Cor_Status'] = cor_casa
                 
-                # Análise de mudanças
+                # Análise de mudanças (comparar com registro anterior)
                 if len(historico) > 1:
                     anterior = historico.iloc[-2]
                     resultado['Pontos_Anterior'] = anterior['Pontos']
@@ -240,7 +318,17 @@ class LiveloAnalytics:
                 # Sazonalidade
                 resultado['Sazonalidade'] = self._calcular_sazonalidade(freq_ofertas, media_pontos_ofertas)
                 
-                # Gasto formatado - CORREÇÃO DO ERRO DE SINTAXE
+                # Classificação estratégica
+                if freq_ofertas >= 80:
+                    resultado['Categoria_Estrategica'] = 'Sempre em oferta'
+                elif freq_ofertas <= 20 and dados_atual['Pontos'] >= 5:
+                    resultado['Categoria_Estrategica'] = 'Oportunidade rara'
+                elif dados_atual['Oferta'] == 'Sim' and freq_ofertas <= 50:
+                    resultado['Categoria_Estrategica'] = 'Compre agora!'
+                else:
+                    resultado['Categoria_Estrategica'] = 'Normal'
+                
+                # Gasto formatado
                 if resultado['Moeda'] == 'R$':
                     resultado['Gasto_Formatado'] = f"R$ {resultado['Valor_Atual']:.2f}".replace('.', ',')
                 else:
@@ -255,33 +343,66 @@ class LiveloAnalytics:
         # Converter para DataFrame
         self.analytics['dados_completos'] = pd.DataFrame(resultados)
         
-        print(f"✓ Análise concluída para {len(resultados)} parceiros")
-        if len(resultados) != len(parceiros_unicos):
-            print(f"⚠️ ATENÇÃO: {len(parceiros_unicos)} parceiros únicos, mas {len(resultados)} analisados com sucesso")
-        
+        print(f"✓ Análise concluída para {len(resultados)} parceiros ativos hoje")
         return self.analytics['dados_completos']
     
     def calcular_metricas_dashboard(self):
         """Calcula métricas aprimoradas para o dashboard"""
         dados = self.analytics['dados_completos']
+        mudancas = self.analytics['mudancas_ofertas']
         
         # Obter data do dado mais recente para o cabeçalho
         data_mais_recente = self.df_completo['Timestamp'].max().strftime('%d/%m/%Y %H:%M')
         
+        # Métricas básicas
+        total_ofertas_hoje = len(dados[dados['Tem_Oferta_Hoje']])
+        total_parceiros = len(dados)
+        
+        # Comparação com ontem (se disponível)
+        if not self.df_ontem.empty:
+            ofertas_ontem = len(self.df_ontem[self.df_ontem['Oferta'] == 'Sim'])
+            parceiros_ontem = len(self.df_ontem)
+            variacao_ofertas = total_ofertas_hoje - ofertas_ontem
+            variacao_parceiros = total_parceiros - parceiros_ontem
+        else:
+            ofertas_ontem = 0
+            parceiros_ontem = 0
+            variacao_ofertas = 0
+            variacao_parceiros = 0
+        
         metricas = {
-            'total_parceiros': len(dados),
-            'total_com_oferta': len(dados[dados['Tem_Oferta_Hoje']]),
-            'total_sem_oferta': len(dados[~dados['Tem_Oferta_Hoje']]),
+            'total_parceiros': total_parceiros,
+            'total_com_oferta': total_ofertas_hoje,
+            'total_sem_oferta': total_parceiros - total_ofertas_hoje,
             'novos_parceiros': len(dados[dados['Status_Casa'] == 'Novo']),
             'ofertas_alta_frequencia': len(dados[dados['Frequencia_Ofertas'] >= 70]),
             'parceiros_sem_oferta_nunca': len(dados[dados['Total_Ofertas_Historicas'] == 0]),
             'media_pontos_geral': dados['Pontos_por_Moeda_Atual'].mean(),
-            'media_pontos_ofertas': dados[dados['Tem_Oferta_Hoje']]['Pontos_por_Moeda_Atual'].mean() if len(dados[dados['Tem_Oferta_Hoje']]) > 0 else 0,
+            'media_pontos_ofertas': dados[dados['Tem_Oferta_Hoje']]['Pontos_por_Moeda_Atual'].mean() if total_ofertas_hoje > 0 else 0,
             'maior_variacao_positiva': dados['Variacao_Pontos'].max(),
             'maior_variacao_negativa': dados['Variacao_Pontos'].min(),
             'media_dias_casa': dados['Dias_Casa'].mean(),
             'ultima_atualizacao': dados['Data_Atual'].iloc[0].strftime('%d/%m/%Y'),
-            'data_coleta_mais_recente': data_mais_recente  # NOVA INFORMAÇÃO
+            'data_coleta_mais_recente': data_mais_recente,
+            
+            # NOVAS MÉTRICAS DE COMPARAÇÃO
+            'ofertas_ontem': ofertas_ontem,
+            'variacao_ofertas': variacao_ofertas,
+            'variacao_parceiros': variacao_parceiros,
+            'percentual_ofertas_hoje': (total_ofertas_hoje / total_parceiros * 100) if total_parceiros > 0 else 0,
+            'percentual_ofertas_ontem': (ofertas_ontem / parceiros_ontem * 100) if parceiros_ontem > 0 else 0,
+            
+            # ALERTAS E OPORTUNIDADES
+            'ganharam_oferta_hoje': len(mudancas['ganharam_oferta']),
+            'perderam_oferta_hoje': len(mudancas['perderam_oferta']),
+            'novos_no_site': len(mudancas['novos_parceiros']),
+            'sumiram_do_site': len(mudancas['parceiros_sumidos']),
+            'grandes_mudancas': len(mudancas['grandes_mudancas_pontos']),
+            
+            # OPORTUNIDADES ESTRATÉGICAS
+            'oportunidades_raras': len(dados[dados['Categoria_Estrategica'] == 'Oportunidade rara']),
+            'compre_agora': len(dados[dados['Categoria_Estrategica'] == 'Compre agora!']),
+            'sempre_oferta': len(dados[dados['Categoria_Estrategica'] == 'Sempre em oferta'])
         }
         
         # Tops mais detalhados
@@ -292,6 +413,10 @@ class LiveloAnalytics:
         metricas['maiores_variacoes_neg'] = dados[dados['Variacao_Pontos'] < 0].nsmallest(10, 'Variacao_Pontos')
         metricas['maior_freq_ofertas'] = dados.nlargest(10, 'Frequencia_Ofertas')
         
+        # Oportunidades estratégicas
+        metricas['oportunidades_compra'] = dados[dados['Categoria_Estrategica'] == 'Compre agora!'].nlargest(10, 'Pontos_por_Moeda_Atual')
+        metricas['oportunidades_raras_lista'] = dados[dados['Categoria_Estrategica'] == 'Oportunidade rara'].nlargest(10, 'Pontos_por_Moeda_Atual')
+        
         self.analytics['metricas'] = metricas
         return metricas
     
@@ -299,6 +424,7 @@ class LiveloAnalytics:
         """Gera gráficos mais informativos"""
         dados = self.analytics['dados_completos']
         metricas = self.analytics['metricas']
+        mudancas = self.analytics['mudancas_ofertas']
         
         # Configurar tema
         colors = [LIVELO_ROSA, LIVELO_AZUL, LIVELO_ROSA_CLARO, LIVELO_AZUL_CLARO, '#28a745', '#ffc107']
@@ -322,104 +448,98 @@ class LiveloAnalytics:
                 metricas['top_ofertas'].head(10),
                 x='Parceiro',
                 y='Pontos_por_Moeda_Atual',
-                title='Top 10 - Melhores Ofertas Atuais',
+                title='Top 10 - Melhores Ofertas HOJE',
                 color='Pontos_por_Moeda_Atual',
                 color_continuous_scale=[[0, LIVELO_AZUL_MUITO_CLARO], [1, LIVELO_ROSA]]
             )
             fig2.update_layout(xaxis_tickangle=-45, plot_bgcolor='white', paper_bgcolor='white', font=dict(color=LIVELO_AZUL))
             graficos['top_ofertas'] = fig2
         
-        # 3. Frequência de Ofertas vs Pontos
-        fig3 = px.scatter(
-            dados,
-            x='Frequencia_Ofertas',
-            y='Pontos_por_Moeda_Atual',
-            color='Status_Casa',
-            size='Total_Ofertas_Historicas',
-            hover_data=['Parceiro'],
-            title='Frequência de Ofertas vs Pontos por Moeda',
-            labels={'Frequencia_Ofertas': 'Frequência de Ofertas (%)', 'Pontos_por_Moeda_Atual': 'Pontos por Moeda'}
-        )
-        fig3.update_layout(plot_bgcolor='white', paper_bgcolor='white', font=dict(color=LIVELO_AZUL))
-        graficos['freq_vs_pontos'] = fig3
-        
-        # 4. Variações Positivas vs Negativas
-        variacoes_pos = dados[dados['Variacao_Pontos'] > 5].nlargest(8, 'Variacao_Pontos')
-        variacoes_neg = dados[dados['Variacao_Pontos'] < -5].nsmallest(8, 'Variacao_Pontos')
-        
-        if len(variacoes_pos) > 0 or len(variacoes_neg) > 0:
-            fig4 = go.Figure()
+        # 3. Mudanças de Status de Ofertas
+        if mudancas['ganharam_oferta'] or mudancas['perderam_oferta']:
+            fig3 = go.Figure()
             
-            if len(variacoes_pos) > 0:
-                fig4.add_trace(go.Bar(
-                    name='Maiores Altas',
-                    x=variacoes_pos['Parceiro'],
-                    y=variacoes_pos['Variacao_Pontos'],
+            if mudancas['ganharam_oferta']:
+                parceiros_ganhou = [item['parceiro'] for item in mudancas['ganharam_oferta'][:8]]
+                pontos_ganhou = [item['pontos_hoje'] for item in mudancas['ganharam_oferta'][:8]]
+                fig3.add_trace(go.Bar(
+                    name='Ganharam Oferta Hoje',
+                    x=parceiros_ganhou,
+                    y=pontos_ganhou,
                     marker_color='#28a745'
                 ))
             
-            if len(variacoes_neg) > 0:
-                fig4.add_trace(go.Bar(
-                    name='Maiores Quedas',
-                    x=variacoes_neg['Parceiro'],
-                    y=variacoes_neg['Variacao_Pontos'],
+            if mudancas['perderam_oferta']:
+                parceiros_perdeu = [item['parceiro'] for item in mudancas['perderam_oferta'][:8]]
+                pontos_perdeu = [item['pontos_hoje'] for item in mudancas['perderam_oferta'][:8]]
+                fig3.add_trace(go.Bar(
+                    name='Perderam Oferta Hoje',
+                    x=parceiros_perdeu,
+                    y=pontos_perdeu,
                     marker_color='#dc3545'
                 ))
             
-            fig4.update_layout(
-                title='Maiores Variações de Pontos',
+            fig3.update_layout(
+                title='Mudanças de Status de Ofertas (Hoje vs Ontem)',
                 xaxis_tickangle=-45,
                 plot_bgcolor='white',
                 paper_bgcolor='white',
                 font=dict(color=LIVELO_AZUL)
             )
-            graficos['variacoes'] = fig4
-        else:
-            # Criar gráfico vazio com mensagem
-            fig4 = go.Figure()
-            fig4.add_annotation(
-                text="Nenhuma variação significativa detectada.<br>Isso é normal no primeiro dia de coleta.",
-                xref="paper", yref="paper",
-                x=0.5, y=0.5, xanchor='center', yanchor='middle',
-                showarrow=False,
-                font=dict(size=14, color=LIVELO_AZUL)
-            )
-            fig4.update_layout(
-                title='Maiores Variações de Pontos',
+            graficos['mudancas_ofertas'] = fig3
+        
+        # 4. Frequência de Ofertas vs Pontos
+        fig4 = px.scatter(
+            dados,
+            x='Frequencia_Ofertas',
+            y='Pontos_por_Moeda_Atual',
+            color='Categoria_Estrategica',
+            size='Total_Ofertas_Historicas',
+            hover_data=['Parceiro'],
+            title='Matriz Estratégica: Frequência vs Pontos',
+            labels={'Frequencia_Ofertas': 'Frequência de Ofertas (%)', 'Pontos_por_Moeda_Atual': 'Pontos por Moeda'}
+        )
+        fig4.update_layout(plot_bgcolor='white', paper_bgcolor='white', font=dict(color=LIVELO_AZUL))
+        graficos['matriz_estrategica'] = fig4
+        
+        # 5. Comparação Hoje vs Ontem
+        if not self.df_ontem.empty:
+            fig5 = go.Figure()
+            fig5.add_trace(go.Bar(
+                name='Ontem',
+                x=['Total Parceiros', 'Com Oferta', '% Ofertas'],
+                y=[metricas['ofertas_ontem'] + metricas['variacao_parceiros'], 
+                   metricas['ofertas_ontem'], 
+                   metricas['percentual_ofertas_ontem']],
+                marker_color=LIVELO_AZUL_CLARO
+            ))
+            fig5.add_trace(go.Bar(
+                name='Hoje',
+                x=['Total Parceiros', 'Com Oferta', '% Ofertas'],
+                y=[metricas['total_parceiros'], 
+                   metricas['total_com_oferta'], 
+                   metricas['percentual_ofertas_hoje']],
+                marker_color=LIVELO_ROSA
+            ))
+            fig5.update_layout(
+                title='Comparação: Hoje vs Ontem',
                 plot_bgcolor='white',
                 paper_bgcolor='white',
-                font=dict(color=LIVELO_AZUL),
-                xaxis=dict(visible=False),
-                yaxis=dict(visible=False)
+                font=dict(color=LIVELO_AZUL)
             )
-            graficos['variacoes'] = fig4
+            graficos['comparacao_temporal'] = fig5
         
-        # 5. Sazonalidade (Alta/Média/Baixa)
-        dados['Nivel_Sazonalidade'] = dados['Sazonalidade'].str.split(' -').str[0]
-        sazon_count = dados['Nivel_Sazonalidade'].value_counts()
-        
-        fig5 = px.bar(
-            x=sazon_count.index,
-            y=sazon_count.values,
-            title='Distribuição por Sazonalidade de Ofertas',
-            color=sazon_count.values,
-            color_continuous_scale=[[0, '#ff6b6b'], [0.5, '#feca57'], [1, '#48dbfb']]
+        # 6. Oportunidades Estratégicas
+        categorias = dados['Categoria_Estrategica'].value_counts()
+        fig6 = px.bar(
+            x=categorias.index,
+            y=categorias.values,
+            title='Classificação Estratégica dos Parceiros',
+            color=categorias.values,
+            color_continuous_scale=[[0, '#ffc107'], [0.5, '#28a745'], [1, LIVELO_ROSA]]
         )
-        fig5.update_layout(plot_bgcolor='white', paper_bgcolor='white', font=dict(color=LIVELO_AZUL))
-        graficos['sazonalidade'] = fig5
-        
-        # 6. Novos Parceiros - Top Pontuações
-        if len(metricas['top_novos']) > 0:
-            fig6 = px.bar(
-                metricas['top_novos'].head(10),
-                x='Parceiro',
-                y='Pontos_por_Moeda_Atual',
-                title='Top 10 - Novos Parceiros por Pontuação',
-                color='Pontos_por_Moeda_Atual',
-                color_continuous_scale=[[0, '#90EE90'], [1, '#28a745']]
-            )
-            fig6.update_layout(xaxis_tickangle=-45, plot_bgcolor='white', paper_bgcolor='white', font=dict(color=LIVELO_AZUL))
-            graficos['novos_parceiros'] = fig6
+        fig6.update_layout(plot_bgcolor='white', paper_bgcolor='white', font=dict(color=LIVELO_AZUL))
+        graficos['oportunidades'] = fig6
         
         self.analytics['graficos'] = graficos
         return graficos
@@ -429,19 +549,22 @@ class LiveloAnalytics:
         dados = self.analytics['dados_completos']
         metricas = self.analytics['metricas']
         graficos = self.analytics['graficos']
+        mudancas = self.analytics['mudancas_ofertas']
         
         # Converter gráficos para HTML
         graficos_html = {}
         for key, fig in graficos.items():
             graficos_html[key] = fig.to_html(full_html=False, include_plotlyjs='cdn')
         
-        # Preparar dados para JavaScript - INCLUIR TODOS OS DADOS HISTÓRICOS
+        # Preparar dados para JavaScript
         dados_json = dados.to_json(orient='records', date_format='iso')
         dados_historicos_completos = self.df_completo.copy()
         dados_historicos_completos['Timestamp'] = dados_historicos_completos['Timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
         dados_historicos_json = dados_historicos_completos.to_json(orient='records')
         parceiros_lista = sorted(dados['Parceiro'].unique().tolist())
-        print(f"📊 Preparando {len(parceiros_lista)} parceiros para interface")
+        
+        # Preparar alertas dinâmicos
+        alertas_html = self._gerar_alertas_dinamicos(mudancas, metricas)
         
         html = f"""
 <!DOCTYPE html>
@@ -505,6 +628,22 @@ class LiveloAnalytics:
             letter-spacing: 0.5px;
             margin-top: 2px;
         }}
+        
+        .metric-change {{
+            font-size: 0.7rem;
+            margin-top: 3px;
+        }}
+        
+        .alert-card {{
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            border-left: 4px solid #ff9f43;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+        }}
+        
+        .alert-success {{ background: linear-gradient(135deg, #d1edff 0%, #a8e6cf 100%); border-left-color: #00b894; }}
+        .alert-danger {{ background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%); border-left-color: #e17055; }}
+        .alert-info {{ background: linear-gradient(135deg, #a8e6cf 0%, #81ecec 100%); border-left-color: #00cec9; }}
         
         .nav-pills .nav-link.active {{ background-color: var(--livelo-rosa); }}
         .nav-pills .nav-link {{ 
@@ -640,46 +779,67 @@ class LiveloAnalytics:
             <h1 class="h3 fw-bold mb-1" style="color: var(--livelo-azul);">
                 <i class="bi bi-graph-up me-2"></i>Livelo Analytics Pro
             </h1>
-            <small class="text-muted">Atualizado em {metricas['ultima_atualizacao']} | {metricas['total_parceiros']} parceiros analisados</small><br>
+            <small class="text-muted">Atualizado em {metricas['ultima_atualizacao']} | {metricas['total_parceiros']} parceiros no site hoje</small><br>
             <small class="text-muted" style="font-size: 0.75rem;">Dados coletados em: {metricas['data_coleta_mais_recente']}</small>
         </div>
+        
+        <!-- Alertas Dinâmicos -->
+        {alertas_html}
         
         <!-- Métricas Principais -->
         <div class="row g-2 mb-3">
             <div class="col-lg-2 col-md-4 col-6">
                 <div class="metric-card text-center">
                     <div class="metric-value">{metricas['total_parceiros']}</div>
-                    <div class="metric-label">Total Parceiros</div>
+                    <div class="metric-label">Parceiros Hoje</div>
+                    <div class="metric-change" style="color: {'green' if metricas['variacao_parceiros'] >= 0 else 'red'};">
+                        {'+' if metricas['variacao_parceiros'] > 0 else ''}{metricas['variacao_parceiros']} vs ontem
+                    </div>
                 </div>
             </div>
             <div class="col-lg-2 col-md-4 col-6">
                 <div class="metric-card text-center">
                     <div class="metric-value">{metricas['total_com_oferta']}</div>
                     <div class="metric-label">Com Oferta</div>
+                    <div class="metric-change" style="color: {'green' if metricas['variacao_ofertas'] >= 0 else 'red'};">
+                        {'+' if metricas['variacao_ofertas'] > 0 else ''}{metricas['variacao_ofertas']} vs ontem
+                    </div>
                 </div>
             </div>
             <div class="col-lg-2 col-md-4 col-6">
                 <div class="metric-card text-center">
-                    <div class="metric-value">{metricas['novos_parceiros']}</div>
-                    <div class="metric-label">Novos (≤14d)</div>
+                    <div class="metric-value">{metricas['percentual_ofertas_hoje']:.1f}%</div>
+                    <div class="metric-label">% Ofertas</div>
+                    <div class="metric-change">
+                        {metricas['percentual_ofertas_ontem']:.1f}% ontem
+                    </div>
                 </div>
             </div>
             <div class="col-lg-2 col-md-4 col-6">
                 <div class="metric-card text-center">
-                    <div class="metric-value">{metricas['ofertas_alta_frequencia']}</div>
-                    <div class="metric-label">Alta Frequência</div>
+                    <div class="metric-value">{metricas['compre_agora']}</div>
+                    <div class="metric-label">Compre Agora!</div>
+                    <div class="metric-change text-success">
+                        Oportunidades hoje
+                    </div>
                 </div>
             </div>
             <div class="col-lg-2 col-md-4 col-6">
                 <div class="metric-card text-center">
-                    <div class="metric-value">{metricas['media_pontos_ofertas']:.1f}</div>
-                    <div class="metric-label">Média Ofertas</div>
+                    <div class="metric-value">{metricas['oportunidades_raras']}</div>
+                    <div class="metric-label">Oport. Raras</div>
+                    <div class="metric-change text-warning">
+                        Baixa frequência
+                    </div>
                 </div>
             </div>
             <div class="col-lg-2 col-md-4 col-6">
                 <div class="metric-card text-center">
-                    <div class="metric-value">{metricas['parceiros_sem_oferta_nunca']}</div>
-                    <div class="metric-label">Nunca c/ Oferta</div>
+                    <div class="metric-value">{metricas['sempre_oferta']}</div>
+                    <div class="metric-label">Sempre Oferta</div>
+                    <div class="metric-change text-info">
+                        Qualquer hora
+                    </div>
                 </div>
             </div>
         </div>
@@ -709,38 +869,38 @@ class LiveloAnalytics:
                 <div class="row g-3">
                     <div class="col-lg-6">
                         <div class="card">
-                            <div class="card-header"><h6 class="mb-0">Tempo de Casa</h6></div>
-                            <div class="card-body p-2">{graficos_html.get('status_casa', '<p>Gráfico não disponível</p>')}</div>
-                        </div>
-                    </div>
-                    <div class="col-lg-6">
-                        <div class="card">
-                            <div class="card-header"><h6 class="mb-0">Top Ofertas Atuais</h6></div>
+                            <div class="card-header"><h6 class="mb-0">Top Ofertas HOJE</h6></div>
                             <div class="card-body p-2">{graficos_html.get('top_ofertas', '<p>Gráfico não disponível</p>')}</div>
                         </div>
                     </div>
                     <div class="col-lg-6">
                         <div class="card">
-                            <div class="card-header"><h6 class="mb-0">Frequência vs Pontos</h6></div>
-                            <div class="card-body p-2">{graficos_html.get('freq_vs_pontos', '<p>Gráfico não disponível</p>')}</div>
+                            <div class="card-header"><h6 class="mb-0">Mudanças de Ofertas (Hoje vs Ontem)</h6></div>
+                            <div class="card-body p-2">{graficos_html.get('mudancas_ofertas', '<p>Ainda sem dados de comparação</p>')}</div>
                         </div>
                     </div>
                     <div class="col-lg-6">
                         <div class="card">
-                            <div class="card-header"><h6 class="mb-0">Maiores Variações</h6></div>
-                            <div class="card-body p-2">{graficos_html.get('variacoes', '<p>Gráfico não disponível</p>')}</div>
+                            <div class="card-header"><h6 class="mb-0">Matriz Estratégica</h6></div>
+                            <div class="card-body p-2">{graficos_html.get('matriz_estrategica', '<p>Gráfico não disponível</p>')}</div>
                         </div>
                     </div>
                     <div class="col-lg-6">
                         <div class="card">
-                            <div class="card-header"><h6 class="mb-0">Sazonalidade</h6></div>
-                            <div class="card-body p-2">{graficos_html.get('sazonalidade', '<p>Gráfico não disponível</p>')}</div>
+                            <div class="card-header"><h6 class="mb-0">Comparação Temporal</h6></div>
+                            <div class="card-body p-2">{graficos_html.get('comparacao_temporal', '<p>Dados de ontem não disponíveis</p>')}</div>
                         </div>
                     </div>
                     <div class="col-lg-6">
                         <div class="card">
-                            <div class="card-header"><h6 class="mb-0">Top Novos Parceiros</h6></div>
-                            <div class="card-body p-2">{graficos_html.get('novos_parceiros', '<p>Gráfico não disponível</p>')}</div>
+                            <div class="card-header"><h6 class="mb-0">Classificação Estratégica</h6></div>
+                            <div class="card-body p-2">{graficos_html.get('oportunidades', '<p>Gráfico não disponível</p>')}</div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header"><h6 class="mb-0">Tempo de Casa</h6></div>
+                            <div class="card-body p-2">{graficos_html.get('status_casa', '<p>Gráfico não disponível</p>')}</div>
                         </div>
                     </div>
                 </div>
@@ -750,7 +910,7 @@ class LiveloAnalytics:
             <div class="tab-pane fade" id="analise">
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0">Análise Completa - {metricas['total_parceiros']} Parceiros</h6>
+                        <h6 class="mb-0">Análise Completa - {metricas['total_parceiros']} Parceiros HOJE</h6>
                         <button class="btn btn-download btn-sm" onclick="downloadAnaliseCompleta()">
                             <i class="bi bi-download me-1"></i>Download Excel
                         </button>
@@ -804,7 +964,7 @@ class LiveloAnalytics:
     </div>
     
     <script>
-        // Dados para análise - INCLUINDO DADOS HISTÓRICOS COMPLETOS
+        // Dados para análise
         const todosOsDados = {dados_json};
         const dadosHistoricosCompletos = {dados_historicos_json};
         let parceiroSelecionado = null;
@@ -830,7 +990,7 @@ class LiveloAnalytics:
             const tbody = tabela.querySelector('tbody');
             const linhas = Array.from(tbody.querySelectorAll('tr'));
             
-            // Determinar direção da ordenação - CORRIGIDO
+            // Determinar direção da ordenação
             const estadoAtual = estadoOrdenacao[indiceColuna] || 'neutro';
             let novaOrdem;
             if (estadoAtual === 'neutro' || estadoAtual === 'desc') {{
@@ -900,7 +1060,7 @@ class LiveloAnalytics:
             XLSX.writeFile(wb, "livelo_analise_completa_{metricas['ultima_atualizacao'].replace('/', '_')}.xlsx");
         }}
         
-        // Carregar análise individual - VERSÃO MELHORADA COM HISTÓRICO COMPLETO
+        // Carregar análise individual
         function carregarAnaliseIndividual() {{
             const parceiro = document.getElementById('parceiroSelect').value;
             if (!parceiro) return;
@@ -955,14 +1115,14 @@ class LiveloAnalytics:
                 <div class="row mt-2">
                     <div class="col-md-4"><strong>Freq. ofertas:</strong> ${{resumo.Frequencia_Ofertas.toFixed(1)}}%</div>
                     <div class="col-md-4"><strong>Variação:</strong> ${{resumo.Variacao_Pontos > 0 ? '+' : ''}}${{resumo.Variacao_Pontos.toFixed(1)}}%</div>
-                    <div class="col-md-4"><strong>Sazonalidade:</strong> ${{resumo.Sazonalidade}}</div>
+                    <div class="col-md-4"><strong>Categoria:</strong> ${{resumo.Categoria_Estrategica}}</div>
                 </div></div>`;
             }}
             
             document.getElementById('tabelaIndividual').innerHTML = html;
         }}
         
-        // Download Excel - Individual - INCLUIR DADOS HISTÓRICOS COMPLETOS
+        // Download Excel - Individual
         function downloadAnaliseIndividual() {{
             const parceiro = document.getElementById('parceiroSelect').value;
             if (!parceiro) {{
@@ -970,19 +1130,16 @@ class LiveloAnalytics:
                 return;
             }}
             
-            // Dados históricos completos + dados de resumo
             const historicoCompleto = dadosHistoricosCompletos.filter(item => item.Parceiro === parceiro);
             const dadosResumo = todosOsDados.filter(item => item.Parceiro === parceiro);
             
             const wb = XLSX.utils.book_new();
             
-            // Aba 1: Histórico completo
             if (historicoCompleto.length > 0) {{
                 const ws1 = XLSX.utils.json_to_sheet(historicoCompleto);
                 XLSX.utils.book_append_sheet(wb, ws1, "Histórico Completo");
             }}
             
-            // Aba 2: Resumo analítico
             if (dadosResumo.length > 0) {{
                 const ws2 = XLSX.utils.json_to_sheet(dadosResumo);
                 XLSX.utils.book_append_sheet(wb, ws2, "Análise Resumo");
@@ -992,7 +1149,7 @@ class LiveloAnalytics:
             XLSX.writeFile(wb, nomeArquivo);
         }}
         
-        // Carregar primeiro parceiro automaticamente quando a aba for exibida
+        // Carregar primeiro parceiro automaticamente
         document.addEventListener('DOMContentLoaded', function() {{
             setTimeout(() => {{
                 const primeiroSelect = document.getElementById('parceiroSelect');
@@ -1003,7 +1160,6 @@ class LiveloAnalytics:
             }}, 1000);
         }});
         
-        // Também carregar quando a aba individual for clicada
         document.querySelector('[data-bs-target="#individual"]').addEventListener('click', function() {{
             setTimeout(() => {{
                 const select = document.getElementById('parceiroSelect');
@@ -1019,11 +1175,79 @@ class LiveloAnalytics:
 """
         return html
     
+    def _gerar_alertas_dinamicos(self, mudancas, metricas):
+        """Gera alertas dinâmicos para o dashboard"""
+        alertas = []
+        
+        # Alertas de oportunidades de compra
+        if mudancas['ganharam_oferta']:
+            parceiros_str = ', '.join([item['parceiro'] for item in mudancas['ganharam_oferta'][:5]])
+            if len(mudancas['ganharam_oferta']) > 5:
+                parceiros_str += f" e mais {len(mudancas['ganharam_oferta']) - 5}"
+            alertas.append(f"""
+                <div class="alert-card alert-success">
+                    <strong>🎯 {len(mudancas['ganharam_oferta'])} parceiros ganharam oferta hoje!</strong><br>
+                    <small>Oportunidade de compra: {parceiros_str}</small>
+                </div>
+            """)
+        
+        # Alertas de ofertas perdidas
+        if mudancas['perderam_oferta']:
+            alertas.append(f"""
+                <div class="alert-card alert-danger">
+                    <strong>📉 {len(mudancas['perderam_oferta'])} parceiros perderam oferta hoje</strong><br>
+                    <small>Pode ser que voltem em breve. Fique de olho!</small>
+                </div>
+            """)
+        
+        # Novos parceiros
+        if mudancas['novos_parceiros']:
+            alertas.append(f"""
+                <div class="alert-card alert-info">
+                    <strong>🆕 {len(mudancas['novos_parceiros'])} novos parceiros no site!</strong><br>
+                    <small>Explore as novas opções de pontuação</small>
+                </div>
+            """)
+        
+        # Grandes mudanças de pontos
+        if mudancas['grandes_mudancas_pontos']:
+            aumentos = [x for x in mudancas['grandes_mudancas_pontos'] if x['variacao'] > 0]
+            if aumentos:
+                alertas.append(f"""
+                    <div class="alert-card alert-success">
+                        <strong>⚡ {len(aumentos)} parceiros com grandes aumentos de pontos!</strong><br>
+                        <small>Aproveite as melhores oportunidades</small>
+                    </div>
+                """)
+        
+        # Resumo da comparação com ontem
+        if metricas['variacao_ofertas'] != 0:
+            cor_classe = 'alert-success' if metricas['variacao_ofertas'] > 0 else 'alert-danger'
+            emoji = '📈' if metricas['variacao_ofertas'] > 0 else '📉'
+            texto = 'mais' if metricas['variacao_ofertas'] > 0 else 'menos'
+            alertas.append(f"""
+                <div class="alert-card {cor_classe}">
+                    <strong>{emoji} Hoje temos {abs(metricas['variacao_ofertas'])} ofertas {texto} que ontem</strong><br>
+                    <small>Total: {metricas['total_com_oferta']} ofertas hoje vs {metricas['ofertas_ontem']} ontem</small>
+                </div>
+            """)
+        
+        if not alertas:
+            alertas.append("""
+                <div class="alert-card">
+                    <strong>📊 Dados atualizados com sucesso!</strong><br>
+                    <small>Todos os parceiros foram analisados. Explore as oportunidades no dashboard.</small>
+                </div>
+            """)
+        
+        return '<div class="row mb-3"><div class="col-12">' + ''.join(alertas) + '</div></div>'
+    
     def _gerar_tabela_analise_completa(self, dados):
         """Gera tabela completa com todas as colunas solicitadas"""
         colunas = [
             ('Parceiro', 'Parceiro', 'texto'),
             ('Status_Casa', 'Status', 'texto'),
+            ('Categoria_Estrategica', 'Categoria', 'texto'),
             ('Gasto_Formatado', 'Gasto', 'texto'),
             ('Pontos_Atual', 'Pontos Atual', 'numero'),
             ('Variacao_Pontos', 'Variação %', 'numero'),
@@ -1050,6 +1274,15 @@ class LiveloAnalytics:
                 if col == 'Status_Casa':
                     cor = row['Cor_Status']
                     html += f'<td><span class="badge badge-status" style="background-color: {cor}; color: white;">{valor}</span></td>'
+                elif col == 'Categoria_Estrategica':
+                    cores_categoria = {
+                        'Compre agora!': '#28a745',
+                        'Oportunidade rara': '#ffc107', 
+                        'Sempre em oferta': '#17a2b8',
+                        'Normal': '#6c757d'
+                    }
+                    cor = cores_categoria.get(valor, '#6c757d')
+                    html += f'<td><span class="badge" style="background-color: {cor}; color: white;">{valor}</span></td>'
                 elif col == 'Variacao_Pontos':
                     if valor > 0:
                         html += f'<td style="color: #28a745;">+{valor:.1f}%</td>'
@@ -1084,6 +1317,10 @@ class LiveloAnalytics:
         if not self.carregar_dados():
             return False
         
+        # Detectar mudanças entre ontem e hoje
+        self.analytics['mudancas_ofertas'] = self.detectar_mudancas_ofertas()
+        
+        # Análise histórica completa
         self.analisar_historico_ofertas()
         self.calcular_metricas_dashboard()
         self.gerar_graficos_aprimorados()
@@ -1107,9 +1344,10 @@ class LiveloAnalytics:
             print(f"✅ Relatório salvo: {arquivo_saida}")
             print(f"✅ GitHub Pages: relatorio_livelo.html")
             
-            # Stats
+            # Stats finais
             dados = self.analytics['dados_completos']
-            print(f"📊 {len(dados)} parceiros | {len(dados[dados['Tem_Oferta_Hoje']])} com oferta | {len(dados[dados['Status_Casa'] == 'Novo'])} novos")
+            mudancas = self.analytics['mudancas_ofertas']
+            print(f"📊 {len(dados)} parceiros HOJE | {len(dados[dados['Tem_Oferta_Hoje']])} com oferta | {len(mudancas['ganharam_oferta'])} ganharam oferta")
             
             return True
             
