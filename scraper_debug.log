@@ -2,35 +2,35 @@
 Iniciando navegador...
 ✓ Navegador iniciado
 Acessando site da Livelo...
-✓ Site carregado - 257 elementos encontrados
+✓ Site carregado - 269 elementos encontrados
 Carregando página completa...
 ✓ Página carregada completamente
 Extraindo dados dos parceiros...
-Processando 257 elementos...
-✓ 1/257: ABC da Construcao
-✓ 2/257: PerfectDraft (Ambev)
-✓ 3/257: ASICS
-✓ 4/257: Angeloni
-✓ 5/257: Divvino
-✓ 6/257: Cruzeiros Agaxtur
-✓ 7/257: Aliexpress
-✓ 8/257: Trocafy
-✓ 9/257: Havaianas
-✓ 10/257: Allianz
-✓ 11/257: AMOBELEZA
-✓ 12/257: Tia Sônia
-✓ 13/257: Amazon
-✓ 14/257: Aramis
-✓ 15/257: Assist Card Seguros
-✓ 50/257: ClickBus
-✓ 100/257: Guldi
-✓ 150/257: Consorcio Magalu
-✓ 200/257: Reserva
-✓ 250/257: Ondas Praia Resort
-✓ 257/257: Zattini
-✓ Extração bruta concluída: 257 elementos processados
+Processando 269 elementos...
+○ 1/269: Hoteis.com
+○ 2/269: Azul Viagens
+○ 3/269: Booking.com
+○ 4/269: Localiza
+○ 5/269: Hoteis.com
+○ 6/269: Azul Viagens
+○ 7/269: Booking.com
+○ 8/269: Localiza
+○ 9/269: Hoteis.com
+○ 10/269: Azul Viagens
+○ 11/269: Booking.com
+○ 12/269: Localiza
+✓ 13/269: ABC da Construcao
+✓ 14/269: PerfectDraft (Ambev)
+✓ 15/269: ASICS
+✓ 50/269: Beyoung
+✓ 100/269: Umbro
+✓ 150/269: Liga Vitória Consórcio
+✓ 200/269: Loccitane
+✓ 250/269: Budget
+✓ 269/269: Zattini
+✓ Extração bruta concluída: 269 elementos processados
 Limpando e validando dados...
-✓ Filtrados 0 registros com N/A
+✓ Filtrados 12 registros com N/A
 ✓ Removidas 0 duplicatas completas
 ✓ Dataset final: 257 registros válidos
 ✓ Dados salvos: livelo_parceiros.xlsx
