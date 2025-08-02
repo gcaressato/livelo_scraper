@@ -2,36 +2,37 @@
 Iniciando navegador...
 ✓ Navegador iniciado
 Acessando site da Livelo...
-✓ Site carregado - 266 elementos encontrados
+✓ Site carregado - 272 elementos encontrados
 Carregando página completa...
 ✓ Página carregada completamente
 Extraindo dados dos parceiros...
-Processando 266 elementos...
-○ 1/266: Hoteis.com
-○ 2/266: Azul Viagens
-○ 3/266: Booking.com
-○ 4/266: Hoteis.com
-○ 5/266: Azul Viagens
-○ 6/266: Booking.com
-○ 7/266: Hoteis.com
-○ 8/266: Azul Viagens
-○ 9/266: Booking.com
-✓ 10/266: ABC da Construcao
-✓ 11/266: PerfectDraft (Ambev)
-✓ 12/266: ASICS
-✓ 13/266: Angeloni
-✓ 14/266: Divvino
-✓ 15/266: Cruzeiros Agaxtur
-✓ 50/266: CEA
-✓ 100/266: Foco
-✓ 150/266: Mobills
-✓ 200/266: Pontofrio
-✓ 250/266: Mizuno
-✓ 266/266: Zattini
-✓ Extração bruta concluída: 266 elementos processados
+Processando 272 elementos...
+○ 1/272: Beto Carrero World
+○ 2/272: Buser
+○ 3/272: Hoteis.com
+○ 4/272: Azul Viagens
+○ 5/272: Booking.com
+○ 6/272: Beto Carrero World
+○ 7/272: Buser
+○ 8/272: Hoteis.com
+○ 9/272: Azul Viagens
+○ 10/272: Booking.com
+✓ 11/272: Beto Carrero World
+✓ 12/272: Buser
+○ 13/272: Hoteis.com
+○ 14/272: Azul Viagens
+○ 15/272: Booking.com
+✓ 50/272: Basicamente
+✓ 100/272: Eudora
+✓ 150/272: Liga Vitória Seguro Moto
+✓ 200/272: Summerville
+✓ 250/272: Chip eSIM Travelex
+✓ 272/272: Zattini
+✓ Extração bruta concluída: 272 elementos processados
 Limpando e validando dados...
-✓ Filtrados 9 registros com N/A
+✓ Filtrados 13 registros com N/A
 ✓ Removidas 0 duplicatas completas
+✓ Resolvidas 2 duplicatas parciais (priorizando oferta 'Sim')
 ✓ Dataset final: 257 registros válidos
 ✓ Dados salvos: livelo_parceiros.xlsx
 ✓ Cópia salva: output/livelo_parceiros.xlsx
