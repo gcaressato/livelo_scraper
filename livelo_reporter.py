@@ -23,10 +23,55 @@ class LiveloAnalytics:
         self.df_hoje = None
         self.df_ontem = None
         self.analytics = {}
+        self.dimensoes = {}
+        
+    def carregar_dimensoes(self):
+        """Carrega as dimensões dos parceiros do arquivo JSON"""
+        try:
+            if os.path.exists('dimensoes.json'):
+                with open('dimensoes.json', 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    self.dimensoes = {item['nome_aplicativo']: item for item in data.get('parceiros', [])}
+                print(f"✓ {len(self.dimensoes)} dimensões carregadas")
+            else:
+                print("⚠️ Arquivo dimensoes.json não encontrado - usando dados básicos")
+                self.dimensoes = {}
+        except Exception as e:
+            print(f"⚠️ Erro ao carregar dimensões: {e}")
+            self.dimensoes = {}
+    
+    def enriquecer_dados_com_dimensoes(self, df):
+        """Enriquece o DataFrame com dados das dimensões"""
+        df = df.copy()
+        
+        # Adicionar colunas das dimensões
+        df['Categoria_Dimensao'] = ''
+        df['Tier'] = ''
+        df['URL_Parceiro'] = ''
+        df['Logo_Link'] = ''
+        df['Codigo_Parceiro'] = ''
+        
+        for idx, row in df.iterrows():
+            parceiro = row['Parceiro']
+            if parceiro in self.dimensoes:
+                dim = self.dimensoes[parceiro]
+                df.at[idx, 'Categoria_Dimensao'] = dim.get('categoria', 'Não definido')
+                df.at[idx, 'Tier'] = dim.get('tier', 'Não definido')
+                df.at[idx, 'URL_Parceiro'] = dim.get('url', '')
+                df.at[idx, 'Logo_Link'] = dim.get('logo_link', '')
+                df.at[idx, 'Codigo_Parceiro'] = dim.get('codigo', '')
+            else:
+                df.at[idx, 'Categoria_Dimensao'] = 'Não mapeado'
+                df.at[idx, 'Tier'] = 'Não mapeado'
+        
+        return df
         
     def carregar_dados(self):
         """Carrega e valida os dados"""
         print("📊 Carregando dados...")
+        
+        # Carregar dimensões primeiro
+        self.carregar_dimensoes()
         
         if not os.path.exists(self.arquivo_entrada):
             print(f"❌ Arquivo não encontrado: {self.arquivo_entrada}")
@@ -39,6 +84,9 @@ class LiveloAnalytics:
             # Converter timestamp para datetime
             self.df_completo['Timestamp'] = pd.to_datetime(self.df_completo['Timestamp'])
             
+            # Enriquecer com dimensões
+            self.df_completo = self.enriquecer_dados_com_dimensoes(self.df_completo)
+            
             # Preparar dados
             self._preparar_dados()
             return True
@@ -48,7 +96,7 @@ class LiveloAnalytics:
             return False
     
     def _preparar_dados(self):
-        """Prepara e limpa os dados - SEM REMOVER DUPLICATAS (já tratadas pelo scraper)"""
+        """Prepara e limpa os dados"""
         inicial = len(self.df_completo)
         print(f"📋 Dados iniciais: {inicial} registros")
         
@@ -56,27 +104,26 @@ class LiveloAnalytics:
         self.df_completo['Valor'] = pd.to_numeric(self.df_completo['Valor'], errors='coerce')
         self.df_completo['Pontos'] = pd.to_numeric(self.df_completo['Pontos'], errors='coerce')
         
-        # CORREÇÃO: Apenas remover registros claramente inválidos - mais conservador
+        # Limpeza conservadora
         antes_limpeza = len(self.df_completo)
         
         # Remover apenas se Parceiro estiver vazio/nulo
         self.df_completo = self.df_completo.dropna(subset=['Parceiro'])
         
-        # Remover apenas se AMBOS Pontos E Valor forem NaN (não zero, mas realmente nulos)
-        # Manter registros onde pelo menos um dos valores seja válido (incluindo zero)
+        # Remover apenas se AMBOS Pontos E Valor forem NaN
         mask_validos = (
             (~self.df_completo['Pontos'].isna()) | 
             (~self.df_completo['Valor'].isna())
         )
         self.df_completo = self.df_completo[mask_validos]
         
-        # Preencher NaN com 0 para evitar problemas nos cálculos
+        # Preencher NaN com 0
         self.df_completo['Pontos'] = self.df_completo['Pontos'].fillna(0)
         self.df_completo['Valor'] = self.df_completo['Valor'].fillna(0)
         
         removidos = antes_limpeza - len(self.df_completo)
         if removidos > 0:
-            print(f"📝 Removidos {removidos} registros realmente inválidos (sem parceiro ou dados)")
+            print(f"📝 Removidos {removidos} registros realmente inválidos")
         
         print(f"✓ {len(self.df_completo)} registros válidos processados")
         
@@ -92,7 +139,7 @@ class LiveloAnalytics:
         datas_unicas = sorted(self.df_completo['Timestamp'].dt.date.unique(), reverse=True)
         print(f"📅 Datas disponíveis: {len(datas_unicas)} dias de coleta")
         
-        # Dados de hoje (data mais recente) - TODOS OS PARCEIROS DO DIA
+        # Dados de hoje
         data_mais_recente = datas_unicas[0]
         self.df_hoje = self.df_completo[
             self.df_completo['Timestamp'].dt.date == data_mais_recente
@@ -100,7 +147,7 @@ class LiveloAnalytics:
         
         print(f"✓ HOJE ({data_mais_recente}): {len(self.df_hoje)} registros no site")
         
-        # Dados de ontem (se existir)
+        # Dados de ontem
         if len(datas_unicas) > 1:
             data_ontem = datas_unicas[1]
             self.df_ontem = self.df_completo[
@@ -114,17 +161,17 @@ class LiveloAnalytics:
     def _calcular_tempo_casa(self, dias):
         """Calcula o status baseado no tempo de casa"""
         if dias <= 14:
-            return 'Novo', '#28a745'  # Verde
+            return 'Novo', '#28a745'
         elif dias <= 29:
-            return 'Recente', '#ff9999'  # Vermelho claro
+            return 'Recente', '#ff9999'
         elif dias <= 59:
-            return 'Estabelecido', '#ff6666'  # Vermelho médio
+            return 'Estabelecido', '#ff6666'
         elif dias <= 89:
-            return 'Veterano', '#ff3333'  # Vermelho forte
+            return 'Veterano', '#ff3333'
         elif dias <= 180:
-            return 'Experiente', '#cc0000'  # Vermelho escuro
+            return 'Experiente', '#cc0000'
         else:
-            return 'Veterano+', '#990000'  # Vermelho máximo
+            return 'Veterano+', '#990000'
     
     def _calcular_sazonalidade(self, freq_ofertas, media_pontos):
         """Calcula sazonalidade baseada na frequência de ofertas"""
@@ -153,10 +200,10 @@ class LiveloAnalytics:
         
         print("🔍 Detectando mudanças entre ontem e hoje...")
         
-        # CORREÇÃO: Preparar dados considerando Parceiro + Moeda como chave única
+        # Preparar dados considerando Parceiro + Moeda como chave única
         hoje_dict = {}
         for _, row in self.df_hoje.iterrows():
-            chave_unica = f"{row['Parceiro']}|{row['Moeda']}"  # Combinação única
+            chave_unica = f"{row['Parceiro']}|{row['Moeda']}"
             hoje_dict[chave_unica] = {
                 'parceiro': row['Parceiro'],
                 'moeda': row['Moeda'],
@@ -167,7 +214,7 @@ class LiveloAnalytics:
         
         ontem_dict = {}
         for _, row in self.df_ontem.iterrows():
-            chave_unica = f"{row['Parceiro']}|{row['Moeda']}"  # Combinação única
+            chave_unica = f"{row['Parceiro']}|{row['Moeda']}"
             ontem_dict[chave_unica] = {
                 'parceiro': row['Parceiro'],
                 'moeda': row['Moeda'],
@@ -179,7 +226,6 @@ class LiveloAnalytics:
         # Detectar mudanças
         for chave_unica in hoje_dict:
             if chave_unica not in ontem_dict:
-                # Novo parceiro+moeda
                 dados_hoje = hoje_dict[chave_unica]
                 mudancas['novos_parceiros'].append({
                     'parceiro': f"{dados_hoje['parceiro']} ({dados_hoje['moeda']})",
@@ -187,7 +233,6 @@ class LiveloAnalytics:
                     'tem_oferta': dados_hoje['oferta']
                 })
             else:
-                # Parceiro+moeda existente - verificar mudanças
                 hoje_data = hoje_dict[chave_unica]
                 ontem_data = ontem_dict[chave_unica]
                 
@@ -219,7 +264,7 @@ class LiveloAnalytics:
                             'tipo': 'Aumento' if variacao > 0 else 'Diminuição'
                         })
         
-        # Parceiros+moeda que sumiram
+        # Parceiros que sumiram
         for chave_unica in ontem_dict:
             if chave_unica not in hoje_dict:
                 dados_ontem = ontem_dict[chave_unica]
@@ -271,7 +316,13 @@ class LiveloAnalytics:
                     'Moeda': dados_atual['Moeda'],
                     'Tem_Oferta_Hoje': dados_atual['Oferta'] == 'Sim',
                     'Pontos_por_Moeda_Atual': dados_atual['Pontos_por_Moeda'],
-                    'Data_Atual': dados_atual['Timestamp'].date()
+                    'Data_Atual': dados_atual['Timestamp'].date(),
+                    # Novos campos das dimensões
+                    'Categoria_Dimensao': dados_atual['Categoria_Dimensao'],
+                    'Tier': dados_atual['Tier'],
+                    'URL_Parceiro': dados_atual['URL_Parceiro'],
+                    'Logo_Link': dados_atual['Logo_Link'],
+                    'Codigo_Parceiro': dados_atual['Codigo_Parceiro']
                 }
                 
                 # Calcular tempo de casa
@@ -283,7 +334,7 @@ class LiveloAnalytics:
                 resultado['Status_Casa'] = status_casa
                 resultado['Cor_Status'] = cor_casa
                 
-                # CORREÇÃO: Buscar a última mudança REAL nos dados
+                # Buscar última mudança real
                 if len(historico) > 1:
                     dados_atuais_comparacao = {
                         'Pontos': dados_atual['Pontos'],
@@ -291,9 +342,8 @@ class LiveloAnalytics:
                         'Oferta': dados_atual['Oferta']
                     }
                     
-                    # Procurar o último registro com dados diferentes
                     ultimo_diferente = None
-                    for idx in range(len(historico) - 2, -1, -1):  # Do penúltimo para o primeiro
+                    for idx in range(len(historico) - 2, -1, -1):
                         registro = historico.iloc[idx]
                         if (registro['Pontos'] != dados_atuais_comparacao['Pontos'] or 
                             registro['Valor'] != dados_atuais_comparacao['Valor'] or 
@@ -307,7 +357,6 @@ class LiveloAnalytics:
                         resultado['Data_Anterior'] = ultimo_diferente['Timestamp'].date()
                         resultado['Dias_Desde_Mudanca'] = (dados_atual['Timestamp'] - ultimo_diferente['Timestamp']).days
                         
-                        # Variação baseada na última mudança real
                         if ultimo_diferente['Pontos'] > 0:
                             resultado['Variacao_Pontos'] = ((dados_atual['Pontos'] - ultimo_diferente['Pontos']) / ultimo_diferente['Pontos']) * 100
                         else:
@@ -328,12 +377,11 @@ class LiveloAnalytics:
                         else:
                             resultado['Tipo_Mudanca'] = 'Sem Mudança'
                     else:
-                        # Não houve mudanças no histórico
                         resultado.update({
                             'Pontos_Anterior': dados_atual['Pontos'],
                             'Valor_Anterior': dados_atual['Valor'],
                             'Data_Anterior': primeiro_registro.date(),
-                            'Dias_Desde_Mudanca': dias_casa,  # Desde que entrou
+                            'Dias_Desde_Mudanca': dias_casa,
                             'Variacao_Pontos': 0,
                             'Tipo_Mudanca': 'Sempre Igual'
                         })
@@ -352,29 +400,23 @@ class LiveloAnalytics:
                 total_ofertas = len(ofertas_historicas)
                 total_dias = dias_casa
                 
-                # Frequência de ofertas
                 freq_ofertas = (total_ofertas / total_dias * 100) if total_dias > 0 else 0
                 
-                # Última oferta
                 if total_ofertas > 0:
                     ultima_oferta = ofertas_historicas.iloc[-1]
                     resultado['Data_Ultima_Oferta'] = ultima_oferta['Timestamp'].date()
                     resultado['Pontos_Ultima_Oferta'] = ultima_oferta['Pontos']
                     resultado['Dias_Desde_Ultima_Oferta'] = (dados_atual['Timestamp'] - ultima_oferta['Timestamp']).days
-                    
-                    # Média de pontos nas ofertas
                     media_pontos_ofertas = ofertas_historicas['Pontos'].mean()
                 else:
                     resultado['Data_Ultima_Oferta'] = None
                     resultado['Pontos_Ultima_Oferta'] = 0
-                    resultado['Dias_Desde_Ultima_Oferta'] = total_dias  # Nunca teve oferta
+                    resultado['Dias_Desde_Ultima_Oferta'] = total_dias
                     media_pontos_ofertas = 0
                 
                 resultado['Frequencia_Ofertas'] = freq_ofertas
                 resultado['Total_Ofertas_Historicas'] = total_ofertas
                 resultado['Media_Pontos_Ofertas'] = media_pontos_ofertas
-                
-                # Sazonalidade
                 resultado['Sazonalidade'] = self._calcular_sazonalidade(freq_ofertas, media_pontos_ofertas)
                 
                 # Classificação estratégica
@@ -399,9 +441,7 @@ class LiveloAnalytics:
                 print(f"⚠️ Erro ao processar {parceiro} ({moeda}): {e}")
                 continue
         
-        # Converter para DataFrame
         self.analytics['dados_completos'] = pd.DataFrame(resultados)
-        
         print(f"✓ Análise concluída para {len(resultados)} combinações parceiro+moeda ativas hoje")
         return self.analytics['dados_completos']
     
@@ -410,14 +450,11 @@ class LiveloAnalytics:
         dados = self.analytics['dados_completos']
         mudancas = self.analytics['mudancas_ofertas']
         
-        # Obter data do dado mais recente para o cabeçalho
         data_mais_recente = self.df_completo['Timestamp'].max().strftime('%d/%m/%Y %H:%M')
         
-        # Métricas básicas
         total_ofertas_hoje = len(dados[dados['Tem_Oferta_Hoje']])
         total_parceiros = len(dados)
         
-        # Comparação com ontem (se disponível)
         if not self.df_ontem.empty:
             ofertas_ontem = len(self.df_ontem[self.df_ontem['Oferta'] == 'Sim'])
             parceiros_ontem = len(self.df_ontem)
@@ -443,36 +480,29 @@ class LiveloAnalytics:
             'media_dias_casa': dados['Dias_Casa'].mean(),
             'ultima_atualizacao': dados['Data_Atual'].iloc[0].strftime('%d/%m/%Y'),
             'data_coleta_mais_recente': data_mais_recente,
-            
-            # NOVAS MÉTRICAS DE COMPARAÇÃO
             'ofertas_ontem': ofertas_ontem,
             'variacao_ofertas': variacao_ofertas,
             'variacao_parceiros': variacao_parceiros,
             'percentual_ofertas_hoje': (total_ofertas_hoje / total_parceiros * 100) if total_parceiros > 0 else 0,
             'percentual_ofertas_ontem': (ofertas_ontem / parceiros_ontem * 100) if parceiros_ontem > 0 else 0,
-            
-            # ALERTAS E OPORTUNIDADES
             'ganharam_oferta_hoje': len(mudancas['ganharam_oferta']),
             'perderam_oferta_hoje': len(mudancas['perderam_oferta']),
             'novos_no_site': len(mudancas['novos_parceiros']),
             'sumiram_do_site': len(mudancas['parceiros_sumidos']),
             'grandes_mudancas': len(mudancas['grandes_mudancas_pontos']),
-            
-            # OPORTUNIDADES ESTRATÉGICAS
             'oportunidades_raras': len(dados[dados['Categoria_Estrategica'] == 'Oportunidade rara']),
             'compre_agora': len(dados[dados['Categoria_Estrategica'] == 'Compre agora!']),
             'sempre_oferta': len(dados[dados['Categoria_Estrategica'] == 'Sempre em oferta'])
         }
         
-        # Tops mais detalhados
-        metricas['top_ofertas'] = dados[dados['Tem_Oferta_Hoje']].nlargest(10, 'Pontos_por_Moeda_Atual')
+        # Top ofertas - APENAS TIER 1
+        dados_tier1 = dados[dados['Tier'] == '1'] if len(dados[dados['Tier'] == '1']) > 0 else dados
+        metricas['top_ofertas'] = dados_tier1[dados_tier1['Tem_Oferta_Hoje']].nlargest(10, 'Pontos_por_Moeda_Atual')
         metricas['top_geral'] = dados.nlargest(10, 'Pontos_por_Moeda_Atual')
         metricas['top_novos'] = dados[dados['Status_Casa'] == 'Novo'].nlargest(10, 'Pontos_por_Moeda_Atual')
         metricas['maiores_variacoes_pos'] = dados[dados['Variacao_Pontos'] > 0].nlargest(10, 'Variacao_Pontos')
         metricas['maiores_variacoes_neg'] = dados[dados['Variacao_Pontos'] < 0].nsmallest(10, 'Variacao_Pontos')
         metricas['maior_freq_ofertas'] = dados.nlargest(10, 'Frequencia_Ofertas')
-        
-        # Oportunidades estratégicas
         metricas['oportunidades_compra'] = dados[dados['Categoria_Estrategica'] == 'Compre agora!'].nlargest(10, 'Pontos_por_Moeda_Atual')
         metricas['oportunidades_raras_lista'] = dados[dados['Categoria_Estrategica'] == 'Oportunidade rara'].nlargest(10, 'Pontos_por_Moeda_Atual')
         
@@ -485,9 +515,7 @@ class LiveloAnalytics:
         metricas = self.analytics['metricas']
         mudancas = self.analytics['mudancas_ofertas']
         
-        # Configurar tema
         colors = [LIVELO_ROSA, LIVELO_AZUL, LIVELO_ROSA_CLARO, LIVELO_AZUL_CLARO, '#28a745', '#ffc107']
-        
         graficos = {}
         
         # 1. Distribuição por Status (Tempo de Casa)
@@ -501,13 +529,13 @@ class LiveloAnalytics:
         fig1.update_layout(plot_bgcolor='white', paper_bgcolor='white', font=dict(color=LIVELO_AZUL))
         graficos['status_casa'] = fig1
         
-        # 2. Top 10 Ofertas Atuais
+        # 2. Top 10 Ofertas Atuais (APENAS TIER 1)
         if len(metricas['top_ofertas']) > 0:
             fig2 = px.bar(
                 metricas['top_ofertas'].head(10),
                 x='Parceiro',
                 y='Pontos_por_Moeda_Atual',
-                title='Top 10 - Melhores Ofertas HOJE',
+                title='Top 10 - Melhores Ofertas HOJE (Tier 1)',
                 color='Pontos_por_Moeda_Atual',
                 color_continuous_scale=[[0, LIVELO_AZUL_MUITO_CLARO], [1, LIVELO_ROSA]]
             )
@@ -604,11 +632,11 @@ class LiveloAnalytics:
         return graficos
     
     def _gerar_alertas_dinamicos(self, mudancas, metricas):
-        """Gera alertas dinâmicos compactos e expansíveis para o dashboard"""
+        """Gera alertas dinâmicos com melhoria para mostrar TODAS as ofertas perdidas"""
         dados = self.analytics['dados_completos']
         alertas = []
         
-        # 1. ALERTA PRINCIPAL: Parceiros que ganharam oferta HOJE
+        # 1. Parceiros que ganharam oferta HOJE
         if mudancas['ganharam_oferta']:
             parceiros_preview = [item['parceiro'] for item in mudancas['ganharam_oferta'][:3]]
             todos_parceiros = [item['parceiro'] for item in mudancas['ganharam_oferta']]
@@ -643,17 +671,21 @@ class LiveloAnalytics:
                 </div>
             """)
         
-        # 2. MELHORES OPORTUNIDADES DO MOMENTO
-        top_ofertas_hoje = dados[dados['Tem_Oferta_Hoje']].nlargest(5, 'Pontos_por_Moeda_Atual')
+        # 2. Top 5 melhores ofertas (Tier 1)
+        top_ofertas_hoje = dados[(dados['Tem_Oferta_Hoje']) & (dados['Tier'] == '1')]
+        if len(top_ofertas_hoje) == 0:
+            top_ofertas_hoje = dados[dados['Tem_Oferta_Hoje']]
+        
+        top_ofertas_hoje = top_ofertas_hoje.nlargest(5, 'Pontos_por_Moeda_Atual')
+        
         if len(top_ofertas_hoje) > 0:
             preview_tops = top_ofertas_hoje.head(3)['Parceiro'].tolist()
-            todos_tops = top_ofertas_hoje['Parceiro'].tolist()
             
             alertas.append(f"""
                 <div class="alert-compact alert-info" data-alert-id="top-ofertas">
                     <div class="alert-header" onclick="toggleAlert('top-ofertas')">
                         <div class="alert-title">
-                            <strong>🏆 Top {len(top_ofertas_hoje)} melhores ofertas ativas</strong>
+                            <strong>🏆 Top {len(top_ofertas_hoje)} melhores ofertas ativas (Tier 1)</strong>
                             <i class="bi bi-chevron-down alert-chevron"></i>
                         </div>
                         <button class="alert-close" onclick="closeAlert('top-ofertas', event)">×</button>
@@ -663,7 +695,7 @@ class LiveloAnalytics:
                     </div>
                     <div class="alert-details" style="display: none;">
                         <div class="alert-content">
-                            <h6><i class="bi bi-trophy me-2"></i>Ranking das melhores ofertas hoje:</h6>
+                            <h6><i class="bi bi-trophy me-2"></i>Ranking das melhores ofertas hoje (Tier 1):</h6>
                             <div class="ranking-list">
                                 {''.join([f'<div class="rank-item"><span class="rank-number">{i+1}º</span><span class="rank-partner">{row["Parceiro"]}</span><span class="rank-points">{row["Pontos_por_Moeda_Atual"]:.1f} pts</span></div>' for i, (_, row) in enumerate(top_ofertas_hoje.iterrows())])}
                             </div>
@@ -672,7 +704,7 @@ class LiveloAnalytics:
                 </div>
             """)
         
-        # 3. OPORTUNIDADES RARAS ATIVAS
+        # 3. Oportunidades raras ativas
         oportunidades_raras = dados[(dados['Categoria_Estrategica'] == 'Oportunidade rara') & (dados['Tem_Oferta_Hoje'])]
         if len(oportunidades_raras) > 0:
             alertas.append(f"""
@@ -699,7 +731,7 @@ class LiveloAnalytics:
                 </div>
             """)
         
-        # 4. GRANDES AUMENTOS DE PONTOS
+        # 4. Grandes aumentos de pontos
         if mudancas['grandes_mudancas_pontos']:
             aumentos = [x for x in mudancas['grandes_mudancas_pontos'] if x['variacao'] > 0]
             if aumentos:
@@ -726,7 +758,7 @@ class LiveloAnalytics:
                     </div>
                 """)
         
-        # 5. PARCEIROS ESTREANTES COM OFERTA
+        # 5. Parceiros estreantes com oferta
         novos_com_oferta = [item for item in mudancas['novos_parceiros'] if item['tem_oferta']]
         if novos_com_oferta:
             alertas.append(f"""
@@ -753,8 +785,14 @@ class LiveloAnalytics:
                 </div>
             """)
         
-        # 6. RESUMO DE OFERTAS PERDIDAS (mais compacto)
+        # 6. TODAS as ofertas perdidas (MELHORADO)
         if mudancas['perderam_oferta']:
+            todas_perdidas = [item['parceiro'] for item in mudancas['perderam_oferta']]
+            preview_perdidas = todas_perdidas[:3]
+            preview_str = ', '.join(preview_perdidas)
+            if len(todas_perdidas) > 3:
+                preview_str += f" +{len(todas_perdidas) - 3} mais"
+            
             alertas.append(f"""
                 <div class="alert-compact alert-danger" data-alert-id="perderam-oferta">
                     <div class="alert-header" onclick="toggleAlert('perderam-oferta')">
@@ -765,13 +803,13 @@ class LiveloAnalytics:
                         <button class="alert-close" onclick="closeAlert('perderam-oferta', event)">×</button>
                     </div>
                     <div class="alert-preview">
-                        <small>Fique de olho - podem voltar em breve</small>
+                        <small>Fique de olho - podem voltar em breve: {preview_str}</small>
                     </div>
                     <div class="alert-details" style="display: none;">
                         <div class="alert-content">
-                            <h6><i class="bi bi-clock-history me-2"></i>Ofertas que saíram do ar:</h6>
+                            <h6><i class="bi bi-clock-history me-2"></i>Todas as ofertas que saíram do ar hoje:</h6>
                             <div class="lost-offers">
-                                {''.join([f'<span class="lost-tag">{item["parceiro"]}</span>' for item in mudancas['perderam_oferta'][:10]])}
+                                {''.join([f'<span class="lost-tag">{item["parceiro"]}</span>' for item in mudancas['perderam_oferta']])}
                             </div>
                             <small class="text-muted">💡 Monitore para quando voltarem!</small>
                         </div>
@@ -798,18 +836,20 @@ class LiveloAnalytics:
         return '<div class="alerts-container mb-3">' + ''.join(alertas) + '</div>'
     
     def _gerar_tabela_analise_completa(self, dados):
-        """Gera tabela completa com todas as colunas solicitadas e ordenação corrigida"""
+        """Gera tabela completa com novas colunas das dimensões"""
         colunas = [
             ('Parceiro', 'Parceiro', 'texto'),
+            ('Categoria_Dimensao', 'Categoria', 'texto'),
+            ('Tier', 'Tier', 'texto'),
             ('Status_Casa', 'Status', 'texto'),
-            ('Categoria_Estrategica', 'Categoria', 'texto'),
+            ('Categoria_Estrategica', 'Tipo', 'texto'),
             ('Gasto_Formatado', 'Gasto', 'texto'),
             ('Pontos_Atual', 'Pontos Atual', 'numero'),
             ('Variacao_Pontos', 'Variação %', 'numero'),
-            ('Data_Anterior', 'Data Anterior', 'data'),  # CORRIGIDO: marcado como 'data'
+            ('Data_Anterior', 'Data Anterior', 'data'),
             ('Pontos_Anterior', 'Pontos Anterior', 'numero'),
             ('Dias_Desde_Mudanca', 'Dias Mudança', 'numero'),
-            ('Data_Ultima_Oferta', 'Última Oferta', 'data'),  # CORRIGIDO: marcado como 'data'
+            ('Data_Ultima_Oferta', 'Última Oferta', 'data'),
             ('Dias_Desde_Ultima_Oferta', 'Dias s/ Oferta', 'numero'),
             ('Frequencia_Ofertas', 'Freq. Ofertas %', 'numero'),
             ('Total_Ofertas_Historicas', 'Total Ofertas', 'numero'),
@@ -826,7 +866,33 @@ class LiveloAnalytics:
             for col, _, _ in colunas:
                 valor = row[col]
                 
-                if col == 'Status_Casa':
+                if col == 'Parceiro':
+                    # Embutir URL invisível no nome do parceiro
+                    url = row.get('URL_Parceiro', '')
+                    if url:
+                        html += f'<td><span data-url="{url}" style="cursor: pointer;" onclick="window.open(\'{url}\', \'_blank\')">{valor}</span></td>'
+                    else:
+                        html += f'<td>{valor}</td>'
+                elif col == 'Categoria_Dimensao':
+                    cores_categoria_dim = {
+                        'Não definido': '#6c757d',
+                        'Não mapeado': '#dc3545',
+                        'default': '#17a2b8'
+                    }
+                    cor = cores_categoria_dim.get(valor, cores_categoria_dim['default'])
+                    html += f'<td><span class="badge" style="background-color: {cor}; color: white;">{valor}</span></td>'
+                elif col == 'Tier':
+                    cores_tier = {
+                        '1': '#28a745',
+                        '2': '#ffc107', 
+                        '3': '#fd7e14',
+                        'Não definido': '#6c757d',
+                        'Não mapeado': '#dc3545'
+                    }
+                    cor = cores_tier.get(str(valor), '#6c757d')
+                    texto_cor = 'white' if str(valor) in ['1', 'Não mapeado'] else '#212529'
+                    html += f'<td><span class="badge" style="background-color: {cor}; color: {texto_cor};">{valor}</span></td>'
+                elif col == 'Status_Casa':
                     cor = row['Cor_Status']
                     html += f'<td><span class="badge badge-status" style="background-color: {cor}; color: white;">{valor}</span></td>'
                 elif col == 'Categoria_Estrategica':
@@ -850,7 +916,6 @@ class LiveloAnalytics:
                 elif col in ['Pontos_Atual', 'Pontos_Anterior', 'Total_Ofertas_Historicas', 'Dias_Desde_Mudanca', 'Dias_Desde_Ultima_Oferta']:
                     html += f'<td>{int(valor) if pd.notnull(valor) and valor >= 0 else "-"}</td>'
                 elif col in ['Data_Anterior', 'Data_Ultima_Oferta']:
-                    # CORREÇÃO: Formatação de datas para ordenação correta
                     if pd.notnull(valor):
                         data_formatada = valor.strftime('%d/%m/%Y') if hasattr(valor, 'strftime') else str(valor)
                         html += f'<td>{data_formatada}</td>'
@@ -867,7 +932,6 @@ class LiveloAnalytics:
         """Gera opções do select de parceiros com chave única"""
         html = '<option value="">Selecione um parceiro...</option>'
         
-        # Criar lista única de parceiro+moeda
         parceiros_unicos = dados[['Parceiro', 'Moeda']].drop_duplicates().sort_values('Parceiro')
         
         for _, row in parceiros_unicos.iterrows():
@@ -877,8 +941,50 @@ class LiveloAnalytics:
         
         return html
     
+    def _gerar_filtros_avancados(self, dados):
+        """Gera filtros avançados para Categoria, Tier, Moeda e Tipo"""
+        # Obter valores únicos
+        categorias = sorted(dados['Categoria_Dimensao'].unique())
+        tiers = sorted(dados['Tier'].unique())
+        moedas = sorted(dados['Moeda'].unique())
+        tipos = sorted(dados['Categoria_Estrategica'].unique())
+        
+        html = f"""
+        <div class="row g-2 mb-3" id="filtrosAvancados">
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label fw-bold" style="font-size: 0.85rem;">Categoria:</label>
+                <select class="form-select form-select-sm" id="filtroCategoriaComplex" onchange="aplicarFiltros()">
+                    <option value="">Todas as categorias</option>
+                    {''.join([f'<option value="{cat}">{cat}</option>' for cat in categorias])}
+                </select>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label fw-bold" style="font-size: 0.85rem;">Tier:</label>
+                <select class="form-select form-select-sm" id="filtroTier" onchange="aplicarFiltros()">
+                    <option value="">Todos os tiers</option>
+                    {''.join([f'<option value="{tier}">{tier}</option>' for tier in tiers])}
+                </select>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label fw-bold" style="font-size: 0.85rem;">Moeda:</label>
+                <select class="form-select form-select-sm" id="filtroMoeda" onchange="aplicarFiltros()">
+                    <option value="">Todas as moedas</option>
+                    {''.join([f'<option value="{moeda}">{moeda}</option>' for moeda in moedas])}
+                </select>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label fw-bold" style="font-size: 0.85rem;">Tipo:</label>
+                <select class="form-select form-select-sm" id="filtroTipo" onchange="aplicarFiltros()">
+                    <option value="">Todos os tipos</option>
+                    {''.join([f'<option value="{tipo}">{tipo}</option>' for tipo in tipos])}
+                </select>
+            </div>
+        </div>
+        """
+        return html
+    
     def gerar_html_completo(self):
-        """Gera HTML com todas as funcionalidades - VERSÃO MELHORADA COM ORDENAÇÃO DE DATAS CORRIGIDA"""
+        """Gera HTML completo com todas as funcionalidades atualizadas"""
         dados = self.analytics['dados_completos']
         metricas = self.analytics['metricas']
         graficos = self.analytics['graficos']
@@ -898,6 +1004,9 @@ class LiveloAnalytics:
         
         # Preparar alertas dinâmicos
         alertas_html = self._gerar_alertas_dinamicos(mudancas, metricas)
+        
+        # Gerar filtros avançados
+        filtros_html = self._gerar_filtros_avancados(dados)
         
         html = f"""
 <!DOCTYPE html>
@@ -931,7 +1040,7 @@ class LiveloAnalytics:
             --shadow-hover: rgba(0,0,0,0.1);
         }}
         
-        /* TEMA ESCURO */
+        /* TEMA ESCURO - MELHORADO */
         [data-theme="dark"] {{
             --bg-primary: #1a1d23;
             --bg-secondary: #2d3139;
@@ -941,6 +1050,11 @@ class LiveloAnalytics:
             --border-color: #495057;
             --shadow: rgba(0,0,0,0.3);
             --shadow-hover: rgba(0,0,0,0.5);
+        }}
+        
+        [data-theme="dark"] body {{
+            background: linear-gradient(135deg, #1a1d23 0%, #2d3139 100%);
+            color: #ffffff;
         }}
         
         [data-theme="dark"] .table th {{
@@ -956,6 +1070,27 @@ class LiveloAnalytics:
         
         [data-theme="dark"] .table tbody tr:hover {{
             background-color: rgba(255, 10, 140, 0.1) !important;
+        }}
+        
+        [data-theme="dark"] .form-select {{
+            background-color: var(--bg-card) !important;
+            color: var(--text-primary) !important;
+            border-color: var(--border-color) !important;
+        }}
+        
+        [data-theme="dark"] .form-select:focus {{
+            background-color: var(--bg-card) !important;
+            color: var(--text-primary) !important;
+            border-color: var(--livelo-rosa) !important;
+            box-shadow: 0 0 0 0.2rem rgba(255, 10, 140, 0.25) !important;
+        }}
+        
+        [data-theme="dark"] .form-label {{
+            color: var(--text-primary) !important;
+        }}
+        
+        [data-theme="dark"] .alert-details {{
+            background: rgba(255,255,255,0.05) !important;
         }}
         
         * {{ box-sizing: border-box; }}
@@ -974,7 +1109,7 @@ class LiveloAnalytics:
             padding: 10px 15px; 
         }}
         
-        /* THEME TOGGLE */
+        /* THEME TOGGLE - MELHORADO */
         .theme-toggle {{
             position: fixed;
             top: 20px;
@@ -996,12 +1131,26 @@ class LiveloAnalytics:
         .theme-toggle:hover {{
             transform: scale(1.1);
             box-shadow: 0 4px 15px var(--shadow-hover);
+            border-color: var(--livelo-rosa);
         }}
         
         .theme-toggle i {{
             font-size: 1.2rem;
             color: var(--text-primary);
             transition: all 0.3s ease;
+        }}
+        
+        [data-theme="dark"] .theme-toggle {{
+            background: var(--bg-card);
+            border-color: var(--livelo-rosa);
+        }}
+        
+        [data-theme="dark"] .theme-toggle:hover {{
+            background: var(--livelo-rosa);
+        }}
+        
+        [data-theme="dark"] .theme-toggle:hover i {{
+            color: white;
         }}
         
         /* ALERTAS COMPACTOS */
@@ -1092,10 +1241,6 @@ class LiveloAnalytics:
             animation: slideDown 0.3s ease;
         }}
         
-        [data-theme="dark"] .alert-details {{
-            background: rgba(255,255,255,0.05);
-        }}
-        
         .alert-content {{
             padding: 15px;
         }}
@@ -1127,9 +1272,16 @@ class LiveloAnalytics:
             background: #dc3545;
         }}
         
-        .ranking-list, .rare-opportunities, .increases-list, .newbies-list {{
+        .ranking-list, .rare-opportunities, .increases-list, .newbies-list, .lost-offers {{
             display: flex;
             flex-direction: column;
+            gap: 5px;
+        }}
+        
+        .lost-offers {{
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
             gap: 5px;
         }}
         
@@ -1175,12 +1327,6 @@ class LiveloAnalytics:
         .increase-percent {{
             font-weight: bold;
             font-size: 0.8rem;
-        }}
-        
-        .lost-offers {{
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
         }}
         
         /* CORES DOS ALERTAS */
@@ -1406,6 +1552,17 @@ class LiveloAnalytics:
             color: var(--livelo-azul);
         }}
         
+        /* LOGO DO PARCEIRO NA ANÁLISE INDIVIDUAL */
+        .logo-parceiro {{
+            max-width: 80px;
+            max-height: 50px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            background: white;
+            padding: 5px;
+            margin-right: 15px;
+        }}
+        
         /* MOBILE RESPONSIVENESS */
         @media (max-width: 768px) {{
             .theme-toggle {{
@@ -1501,6 +1658,12 @@ class LiveloAnalytics:
             
             .metric-card {{
                 padding: 10px;
+            }}
+            
+            .logo-parceiro {{
+                max-width: 60px;
+                max-height: 40px;
+                margin-right: 10px;
             }}
         }}
         
@@ -1658,7 +1821,7 @@ class LiveloAnalytics:
                 <div class="row g-3">
                     <div class="col-lg-6">
                         <div class="card">
-                            <div class="card-header"><h6 class="mb-0">Top Ofertas HOJE</h6></div>
+                            <div class="card-header"><h6 class="mb-0">Top Ofertas HOJE (Tier 1)</h6></div>
                             <div class="card-body p-2">{graficos_html.get('top_ofertas', '<p>Gráfico não disponível</p>')}</div>
                         </div>
                     </div>
@@ -1697,6 +1860,9 @@ class LiveloAnalytics:
             
             <!-- Análise Completa -->
             <div class="tab-pane fade" id="analise">
+                <!-- Filtros Avançados -->
+                {filtros_html}
+                
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h6 class="mb-0">Análise Completa - {metricas['total_parceiros']} Parceiros HOJE</h6>
@@ -1801,7 +1967,7 @@ class LiveloAnalytics:
         }}
         
         function closeAlert(alertId, event) {{
-            event.stopPropagation(); // Impede que o clique no X expanda o alerta
+            event.stopPropagation();
             const alert = document.querySelector(`[data-alert-id="${{alertId}}"]`);
             if (alert) {{
                 alert.style.animation = 'slideUp 0.3s ease';
@@ -1833,39 +1999,28 @@ class LiveloAnalytics:
         // FUNÇÃO AUXILIAR MELHORADA PARA PARSE DE DATAS EM PT-BR
         function parseDataBR(dataString) {{
             if (!dataString || dataString === '-' || dataString === 'Nunca') {{
-                return new Date(1900, 0, 1); // Data muito antiga para ordenação
+                return new Date(1900, 0, 1);
             }}
             
-            // Limpar e normalizar a string
             let cleanDate = dataString.trim();
-            
-            // Padrões de data suportados:
-            // dd/mm/yyyy, dd/mm/yyyy hh:mm:ss, yyyy-mm-dd, yyyy-mm-dd hh:mm:ss
-            
-            // Se tem espaço, separar data e hora
             let [datePart, timePart] = cleanDate.split(' ');
             
             let year, month, day, hour = 0, minute = 0, second = 0;
             
-            // Parse da parte da data
             if (datePart.includes('/')) {{
-                // Formato brasileiro: dd/mm/yyyy
                 let [d, m, y] = datePart.split('/');
                 day = parseInt(d);
-                month = parseInt(m) - 1; // Mês em JS é 0-indexado
+                month = parseInt(m) - 1;
                 year = parseInt(y);
             }} else if (datePart.includes('-')) {{
-                // Formato ISO: yyyy-mm-dd
                 let [y, m, d] = datePart.split('-');
                 day = parseInt(d);
                 month = parseInt(m) - 1;
                 year = parseInt(y);
             }} else {{
-                // Tentar parse direto
                 return new Date(dataString);
             }}
             
-            // Parse da parte do tempo se existir
             if (timePart) {{
                 let timeParts = timePart.split(':');
                 hour = parseInt(timeParts[0]) || 0;
@@ -1876,18 +2031,41 @@ class LiveloAnalytics:
             return new Date(year, month, day, hour, minute, second);
         }}
         
-        // Busca na tabela
-        document.getElementById('searchInput').addEventListener('input', function() {{
-            const filter = this.value.toLowerCase();
+        // FILTROS AVANÇADOS
+        function aplicarFiltros() {{
+            const filtroCategoria = document.getElementById('filtroCategoriaComplex').value;
+            const filtroTier = document.getElementById('filtroTier').value;
+            const filtroMoeda = document.getElementById('filtroMoeda').value;
+            const filtroTipo = document.getElementById('filtroTipo').value;
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
             const rows = document.querySelectorAll('#tabelaAnalise tbody tr');
             
             rows.forEach(row => {{
                 const parceiro = row.cells[0].textContent.toLowerCase();
-                row.style.display = parceiro.includes(filter) ? '' : 'none';
+                const categoria = row.cells[1].textContent.trim();
+                const tier = row.cells[2].textContent.trim();
+                const tipo = row.cells[4].textContent.trim();
+                
+                // Buscar moeda nos dados originais
+                const parceiroNome = row.cells[0].textContent.trim();
+                const dadoParceiro = todosOsDados.find(item => item.Parceiro === parceiroNome);
+                const moeda = dadoParceiro ? dadoParceiro.Moeda : '';
+                
+                const matchParceiro = !searchTerm || parceiro.includes(searchTerm);
+                const matchCategoria = !filtroCategoria || categoria === filtroCategoria;
+                const matchTier = !filtroTier || tier === filtroTier;
+                const matchMoeda = !filtroMoeda || moeda === filtroMoeda;
+                const matchTipo = !filtroTipo || tipo === filtroTipo;
+                
+                row.style.display = (matchParceiro && matchCategoria && matchTier && matchMoeda && matchTipo) ? '' : 'none';
             }});
-        }});
+        }}
         
-        // Ordenação da tabela principal - VERSÃO CORRIGIDA
+        // Busca na tabela
+        document.getElementById('searchInput').addEventListener('input', aplicarFiltros);
+        
+        // Ordenação da tabela principal
         let estadoOrdenacao = {{}};
         
         function ordenarTabela(indiceColuna, tipoColuna) {{
@@ -1934,7 +2112,6 @@ class LiveloAnalytics:
                     
                     resultado = numA - numB;
                 }} else if (tipoColuna === 'data') {{
-                    // ORDENAÇÃO DE DATAS CORRIGIDA
                     let dataA = parseDataBR(textoA);
                     let dataB = parseDataBR(textoB);
                     
@@ -1952,7 +2129,7 @@ class LiveloAnalytics:
             linhas.forEach(linha => tbody.appendChild(linha));
         }}
         
-        // ORDENAÇÃO DA TABELA INDIVIDUAL - VERSÃO CORRIGIDA
+        // ORDENAÇÃO DA TABELA INDIVIDUAL
         let estadoOrdenacaoIndividual = {{}};
         
         function ordenarTabelaIndividual(indiceColuna, tipoColuna) {{
@@ -1971,7 +2148,6 @@ class LiveloAnalytics:
             }}
             estadoOrdenacaoIndividual[indiceColuna] = novaOrdem;
             
-            // Atualizar indicadores visuais
             tabela.querySelectorAll('th .sort-indicator').forEach(indicator => {{
                 indicator.className = 'bi bi-arrows-expand sort-indicator';
             }});
@@ -1982,7 +2158,6 @@ class LiveloAnalytics:
                 indicatorAtual.className = `bi bi-arrow-${{novaOrdem === 'asc' ? 'up' : 'down'}} sort-indicator active`;
             }}
             
-            // Ordenar linhas
             linhas.sort((linhaA, linhaB) => {{
                 let textoA = linhaA.cells[indiceColuna].textContent.trim();
                 let textoB = linhaB.cells[indiceColuna].textContent.trim();
@@ -1999,7 +2174,6 @@ class LiveloAnalytics:
                     let numB = parseFloat(textoB.replace(/[^\\d.-]/g, '')) || 0;
                     resultado = numA - numB;
                 }} else if (tipoColuna === 'data') {{
-                    // ORDENAÇÃO DE DATAS CORRIGIDA PARA TABELA INDIVIDUAL
                     let dataA = parseDataBR(textoA);
                     let dataB = parseDataBR(textoB);
                     
@@ -2014,11 +2188,20 @@ class LiveloAnalytics:
             linhas.forEach(linha => tbody.appendChild(linha));
         }}
         
-        // Download Excel - Análise Completa
+        // Download Excel - Análise Completa (COM DADOS DAS DIMENSÕES)
         function downloadAnaliseCompleta() {{
-            const dadosVisiveis = todosOsDados.filter(item => {{
-                const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-                return !searchTerm || item.Parceiro.toLowerCase().includes(searchTerm);
+            // Obter dados filtrados
+            const rows = document.querySelectorAll('#tabelaAnalise tbody tr');
+            const dadosVisiveis = [];
+            
+            rows.forEach(row => {{
+                if (row.style.display !== 'none') {{
+                    const parceiroNome = row.cells[0].textContent.trim();
+                    const dadoCompleto = todosOsDados.find(item => item.Parceiro === parceiroNome);
+                    if (dadoCompleto) {{
+                        dadosVisiveis.push(dadoCompleto);
+                    }}
+                }}
             }});
             
             const wb = XLSX.utils.book_new();
@@ -2027,12 +2210,11 @@ class LiveloAnalytics:
             XLSX.writeFile(wb, "livelo_analise_completa_{metricas['ultima_atualizacao'].replace('/', '_')}.xlsx");
         }}
         
-        // CARREGAR ANÁLISE INDIVIDUAL - VERSÃO MELHORADA
+        // CARREGAR ANÁLISE INDIVIDUAL COM LOGO
         function carregarAnaliseIndividual() {{
             const chaveUnica = document.getElementById('parceiroSelect').value;
             if (!chaveUnica) return;
             
-            // Resetar estado de ordenação
             estadoOrdenacaoIndividual = {{}};
             
             const [parceiro, moeda] = chaveUnica.split('|');
@@ -2046,8 +2228,12 @@ class LiveloAnalytics:
                 item.Parceiro === parceiro && item.Moeda === moeda
             );
             
-            document.getElementById('tituloAnaliseIndividual').textContent = 
-                `Histórico Detalhado - ${{parceiro}} (${{moeda}}) - ${{historicoCompleto.length}} registros`;
+            // Obter logo do parceiro
+            const logoUrl = dadosResumo.length > 0 ? dadosResumo[0].Logo_Link : '';
+            const logoHtml = logoUrl ? `<img src="${{logoUrl}}" class="logo-parceiro" alt="Logo ${{parceiro}}" onerror="this.style.display='none'">` : '';
+            
+            document.getElementById('tituloAnaliseIndividual').innerHTML = 
+                `${{logoHtml}}<span>Histórico Detalhado - ${{parceiro}} (${{moeda}}) - ${{historicoCompleto.length}} registros</span>`;
             
             if (historicoCompleto.length === 0) {{
                 document.getElementById('tabelaIndividual').innerHTML = 
@@ -2055,7 +2241,7 @@ class LiveloAnalytics:
                 return;
             }}
             
-            // Montar tabela do histórico COM ORDENAÇÃO CORRIGIDA
+            // Montar tabela do histórico
             let html = `
                 <table class="table table-hover table-sm">
                     <thead>
@@ -2083,7 +2269,6 @@ class LiveloAnalytics:
                     <tbody>
             `;
             
-            // Ordenar por data (mais recente primeiro)
             historicoCompleto.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
             
             historicoCompleto.forEach(item => {{
@@ -2106,7 +2291,7 @@ class LiveloAnalytics:
             
             html += '</tbody></table>';
             
-            // Adicionar resumo estatístico se disponível
+            // Adicionar resumo estatístico com informações das dimensões
             if (dadosResumo.length > 0) {{
                 const resumo = dadosResumo[0];
                 html += `
@@ -2115,8 +2300,14 @@ class LiveloAnalytics:
                         <div class="row g-2">
                             <div class="col-md-3 col-6">
                                 <div class="card border-0 bg-white text-center p-2">
-                                    <div class="fw-bold text-primary">${{resumo.Status_Casa}}</div>
-                                    <small class="text-muted">Status</small>
+                                    <div class="fw-bold text-primary">${{resumo.Categoria_Dimensao}}</div>
+                                    <small class="text-muted">Categoria</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="card border-0 bg-white text-center p-2">
+                                    <div class="fw-bold text-info">Tier ${{resumo.Tier}}</div>
+                                    <small class="text-muted">Nível</small>
                                 </div>
                             </div>
                             <div class="col-md-3 col-6">
@@ -2129,12 +2320,6 @@ class LiveloAnalytics:
                                 <div class="card border-0 bg-white text-center p-2">
                                     <div class="fw-bold text-warning">${{resumo.Total_Ofertas_Historicas}}</div>
                                     <small class="text-muted">Total ofertas</small>
-                                </div>
-                            </div>
-                            <div class="col-md-3 col-6">
-                                <div class="card border-0 bg-white text-center p-2">
-                                    <div class="fw-bold text-info">${{resumo.Frequencia_Ofertas.toFixed(1)}}%</div>
-                                    <small class="text-muted">Freq. ofertas</small>
                                 </div>
                             </div>
                         </div>
@@ -2151,7 +2336,7 @@ class LiveloAnalytics:
                             <div class="col-md-4">
                                 <div class="card border-0 bg-white text-center p-2">
                                     <div class="fw-bold text-secondary">${{resumo.Categoria_Estrategica}}</div>
-                                    <small class="text-muted">Categoria</small>
+                                    <small class="text-muted">Tipo</small>
                                 </div>
                             </div>
                             <div class="col-md-4">
@@ -2161,6 +2346,18 @@ class LiveloAnalytics:
                                 </div>
                             </div>
                         </div>
+                        
+                        ${{resumo.URL_Parceiro ? `
+                        <div class="row g-2 mt-2">
+                            <div class="col-12">
+                                <div class="card border-0 bg-white text-center p-2">
+                                    <a href="${{resumo.URL_Parceiro}}" target="_blank" class="btn btn-outline-primary btn-sm">
+                                        <i class="bi bi-box-arrow-up-right me-1"></i>Visitar Página do Parceiro
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}}
                     </div>
                 `;
             }}
@@ -2201,7 +2398,7 @@ class LiveloAnalytics:
             XLSX.writeFile(wb, nomeArquivo);
         }}
         
-        // NOVA FUNÇÃO: Download dados RAW (escondido no footer)
+        // Download dados RAW (COM DADOS DAS DIMENSÕES)
         function downloadDadosRaw() {{
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.json_to_sheet(dadosRawCompletos);
@@ -2224,10 +2421,14 @@ class LiveloAnalytics:
         
         // INICIALIZAÇÃO
         document.addEventListener('DOMContentLoaded', function() {{
-            // Inicializar tema
             initTheme();
             
-            // Carregar análise individual se necessário
+            // Configurar event listeners para filtros
+            document.getElementById('filtroCategoriaComplex').addEventListener('change', aplicarFiltros);
+            document.getElementById('filtroTier').addEventListener('change', aplicarFiltros);
+            document.getElementById('filtroMoeda').addEventListener('change', aplicarFiltros);
+            document.getElementById('filtroTipo').addEventListener('change', aplicarFiltros);
+            
             setTimeout(() => {{
                 if (document.querySelector('#individual.show.active')) {{
                     const select = document.getElementById('parceiroSelect');
@@ -2242,6 +2443,7 @@ class LiveloAnalytics:
 </body>
 </html>
         """
+        
         return html
     
     def executar_analise_completa(self):
