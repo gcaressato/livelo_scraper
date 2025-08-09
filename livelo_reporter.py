@@ -239,11 +239,10 @@ class LiveloAnalytics:
         return mudancas
     
     def analisar_historico_ofertas(self):
-        """Análise completa do histórico - baseada em TODOS os parceiros de hoje"""
+        """Análise completa do histórico"""
         print("🔍 Analisando histórico completo...")
         
         resultados = []
-        # CORREÇÃO: Considerar cada linha única (Parceiro + Moeda)
         linhas_hoje = self.df_hoje[['Parceiro', 'Moeda']].drop_duplicates()
         print(f"📋 Processando {len(linhas_hoje)} combinações parceiro+moeda ativas hoje...")
         
@@ -252,7 +251,7 @@ class LiveloAnalytics:
                 parceiro = linha_atual['Parceiro']
                 moeda = linha_atual['Moeda']
                 
-                # Dados atuais (de hoje) - buscar a combinação específica
+                # Dados atuais (de hoje)
                 dados_atual = self.df_hoje[
                     (self.df_hoje['Parceiro'] == parceiro) & 
                     (self.df_hoje['Moeda'] == moeda)
@@ -275,7 +274,7 @@ class LiveloAnalytics:
                     'Data_Atual': dados_atual['Timestamp'].date()
                 }
                 
-                # Calcular tempo de casa (dias desde primeiro registro)
+                # Calcular tempo de casa
                 primeiro_registro = historico.iloc[0]['Timestamp']
                 dias_casa = (dados_atual['Timestamp'] - primeiro_registro).days + 1
                 status_casa, cor_casa = self._calcular_tempo_casa(dias_casa)
@@ -284,32 +283,60 @@ class LiveloAnalytics:
                 resultado['Status_Casa'] = status_casa
                 resultado['Cor_Status'] = cor_casa
                 
-                # Análise de mudanças (comparar com registro anterior)
+                # CORREÇÃO: Buscar a última mudança REAL nos dados
                 if len(historico) > 1:
-                    anterior = historico.iloc[-2]
-                    resultado['Pontos_Anterior'] = anterior['Pontos']
-                    resultado['Valor_Anterior'] = anterior['Valor']
-                    resultado['Data_Anterior'] = anterior['Timestamp'].date()
-                    resultado['Dias_Desde_Mudanca'] = (dados_atual['Timestamp'] - anterior['Timestamp']).days
+                    dados_atuais_comparacao = {
+                        'Pontos': dados_atual['Pontos'],
+                        'Valor': dados_atual['Valor'],
+                        'Oferta': dados_atual['Oferta']
+                    }
                     
-                    # Variação
-                    if anterior['Pontos'] > 0:
-                        resultado['Variacao_Pontos'] = ((dados_atual['Pontos'] - anterior['Pontos']) / anterior['Pontos']) * 100
-                    else:
-                        resultado['Variacao_Pontos'] = 0
+                    # Procurar o último registro com dados diferentes
+                    ultimo_diferente = None
+                    for idx in range(len(historico) - 2, -1, -1):  # Do penúltimo para o primeiro
+                        registro = historico.iloc[idx]
+                        if (registro['Pontos'] != dados_atuais_comparacao['Pontos'] or 
+                            registro['Valor'] != dados_atuais_comparacao['Valor'] or 
+                            registro['Oferta'] != dados_atuais_comparacao['Oferta']):
+                            ultimo_diferente = registro
+                            break
                     
-                    # Tipo de mudança
-                    if dados_atual['Oferta'] == 'Sim' and anterior['Oferta'] != 'Sim':
-                        resultado['Tipo_Mudanca'] = 'Ganhou Oferta'
-                    elif dados_atual['Oferta'] != 'Sim' and anterior['Oferta'] == 'Sim':
-                        resultado['Tipo_Mudanca'] = 'Perdeu Oferta'
-                    elif dados_atual['Pontos'] != anterior['Pontos']:
-                        if dados_atual['Pontos'] > anterior['Pontos']:
-                            resultado['Tipo_Mudanca'] = 'Aumentou Pontos'
+                    if ultimo_diferente is not None:
+                        resultado['Pontos_Anterior'] = ultimo_diferente['Pontos']
+                        resultado['Valor_Anterior'] = ultimo_diferente['Valor']
+                        resultado['Data_Anterior'] = ultimo_diferente['Timestamp'].date()
+                        resultado['Dias_Desde_Mudanca'] = (dados_atual['Timestamp'] - ultimo_diferente['Timestamp']).days
+                        
+                        # Variação baseada na última mudança real
+                        if ultimo_diferente['Pontos'] > 0:
+                            resultado['Variacao_Pontos'] = ((dados_atual['Pontos'] - ultimo_diferente['Pontos']) / ultimo_diferente['Pontos']) * 100
                         else:
-                            resultado['Tipo_Mudanca'] = 'Diminuiu Pontos'
+                            resultado['Variacao_Pontos'] = 0
+                        
+                        # Tipo de mudança
+                        if dados_atual['Oferta'] == 'Sim' and ultimo_diferente['Oferta'] != 'Sim':
+                            resultado['Tipo_Mudanca'] = 'Ganhou Oferta'
+                        elif dados_atual['Oferta'] != 'Sim' and ultimo_diferente['Oferta'] == 'Sim':
+                            resultado['Tipo_Mudanca'] = 'Perdeu Oferta'
+                        elif dados_atual['Pontos'] != ultimo_diferente['Pontos']:
+                            if dados_atual['Pontos'] > ultimo_diferente['Pontos']:
+                                resultado['Tipo_Mudanca'] = 'Aumentou Pontos'
+                            else:
+                                resultado['Tipo_Mudanca'] = 'Diminuiu Pontos'
+                        elif dados_atual['Valor'] != ultimo_diferente['Valor']:
+                            resultado['Tipo_Mudanca'] = 'Mudou Valor'
+                        else:
+                            resultado['Tipo_Mudanca'] = 'Sem Mudança'
                     else:
-                        resultado['Tipo_Mudanca'] = 'Sem Mudança'
+                        # Não houve mudanças no histórico
+                        resultado.update({
+                            'Pontos_Anterior': dados_atual['Pontos'],
+                            'Valor_Anterior': dados_atual['Valor'],
+                            'Data_Anterior': primeiro_registro.date(),
+                            'Dias_Desde_Mudanca': dias_casa,  # Desde que entrou
+                            'Variacao_Pontos': 0,
+                            'Tipo_Mudanca': 'Sempre Igual'
+                        })
                 else:
                     resultado.update({
                         'Pontos_Anterior': 0,
@@ -576,1021 +603,202 @@ class LiveloAnalytics:
         self.analytics['graficos'] = graficos
         return graficos
     
-    def gerar_html_completo(self):
-        """Gera HTML com todas as funcionalidades - VERSÃO MELHORADA"""
-        dados = self.analytics['dados_completos']
-        metricas = self.analytics['metricas']
-        graficos = self.analytics['graficos']
-        mudancas = self.analytics['mudancas_ofertas']
-        
-        # Converter gráficos para HTML
-        graficos_html = {}
-        for key, fig in graficos.items():
-            graficos_html[key] = fig.to_html(full_html=False, include_plotlyjs='cdn')
-        
-        # Preparar dados para JavaScript
-        dados_json = dados.to_json(orient='records', date_format='iso')
-        dados_historicos_completos = self.df_completo.copy()
-        dados_historicos_completos['Timestamp'] = dados_historicos_completos['Timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
-        dados_historicos_json = dados_historicos_completos.to_json(orient='records')
-        dados_raw_json = self.df_completo.to_json(orient='records', date_format='iso')
-        
-        # Preparar alertas dinâmicos
-        alertas_html = self._gerar_alertas_dinamicos(mudancas, metricas)
-        
-        html = f"""
-    <!DOCTYPE html>
-    <html lang="pt-br">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Livelo Analytics Pro - {metricas['ultima_atualizacao']}</title>
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-        
-        <style>
-            :root {{
-                --livelo-rosa: {LIVELO_ROSA};
-                --livelo-azul: {LIVELO_AZUL};
-                --livelo-rosa-claro: {LIVELO_ROSA_CLARO};
-                --livelo-azul-claro: {LIVELO_AZUL_CLARO};
-            }}
-            
-            * {{ box-sizing: border-box; }}
-            
-            body {{
-                background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                font-size: 14px;
-                line-height: 1.4;
-            }}
-            
-            .container-fluid {{ 
-                max-width: 100%; 
-                padding: 10px 15px; 
-            }}
-            
-            .card {{
-                border: none;
-                border-radius: 12px;
-                box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-                transition: all 0.3s ease;
-                margin-bottom: 15px;
-            }}
-            
-            .card:hover {{ 
-                transform: translateY(-1px); 
-                box-shadow: 0 4px 20px rgba(0,0,0,0.1); 
-            }}
-            
-            .metric-card {{
-                background: linear-gradient(135deg, white 0%, #f8f9fa 100%);
-                border-left: 3px solid var(--livelo-rosa);
-                padding: 15px;
-            }}
-            
-            .metric-value {{
-                font-size: 1.8rem;
-                font-weight: 700;
-                color: var(--livelo-azul);
-                margin: 0;
-                line-height: 1;
-            }}
-            
-            .metric-label {{
-                color: #6c757d;
-                font-size: 0.75rem;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-                margin-top: 2px;
-            }}
-            
-            .metric-change {{
-                font-size: 0.7rem;
-                margin-top: 3px;
-            }}
-            
-            .alert-card {{
-                background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
-                border-left: 4px solid #ff9f43;
-                padding: 10px 15px;
-                margin-bottom: 10px;
-            }}
-            
-            .alert-success {{ background: linear-gradient(135deg, #d1edff 0%, #a8e6cf 100%); border-left-color: #00b894; }}
-            .alert-danger {{ background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%); border-left-color: #e17055; }}
-            .alert-info {{ background: linear-gradient(135deg, #a8e6cf 0%, #81ecec 100%); border-left-color: #00cec9; }}
-            
-            .nav-pills .nav-link.active {{ background-color: var(--livelo-rosa); }}
-            .nav-pills .nav-link {{ 
-                color: var(--livelo-azul); 
-                padding: 8px 16px;
-                margin-right: 5px;
-                border-radius: 20px;
-                font-size: 0.9rem;
-            }}
-            
-            .table-container {{
-                background: white;
-                border-radius: 12px;
-                overflow: hidden;
-                max-height: 70vh;
-                overflow-y: auto;
-                overflow-x: auto;
-            }}
-            
-            .table {{ 
-                margin: 0; 
-                font-size: 0.85rem;
-                white-space: nowrap;
-                min-width: 100%;
-            }}
-            
-            .table th {{
-                background-color: var(--livelo-azul) !important;
-                color: white !important;
-                border: none !important;
-                padding: 12px 8px !important;
-                font-weight: 600 !important;
-                position: sticky !important;
-                top: 0 !important;
-                z-index: 10 !important;
-                font-size: 0.8rem !important;
-                cursor: pointer !important;
-                user-select: none !important;
-                transition: all 0.2s ease !important;
-                text-align: center !important;
-                vertical-align: middle !important;
-                white-space: nowrap !important;
-                min-width: 100px;
-            }}
-            
-            .table th:hover {{ 
-                background-color: var(--livelo-rosa) !important;
-                transform: translateY(-1px);
-            }}
-            
-            .table td {{
-                padding: 8px !important;
-                border-bottom: 1px solid #f0f0f0 !important;
-                vertical-align: middle !important;
-                font-size: 0.8rem !important;
-                white-space: nowrap !important;
-                text-align: center !important;
-            }}
-            
-            .table tbody tr:hover {{ 
-                background-color: rgba(255, 10, 140, 0.05) !important; 
-            }}
-            
-            .table td:first-child {{
-                text-align: left !important;
-                font-weight: 500;
-                max-width: 200px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }}
-            
-            .badge-status {{
-                padding: 4px 8px;
-                border-radius: 12px;
-                font-size: 0.7rem;
-                font-weight: 500;
-                min-width: 60px;
-                text-align: center;
-                white-space: nowrap;
-            }}
-            
-            .search-input {{
-                border-radius: 20px;
-                border: 2px solid #e9ecef;
-                padding: 8px 15px;
-                font-size: 0.9rem;
-            }}
-            
-            .search-input:focus {{
-                border-color: var(--livelo-rosa);
-                box-shadow: 0 0 0 0.2rem rgba(255, 10, 140, 0.25);
-            }}
-            
-            .btn-download {{
-                background: linear-gradient(135deg, var(--livelo-rosa) 0%, var(--livelo-azul) 100%);
-                border: none;
-                border-radius: 20px;
-                color: white;
-                padding: 8px 20px;
-                font-weight: 500;
-                font-size: 0.9rem;
-            }}
-            
-            .btn-download:hover {{ 
-                color: white; 
-                transform: translateY(-1px); 
-            }}
-            
-            .individual-analysis {{
-                background: #f8f9fa;
-                border-radius: 12px;
-                padding: 20px;
-                margin-bottom: 20px;
-            }}
-            
-            .sort-indicator {{
-                margin-left: 5px;
-                opacity: 0.3;
-                transition: all 0.2s ease;
-            }}
-            
-            .sort-indicator.active {{ 
-                opacity: 1; 
-                color: #FFD700 !important;
-            }}
-            
-            .table th:hover .sort-indicator {{
-                opacity: 0.7;
-                color: #FFD700 !important;
-            }}
-            
-            .table-responsive {{ 
-                border-radius: 12px; 
-            }}
-            
-            .plotly {{ 
-                width: 100% !important; 
-            }}
-            
-            .footer {{
-                text-align: center;
-                margin-top: 40px;
-                padding: 20px;
-                color: #6c757d;
-                font-size: 0.9rem;
-                border-top: 1px solid #e9ecef;
-            }}
-            
-            .footer small {{
-                cursor: pointer;
-                transition: all 0.2s ease;
-            }}
-            
-            .footer small:hover {{
-                color: var(--livelo-azul);
-            }}
-            
-            /* MOBILE RESPONSIVENESS */
-            @media (max-width: 768px) {{
-                .container-fluid {{ 
-                    padding: 5px 8px; 
-                }}
-                
-                .metric-value {{ 
-                    font-size: 1.4rem; 
-                }}
-                
-                .metric-label {{
-                    font-size: 0.65rem;
-                }}
-                
-                .table {{ 
-                    font-size: 0.7rem; 
-                }}
-                
-                .table th {{
-                    padding: 8px 4px !important;
-                    font-size: 0.7rem !important;
-                    min-width: 80px;
-                }}
-                
-                .table td {{
-                    padding: 6px 4px !important;
-                    font-size: 0.7rem !important;
-                }}
-                
-                .nav-pills .nav-link {{ 
-                    padding: 6px 10px; 
-                    font-size: 0.75rem; 
-                    margin-right: 2px;
-                }}
-                
-                .card {{
-                    margin-bottom: 10px;
-                }}
-                
-                .individual-analysis {{
-                    padding: 15px;
-                }}
-                
-                .btn-download {{
-                    font-size: 0.8rem;
-                    padding: 6px 15px;
-                }}
-                
-                .row.g-2 {{
-                    margin: 0 -2px;
-                }}
-                
-                .row.g-2 > * {{
-                    padding-right: 2px;
-                    padding-left: 2px;
-                }}
-                
-                .table-container {{
-                    max-height: 60vh;
-                }}
-                
-                .metric-card {{
-                    padding: 10px;
-                }}
-                
-                .alert-card {{
-                    padding: 8px 12px;
-                    margin-bottom: 8px;
-                }}
-                
-                /* Scrolling horizontal para tabelas em mobile */
-                .table-responsive {{
-                    -webkit-overflow-scrolling: touch;
-                }}
-            }}
-            
-            @media (max-width: 576px) {{
-                .table th {{
-                    min-width: 70px;
-                    padding: 6px 3px !important;
-                    font-size: 0.65rem !important;
-                }}
-                
-                .table td {{
-                    padding: 5px 3px !important;
-                    font-size: 0.65rem !important;
-                }}
-                
-                .nav-pills .nav-link {{
-                    font-size: 0.7rem;
-                    padding: 5px 8px;
-                }}
-                
-                .metric-value {{
-                    font-size: 1.2rem;
-                }}
-                
-                .card-header h6 {{
-                    font-size: 0.9rem;
-                }}
-            }}
-            
-            /* Melhor scroll em dispositivos touch */
-            .table-container {{
-                -webkit-overflow-scrolling: touch;
-                scrollbar-width: thin;
-            }}
-            
-            .table-container::-webkit-scrollbar {{
-                width: 6px;
-                height: 6px;
-            }}
-            
-            .table-container::-webkit-scrollbar-track {{
-                background: #f1f1f1;
-                border-radius: 3px;
-            }}
-            
-            .table-container::-webkit-scrollbar-thumb {{
-                background: var(--livelo-azul-claro);
-                border-radius: 3px;
-            }}
-            
-            .table-container::-webkit-scrollbar-thumb:hover {{
-                background: var(--livelo-azul);
-            }}
-        </style>
-    </head>
-    <body>
-        <div class="container-fluid">
-            <!-- Header -->
-            <div class="text-center mb-3">
-                <h1 class="h3 fw-bold mb-1" style="color: var(--livelo-azul);">
-                    <i class="bi bi-graph-up me-2"></i>Livelo Analytics Pro
-                </h1>
-                <small class="text-muted">Atualizado em {metricas['ultima_atualizacao']} | {metricas['total_parceiros']} parceiros no site hoje</small><br>
-                <small class="text-muted" style="font-size: 0.75rem;">Dados coletados em: {metricas['data_coleta_mais_recente']}</small>
-            </div>
-            
-            <!-- Alertas Dinâmicos -->
-            {alertas_html}
-            
-            <!-- Métricas Principais -->
-            <div class="row g-2 mb-3">
-                <div class="col-lg-2 col-md-4 col-6">
-                    <div class="metric-card text-center">
-                        <div class="metric-value">{metricas['total_parceiros']}</div>
-                        <div class="metric-label">Parceiros Hoje</div>
-                        <div class="metric-change" style="color: {'green' if metricas['variacao_parceiros'] >= 0 else 'red'};">
-                            {'+' if metricas['variacao_parceiros'] > 0 else ''}{metricas['variacao_parceiros']} vs ontem
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-2 col-md-4 col-6">
-                    <div class="metric-card text-center">
-                        <div class="metric-value">{metricas['total_com_oferta']}</div>
-                        <div class="metric-label">Com Oferta</div>
-                        <div class="metric-change" style="color: {'green' if metricas['variacao_ofertas'] >= 0 else 'red'};">
-                            {'+' if metricas['variacao_ofertas'] > 0 else ''}{metricas['variacao_ofertas']} vs ontem
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-2 col-md-4 col-6">
-                    <div class="metric-card text-center">
-                        <div class="metric-value">{metricas['percentual_ofertas_hoje']:.1f}%</div>
-                        <div class="metric-label">% Ofertas</div>
-                        <div class="metric-change">
-                            {metricas['percentual_ofertas_ontem']:.1f}% ontem
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-2 col-md-4 col-6">
-                    <div class="metric-card text-center">
-                        <div class="metric-value">{metricas['compre_agora']}</div>
-                        <div class="metric-label">Compre Agora!</div>
-                        <div class="metric-change text-success">
-                            Oportunidades hoje
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-2 col-md-4 col-6">
-                    <div class="metric-card text-center">
-                        <div class="metric-value">{metricas['oportunidades_raras']}</div>
-                        <div class="metric-label">Oport. Raras</div>
-                        <div class="metric-change text-warning">
-                            Baixa frequência
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-2 col-md-4 col-6">
-                    <div class="metric-card text-center">
-                        <div class="metric-value">{metricas['sempre_oferta']}</div>
-                        <div class="metric-label">Sempre Oferta</div>
-                        <div class="metric-change text-info">
-                            Qualquer hora
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Navegação -->
-            <ul class="nav nav-pills justify-content-center mb-3" id="mainTabs" role="tablist">
-                <li class="nav-item">
-                    <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#dashboard">
-                        <i class="bi bi-speedometer2 me-1"></i>Dashboard
-                    </button>
-                </li>
-                <li class="nav-item">
-                    <button class="nav-link" data-bs-toggle="pill" data-bs-target="#analise">
-                        <i class="bi bi-table me-1"></i>Análise Completa
-                    </button>
-                </li>
-                <li class="nav-item">
-                    <button class="nav-link" data-bs-toggle="pill" data-bs-target="#individual">
-                        <i class="bi bi-person-check me-1"></i>Análise Individual
-                    </button>
-                </li>
-            </ul>
-            
-            <div class="tab-content">
-                <!-- Dashboard -->
-                <div class="tab-pane fade show active" id="dashboard">
-                    <div class="row g-3">
-                        <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header"><h6 class="mb-0">Top Ofertas HOJE</h6></div>
-                                <div class="card-body p-2">{graficos_html.get('top_ofertas', '<p>Gráfico não disponível</p>')}</div>
-                            </div>
-                        </div>
-                        <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header"><h6 class="mb-0">Mudanças de Ofertas (Hoje vs Ontem)</h6></div>
-                                <div class="card-body p-2">{graficos_html.get('mudancas_ofertas', '<p>Ainda sem dados de comparação</p>')}</div>
-                            </div>
-                        </div>
-                        <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header"><h6 class="mb-0">Matriz Estratégica</h6></div>
-                                <div class="card-body p-2">{graficos_html.get('matriz_estrategica', '<p>Gráfico não disponível</p>')}</div>
-                            </div>
-                        </div>
-                        <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header"><h6 class="mb-0">Comparação Temporal</h6></div>
-                                <div class="card-body p-2">{graficos_html.get('comparacao_temporal', '<p>Dados de ontem não disponíveis</p>')}</div>
-                            </div>
-                        </div>
-                        <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header"><h6 class="mb-0">Classificação Estratégica</h6></div>
-                                <div class="card-body p-2">{graficos_html.get('oportunidades', '<p>Gráfico não disponível</p>')}</div>
-                            </div>
-                        </div>
-                        <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header"><h6 class="mb-0">Tempo de Casa</h6></div>
-                                <div class="card-body p-2">{graficos_html.get('status_casa', '<p>Gráfico não disponível</p>')}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Análise Completa -->
-                <div class="tab-pane fade" id="analise">
-                    <div class="card">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h6 class="mb-0">Análise Completa - {metricas['total_parceiros']} Parceiros HOJE</h6>
-                            <button class="btn btn-download btn-sm" onclick="downloadAnaliseCompleta()">
-                                <i class="bi bi-download me-1"></i>Download Excel
-                            </button>
-                        </div>
-                        <div class="card-body p-0">
-                            <div class="p-3 border-bottom">
-                                <input type="text" class="form-control search-input" id="searchInput" placeholder="🔍 Buscar parceiro...">
-                            </div>
-                            <div class="table-responsive table-container">
-                                {self._gerar_tabela_analise_completa(dados)}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Análise Individual -->
-                <div class="tab-pane fade" id="individual">
-                    <div class="individual-analysis">
-                        <div class="row align-items-center mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Selecionar Parceiro:</label>
-                                <select class="form-select" id="parceiroSelect" onchange="carregarAnaliseIndividual()">
-                                    {self._gerar_opcoes_parceiros(dados)}
-                                </select>
-                            </div>
-                            <div class="col-md-6 text-end">
-                                <button class="btn btn-download" onclick="downloadAnaliseIndividual()">
-                                    <i class="bi bi-download me-1"></i>Download Parceiro
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="card">
-                        <div class="card-header">
-                            <h6 class="mb-0" id="tituloAnaliseIndividual">Histórico Detalhado</h6>
-                        </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive table-container">
-                                <div id="tabelaIndividual">Selecione um parceiro para ver o histórico...</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Rodapé -->
-            <div class="footer">
-                <small onclick="downloadDadosRaw()" title="Download dados brutos">Desenvolvido por gc</small>
-            </div>
-        </div>
-        
-        <script>
-            // Dados para análise
-            const todosOsDados = {dados_json};
-            const dadosHistoricosCompletos = {dados_historicos_json};
-            const dadosRawCompletos = {dados_raw_json};
-            let parceiroSelecionado = null;
-            
-            // Busca na tabela
-            document.getElementById('searchInput').addEventListener('input', function() {{
-                const filter = this.value.toLowerCase();
-                const rows = document.querySelectorAll('#tabelaAnalise tbody tr');
-                
-                rows.forEach(row => {{
-                    const parceiro = row.cells[0].textContent.toLowerCase();
-                    row.style.display = parceiro.includes(filter) ? '' : 'none';
-                }});
-            }});
-            
-            // Ordenação da tabela principal
-            let estadoOrdenacao = {{}};
-            
-            function ordenarTabela(indiceColuna, tipoColuna) {{
-                const tabela = document.querySelector('#tabelaAnalise');
-                if (!tabela) return;
-                
-                const tbody = tabela.querySelector('tbody');
-                const linhas = Array.from(tbody.querySelectorAll('tr'));
-                
-                const estadoAtual = estadoOrdenacao[indiceColuna] || 'neutro';
-                let novaOrdem;
-                if (estadoAtual === 'neutro' || estadoAtual === 'desc') {{
-                    novaOrdem = 'asc';
-                }} else {{
-                    novaOrdem = 'desc';
-                }}
-                estadoOrdenacao[indiceColuna] = novaOrdem;
-                
-                tabela.querySelectorAll('th .sort-indicator').forEach(indicator => {{
-                    indicator.className = 'bi bi-arrows-expand sort-indicator';
-                }});
-                
-                const headerAtual = tabela.querySelectorAll('th')[indiceColuna];
-                const indicatorAtual = headerAtual.querySelector('.sort-indicator');
-                indicatorAtual.className = `bi bi-arrow-${{novaOrdem === 'asc' ? 'up' : 'down'}} sort-indicator active`;
-                
-                linhas.sort((linhaA, linhaB) => {{
-                    let textoA = linhaA.cells[indiceColuna].textContent.trim();
-                    let textoB = linhaB.cells[indiceColuna].textContent.trim();
-                    
-                    const badgeA = linhaA.cells[indiceColuna].querySelector('.badge');
-                    const badgeB = linhaB.cells[indiceColuna].querySelector('.badge');
-                    if (badgeA) textoA = badgeA.textContent.trim();
-                    if (badgeB) textoB = badgeB.textContent.trim();
-                    
-                    let resultado = 0;
-                    
-                    if (tipoColuna === 'numero') {{
-                        let numA = parseFloat(textoA.replace(/[^\\d.-]/g, '')) || 0;
-                        let numB = parseFloat(textoB.replace(/[^\\d.-]/g, '')) || 0;
-                        
-                        if (textoA === '-' || textoA === 'Nunca') numA = novaOrdem === 'asc' ? -999999 : 999999;
-                        if (textoB === '-' || textoB === 'Nunca') numB = novaOrdem === 'asc' ? -999999 : 999999;
-                        
-                        resultado = numA - numB;
-                    }} else {{
-                        if (textoA === '-' || textoA === 'Nunca') textoA = novaOrdem === 'asc' ? 'zzz' : '';
-                        if (textoB === '-' || textoB === 'Nunca') textoB = novaOrdem === 'asc' ? 'zzz' : '';
-                        
-                        resultado = textoA.localeCompare(textoB, 'pt-BR', {{ numeric: true }});
-                    }}
-                    
-                    return novaOrdem === 'asc' ? resultado : -resultado;
-                }});
-                
-                linhas.forEach(linha => tbody.appendChild(linha));
-            }}
-            
-            // NOVA FUNÇÃO: Ordenação da tabela individual
-            let estadoOrdenacaoIndividual = {{}};
-            
-            function ordenarTabelaIndividual(indiceColuna, tipoColuna) {{
-                const tabela = document.querySelector('#tabelaIndividual table');
-                if (!tabela) return;
-                
-                const tbody = tabela.querySelector('tbody');
-                const linhas = Array.from(tbody.querySelectorAll('tr'));
-                
-                const estadoAtual = estadoOrdenacaoIndividual[indiceColuna] || 'neutro';
-                let novaOrdem;
-                if (estadoAtual === 'neutro' || estadoAtual === 'desc') {{
-                    novaOrdem = 'asc';
-                }} else {{
-                    novaOrdem = 'desc';
-                }}
-                estadoOrdenacaoIndividual[indiceColuna] = novaOrdem;
-                
-                // Atualizar indicadores visuais
-                tabela.querySelectorAll('th .sort-indicator').forEach(indicator => {{
-                    indicator.className = 'bi bi-arrows-expand sort-indicator';
-                }});
-                
-                const headerAtual = tabela.querySelectorAll('th')[indiceColuna];
-                const indicatorAtual = headerAtual.querySelector('.sort-indicator');
-                if (indicatorAtual) {{
-                    indicatorAtual.className = `bi bi-arrow-${{novaOrdem === 'asc' ? 'up' : 'down'}} sort-indicator active`;
-                }}
-                
-                // Ordenar linhas
-                linhas.sort((linhaA, linhaB) => {{
-                    let textoA = linhaA.cells[indiceColuna].textContent.trim();
-                    let textoB = linhaB.cells[indiceColuna].textContent.trim();
-                    
-                    const badgeA = linhaA.cells[indiceColuna].querySelector('.badge');
-                    const badgeB = linhaB.cells[indiceColuna].querySelector('.badge');
-                    if (badgeA) textoA = badgeA.textContent.trim();
-                    if (badgeB) textoB = badgeB.textContent.trim();
-                    
-                    let resultado = 0;
-                    
-                    if (tipoColuna === 'numero') {{
-                        let numA = parseFloat(textoA.replace(/[^\\d.-]/g, '')) || 0;
-                        let numB = parseFloat(textoB.replace(/[^\\d.-]/g, '')) || 0;
-                        resultado = numA - numB;
-                    }} else if (tipoColuna === 'data') {{
-                        // Ordenação especial para datas
-                        let dataA = new Date(textoA.split(' ')[0].split('/').reverse().join('-') + ' ' + (textoA.split(' ')[1] || '00:00:00'));
-                        let dataB = new Date(textoB.split(' ')[0].split('/').reverse().join('-') + ' ' + (textoB.split(' ')[1] || '00:00:00'));
-                        resultado = dataA - dataB;
-                    }} else {{
-                        resultado = textoA.localeCompare(textoB, 'pt-BR', {{ numeric: true }});
-                    }}
-                    
-                    return novaOrdem === 'asc' ? resultado : -resultado;
-                }});
-                
-                linhas.forEach(linha => tbody.appendChild(linha));
-            }}
-            
-            // Download Excel - Análise Completa
-            function downloadAnaliseCompleta() {{
-                const dadosVisiveis = todosOsDados.filter(item => {{
-                    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-                    return !searchTerm || item.Parceiro.toLowerCase().includes(searchTerm);
-                }});
-                
-                const wb = XLSX.utils.book_new();
-                const ws = XLSX.utils.json_to_sheet(dadosVisiveis);
-                XLSX.utils.book_append_sheet(wb, ws, "Análise Completa");
-                XLSX.writeFile(wb, "livelo_analise_completa_{metricas['ultima_atualizacao'].replace('/', '_')}.xlsx");
-            }}
-            
-            // CARREGAR ANÁLISE INDIVIDUAL - VERSÃO MELHORADA
-            function carregarAnaliseIndividual() {{
-                const chaveUnica = document.getElementById('parceiroSelect').value;
-                if (!chaveUnica) return;
-                
-                // Resetar estado de ordenação
-                estadoOrdenacaoIndividual = {{}};
-                
-                const [parceiro, moeda] = chaveUnica.split('|');
-                parceiroSelecionado = `${{parceiro}} (${{moeda}})`;
-                
-                const historicoCompleto = dadosHistoricosCompletos.filter(item => 
-                    item.Parceiro === parceiro && item.Moeda === moeda
-                );
-                
-                const dadosResumo = todosOsDados.filter(item => 
-                    item.Parceiro === parceiro && item.Moeda === moeda
-                );
-                
-                document.getElementById('tituloAnaliseIndividual').textContent = 
-                    `Histórico Detalhado - ${{parceiro}} (${{moeda}}) - ${{historicoCompleto.length}} registros`;
-                
-                if (historicoCompleto.length === 0) {{
-                    document.getElementById('tabelaIndividual').innerHTML = 
-                        '<div class="p-3 text-center text-muted">Nenhum dado encontrado para este parceiro.</div>';
-                    return;
-                }}
-                
-                // Montar tabela do histórico COM ORDENAÇÃO
-                let html = `
-                    <table class="table table-hover table-sm">
-                        <thead>
-                            <tr>
-                                <th onclick="ordenarTabelaIndividual(0, 'data')" style="cursor: pointer;">
-                                    Data/Hora <i class="bi bi-arrows-expand sort-indicator"></i>
-                                </th>
-                                <th onclick="ordenarTabelaIndividual(1, 'numero')" style="cursor: pointer;">
-                                    Pontos <i class="bi bi-arrows-expand sort-indicator"></i>
-                                </th>
-                                <th onclick="ordenarTabelaIndividual(2, 'numero')" style="cursor: pointer;">
-                                    Valor <i class="bi bi-arrows-expand sort-indicator"></i>
-                                </th>
-                                <th onclick="ordenarTabelaIndividual(3, 'texto')" style="cursor: pointer;">
-                                    Moeda <i class="bi bi-arrows-expand sort-indicator"></i>
-                                </th>
-                                <th onclick="ordenarTabelaIndividual(4, 'texto')" style="cursor: pointer;">
-                                    Oferta <i class="bi bi-arrows-expand sort-indicator"></i>
-                                </th>
-                                <th onclick="ordenarTabelaIndividual(5, 'numero')" style="cursor: pointer;">
-                                    Pontos/Moeda <i class="bi bi-arrows-expand sort-indicator"></i>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-                
-                // Ordenar por data (mais recente primeiro)
-                historicoCompleto.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
-                
-                historicoCompleto.forEach(item => {{
-                    const dataFormatada = new Date(item.Timestamp).toLocaleString('pt-BR');
-                    const pontosPorMoeda = item.Valor > 0 ? (item.Pontos / item.Valor).toFixed(2) : '0.00';
-                    const corOferta = item.Oferta === 'Sim' ? 'success' : 'secondary';
-                    const valorFormatado = (item.Valor || 0).toFixed(2).replace('.', ',');
-                    
-                    html += `
-                        <tr>
-                            <td style="font-size: 0.75rem;">${{dataFormatada}}</td>
-                            <td><strong>${{item.Pontos || 0}}</strong></td>
-                            <td>${{item.Moeda}} ${{valorFormatado}}</td>
-                            <td><span class="badge bg-info">${{item.Moeda}}</span></td>
-                            <td><span class="badge bg-${{corOferta}}">${{item.Oferta}}</span></td>
-                            <td><strong>${{pontosPorMoeda}}</strong></td>
-                        </tr>
-                    `;
-                }});
-                
-                html += '</tbody></table>';
-                
-                // Adicionar resumo estatístico se disponível
-                if (dadosResumo.length > 0) {{
-                    const resumo = dadosResumo[0];
-                    html += `
-                        <div class="mt-3 p-3 bg-light rounded">
-                            <h6 class="mb-3"><i class="bi bi-bar-chart me-2"></i>Resumo Estatístico</h6>
-                            <div class="row g-2">
-                                <div class="col-md-3 col-6">
-                                    <div class="card border-0 bg-white text-center p-2">
-                                        <div class="fw-bold text-primary">${{resumo.Status_Casa}}</div>
-                                        <small class="text-muted">Status</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 col-6">
-                                    <div class="card border-0 bg-white text-center p-2">
-                                        <div class="fw-bold text-success">${{resumo.Dias_Casa}}</div>
-                                        <small class="text-muted">Dias na casa</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 col-6">
-                                    <div class="card border-0 bg-white text-center p-2">
-                                        <div class="fw-bold text-warning">${{resumo.Total_Ofertas_Historicas}}</div>
-                                        <small class="text-muted">Total ofertas</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 col-6">
-                                    <div class="card border-0 bg-white text-center p-2">
-                                        <div class="fw-bold text-info">${{resumo.Frequencia_Ofertas.toFixed(1)}}%</div>
-                                        <small class="text-muted">Freq. ofertas</small>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="row g-2 mt-2">
-                                <div class="col-md-4">
-                                    <div class="card border-0 bg-white text-center p-2">
-                                        <div class="fw-bold" style="color: ${{resumo.Variacao_Pontos >= 0 ? '#28a745' : '#dc3545'}}">
-                                            ${{resumo.Variacao_Pontos > 0 ? '+' : ''}}${{resumo.Variacao_Pontos.toFixed(1)}}%
-                                        </div>
-                                        <small class="text-muted">Variação</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="card border-0 bg-white text-center p-2">
-                                        <div class="fw-bold text-secondary">${{resumo.Categoria_Estrategica}}</div>
-                                        <small class="text-muted">Categoria</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="card border-0 bg-white text-center p-2">
-                                        <div class="fw-bold text-dark">${{resumo.Gasto_Formatado}}</div>
-                                        <small class="text-muted">Gasto atual</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }}
-                
-                document.getElementById('tabelaIndividual').innerHTML = html;
-            }}
-            
-            // Download Excel - Individual
-            function downloadAnaliseIndividual() {{
-                const chaveUnica = document.getElementById('parceiroSelect').value;
-                if (!chaveUnica) {{
-                    alert('Selecione um parceiro primeiro');
-                    return;
-                }}
-                
-                const [parceiro, moeda] = chaveUnica.split('|');
-                
-                const historicoCompleto = dadosHistoricosCompletos.filter(item => 
-                    item.Parceiro === parceiro && item.Moeda === moeda
-                );
-                const dadosResumo = todosOsDados.filter(item => 
-                    item.Parceiro === parceiro && item.Moeda === moeda
-                );
-                
-                const wb = XLSX.utils.book_new();
-                
-                if (historicoCompleto.length > 0) {{
-                    const ws1 = XLSX.utils.json_to_sheet(historicoCompleto);
-                    XLSX.utils.book_append_sheet(wb, ws1, "Histórico Completo");
-                }}
-                
-                if (dadosResumo.length > 0) {{
-                    const ws2 = XLSX.utils.json_to_sheet(dadosResumo);
-                    XLSX.utils.book_append_sheet(wb, ws2, "Análise Resumo");
-                }}
-                
-                const nomeArquivo = `livelo_${{parceiro.replace(/[^a-zA-Z0-9]/g, '_')}}_${{moeda}}_completo.xlsx`;
-                XLSX.writeFile(wb, nomeArquivo);
-            }}
-            
-            // NOVA FUNÇÃO: Download dados RAW (escondido no footer)
-            function downloadDadosRaw() {{
-                const wb = XLSX.utils.book_new();
-                const ws = XLSX.utils.json_to_sheet(dadosRawCompletos);
-                XLSX.utils.book_append_sheet(wb, ws, "Dados Raw Livelo");
-                
-                const dataAtual = new Date().toISOString().slice(0, 10).replace(/-/g, '_');
-                XLSX.writeFile(wb, `livelo_dados_raw_${{dataAtual}}.xlsx`);
-            }}
-            
-            // Auto-carregar primeiro parceiro quando entrar na aba
-            document.querySelector('[data-bs-target="#individual"]').addEventListener('click', function() {{
-                setTimeout(() => {{
-                    const select = document.getElementById('parceiroSelect');
-                    if (select && select.selectedIndex === 0 && select.options.length > 1) {{
-                        select.selectedIndex = 1;
-                        carregarAnaliseIndividual();
-                    }}
-                }}, 200);
-            }});
-            
-            // Carregar automaticamente na inicialização se já estiver na aba individual
-            document.addEventListener('DOMContentLoaded', function() {{
-                setTimeout(() => {{
-                    if (document.querySelector('#individual.show.active')) {{
-                        const select = document.getElementById('parceiroSelect');
-                        if (select && select.options.length > 1) {{
-                            select.selectedIndex = 1;
-                            carregarAnaliseIndividual();
-                        }}
-                    }}
-                }}, 1000);
-            }});
-        </script>
-    </body>
-    </html>
-    """
-        return html
-    
     def _gerar_alertas_dinamicos(self, mudancas, metricas):
-        """Gera alertas dinâmicos para o dashboard"""
+        """Gera alertas dinâmicos compactos e expansíveis para o dashboard"""
+        dados = self.analytics['dados_completos']
         alertas = []
         
-        # Alertas de oportunidades de compra
+        # 1. ALERTA PRINCIPAL: Parceiros que ganharam oferta HOJE
         if mudancas['ganharam_oferta']:
-            parceiros_str = ', '.join([item['parceiro'] for item in mudancas['ganharam_oferta'][:5]])
-            if len(mudancas['ganharam_oferta']) > 5:
-                parceiros_str += f" e mais {len(mudancas['ganharam_oferta']) - 5}"
+            parceiros_preview = [item['parceiro'] for item in mudancas['ganharam_oferta'][:3]]
+            todos_parceiros = [item['parceiro'] for item in mudancas['ganharam_oferta']]
+            
+            preview_str = ', '.join(parceiros_preview)
+            if len(mudancas['ganharam_oferta']) > 3:
+                preview_str += f" +{len(mudancas['ganharam_oferta']) - 3} mais"
+            
             alertas.append(f"""
-                <div class="alert-card alert-success">
-                    <strong>🎯 {len(mudancas['ganharam_oferta'])} parceiros ganharam oferta hoje!</strong><br>
-                    <small>Oportunidade de compra: {parceiros_str}</small>
+                <div class="alert-compact alert-success" data-alert-id="ganharam-oferta">
+                    <div class="alert-header" onclick="toggleAlert('ganharam-oferta')">
+                        <div class="alert-title">
+                            <strong>🎯 {len(mudancas['ganharam_oferta'])} parceiros ganharam oferta hoje!</strong>
+                            <i class="bi bi-chevron-down alert-chevron"></i>
+                        </div>
+                        <button class="alert-close" onclick="closeAlert('ganharam-oferta', event)">×</button>
+                    </div>
+                    <div class="alert-preview">
+                        <small>Oportunidade de compra: {preview_str}</small>
+                    </div>
+                    <div class="alert-details" style="display: none;">
+                        <div class="alert-content">
+                            <h6><i class="bi bi-target me-2"></i>Todos os parceiros que ganharam oferta:</h6>
+                            <div class="partners-grid">
+                                {''.join([f'<span class="partner-tag">{p}</span>' for p in todos_parceiros])}
+                            </div>
+                            <div class="alert-stats mt-2">
+                                <small class="text-muted">💡 Aproveite agora estas oportunidades - podem ser temporárias!</small>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             """)
         
-        # Alertas de ofertas perdidas
-        if mudancas['perderam_oferta']:
+        # 2. MELHORES OPORTUNIDADES DO MOMENTO
+        top_ofertas_hoje = dados[dados['Tem_Oferta_Hoje']].nlargest(5, 'Pontos_por_Moeda_Atual')
+        if len(top_ofertas_hoje) > 0:
+            preview_tops = top_ofertas_hoje.head(3)['Parceiro'].tolist()
+            todos_tops = top_ofertas_hoje['Parceiro'].tolist()
+            
             alertas.append(f"""
-                <div class="alert-card alert-danger">
-                    <strong>📉 {len(mudancas['perderam_oferta'])} parceiros perderam oferta hoje</strong><br>
-                    <small>Pode ser que voltem em breve. Fique de olho!</small>
+                <div class="alert-compact alert-info" data-alert-id="top-ofertas">
+                    <div class="alert-header" onclick="toggleAlert('top-ofertas')">
+                        <div class="alert-title">
+                            <strong>🏆 Top {len(top_ofertas_hoje)} melhores ofertas ativas</strong>
+                            <i class="bi bi-chevron-down alert-chevron"></i>
+                        </div>
+                        <button class="alert-close" onclick="closeAlert('top-ofertas', event)">×</button>
+                    </div>
+                    <div class="alert-preview">
+                        <small>Destaques: {', '.join(preview_tops[:3])}</small>
+                    </div>
+                    <div class="alert-details" style="display: none;">
+                        <div class="alert-content">
+                            <h6><i class="bi bi-trophy me-2"></i>Ranking das melhores ofertas hoje:</h6>
+                            <div class="ranking-list">
+                                {''.join([f'<div class="rank-item"><span class="rank-number">{i+1}º</span><span class="rank-partner">{row["Parceiro"]}</span><span class="rank-points">{row["Pontos_por_Moeda_Atual"]:.1f} pts</span></div>' for i, (_, row) in enumerate(top_ofertas_hoje.iterrows())])}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             """)
         
-        # Novos parceiros
-        if mudancas['novos_parceiros']:
+        # 3. OPORTUNIDADES RARAS ATIVAS
+        oportunidades_raras = dados[(dados['Categoria_Estrategica'] == 'Oportunidade rara') & (dados['Tem_Oferta_Hoje'])]
+        if len(oportunidades_raras) > 0:
             alertas.append(f"""
-                <div class="alert-card alert-info">
-                    <strong>🆕 {len(mudancas['novos_parceiros'])} novos parceiros no site!</strong><br>
-                    <small>Explore as novas opções de pontuação</small>
+                <div class="alert-compact alert-warning" data-alert-id="oportunidades-raras">
+                    <div class="alert-header" onclick="toggleAlert('oportunidades-raras')">
+                        <div class="alert-title">
+                            <strong>💎 {len(oportunidades_raras)} oportunidades raras ativas!</strong>
+                            <i class="bi bi-chevron-down alert-chevron"></i>
+                        </div>
+                        <button class="alert-close" onclick="closeAlert('oportunidades-raras', event)">×</button>
+                    </div>
+                    <div class="alert-preview">
+                        <small>Baixa frequência de ofertas - aproveite!</small>
+                    </div>
+                    <div class="alert-details" style="display: none;">
+                        <div class="alert-content">
+                            <h6><i class="bi bi-gem me-2"></i>Parceiros com baixa frequência de ofertas:</h6>
+                            <div class="rare-opportunities">
+                                {''.join([f'<div class="rare-item"><span class="rare-partner">{row["Parceiro"]}</span><span class="rare-freq">{row["Frequencia_Ofertas"]:.1f}% freq</span><span class="rare-points">{row["Pontos_por_Moeda_Atual"]:.1f} pts</span></div>' for _, row in oportunidades_raras.iterrows()])}
+                            </div>
+                            <small class="text-muted">💡 Estes parceiros raramente fazem ofertas - não perca!</small>
+                        </div>
+                    </div>
                 </div>
             """)
         
-        # Grandes mudanças de pontos
+        # 4. GRANDES AUMENTOS DE PONTOS
         if mudancas['grandes_mudancas_pontos']:
             aumentos = [x for x in mudancas['grandes_mudancas_pontos'] if x['variacao'] > 0]
             if aumentos:
                 alertas.append(f"""
-                    <div class="alert-card alert-success">
-                        <strong>⚡ {len(aumentos)} parceiros com grandes aumentos de pontos!</strong><br>
-                        <small>Aproveite as melhores oportunidades</small>
+                    <div class="alert-compact alert-success" data-alert-id="grandes-aumentos">
+                        <div class="alert-header" onclick="toggleAlert('grandes-aumentos')">
+                            <div class="alert-title">
+                                <strong>⚡ {len(aumentos)} parceiros com grandes aumentos!</strong>
+                                <i class="bi bi-chevron-down alert-chevron"></i>
+                            </div>
+                            <button class="alert-close" onclick="closeAlert('grandes-aumentos', event)">×</button>
+                        </div>
+                        <div class="alert-preview">
+                            <small>Aumentos superiores a 20% nos pontos</small>
+                        </div>
+                        <div class="alert-details" style="display: none;">
+                            <div class="alert-content">
+                                <h6><i class="bi bi-graph-up-arrow me-2"></i>Maiores aumentos de pontos:</h6>
+                                <div class="increases-list">
+                                    {''.join([f'<div class="increase-item"><span class="increase-partner">{item["parceiro"]}</span><span class="increase-percent text-success">+{item["variacao"]:.1f}%</span></div>' for item in aumentos[:8]])}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 """)
         
-        # Resumo da comparação com ontem
-        if metricas['variacao_ofertas'] != 0:
-            cor_classe = 'alert-success' if metricas['variacao_ofertas'] > 0 else 'alert-danger'
-            emoji = '📈' if metricas['variacao_ofertas'] > 0 else '📉'
-            texto = 'mais' if metricas['variacao_ofertas'] > 0 else 'menos'
+        # 5. PARCEIROS ESTREANTES COM OFERTA
+        novos_com_oferta = [item for item in mudancas['novos_parceiros'] if item['tem_oferta']]
+        if novos_com_oferta:
             alertas.append(f"""
-                <div class="alert-card {cor_classe}">
-                    <strong>{emoji} Hoje temos {abs(metricas['variacao_ofertas'])} ofertas {texto} que ontem</strong><br>
-                    <small>Total: {metricas['total_com_oferta']} ofertas hoje vs {metricas['ofertas_ontem']} ontem</small>
+                <div class="alert-compact alert-info" data-alert-id="novos-com-oferta">
+                    <div class="alert-header" onclick="toggleAlert('novos-com-oferta')">
+                        <div class="alert-title">
+                            <strong>🆕 {len(novos_com_oferta)} estreantes já com oferta!</strong>
+                            <i class="bi bi-chevron-down alert-chevron"></i>
+                        </div>
+                        <button class="alert-close" onclick="closeAlert('novos-com-oferta', event)">×</button>
+                    </div>
+                    <div class="alert-preview">
+                        <small>Novos parceiros que chegaram oferecendo pontos</small>
+                    </div>
+                    <div class="alert-details" style="display: none;">
+                        <div class="alert-content">
+                            <h6><i class="bi bi-star me-2"></i>Novatos generosos:</h6>
+                            <div class="newbies-list">
+                                {''.join([f'<div class="newbie-item"><span class="newbie-partner">{item["parceiro"]}</span><span class="newbie-points">{item["pontos_hoje"]} pts</span></div>' for item in novos_com_oferta])}
+                            </div>
+                            <small class="text-muted">💡 Explore essas novas opções!</small>
+                        </div>
+                    </div>
                 </div>
             """)
         
+        # 6. RESUMO DE OFERTAS PERDIDAS (mais compacto)
+        if mudancas['perderam_oferta']:
+            alertas.append(f"""
+                <div class="alert-compact alert-danger" data-alert-id="perderam-oferta">
+                    <div class="alert-header" onclick="toggleAlert('perderam-oferta')">
+                        <div class="alert-title">
+                            <strong>📉 {len(mudancas['perderam_oferta'])} ofertas finalizaram</strong>
+                            <i class="bi bi-chevron-down alert-chevron"></i>
+                        </div>
+                        <button class="alert-close" onclick="closeAlert('perderam-oferta', event)">×</button>
+                    </div>
+                    <div class="alert-preview">
+                        <small>Fique de olho - podem voltar em breve</small>
+                    </div>
+                    <div class="alert-details" style="display: none;">
+                        <div class="alert-content">
+                            <h6><i class="bi bi-clock-history me-2"></i>Ofertas que saíram do ar:</h6>
+                            <div class="lost-offers">
+                                {''.join([f'<span class="lost-tag">{item["parceiro"]}</span>' for item in mudancas['perderam_oferta'][:10]])}
+                            </div>
+                            <small class="text-muted">💡 Monitore para quando voltarem!</small>
+                        </div>
+                    </div>
+                </div>
+            """)
+        
+        # Alerta padrão se não houver informações relevantes
         if not alertas:
             alertas.append("""
-                <div class="alert-card">
-                    <strong>📊 Dados atualizados com sucesso!</strong><br>
-                    <small>Todos os parceiros foram analisados. Explore as oportunidades no dashboard.</small>
+                <div class="alert-compact alert-default" data-alert-id="default">
+                    <div class="alert-header">
+                        <div class="alert-title">
+                            <strong>📊 Dados atualizados com sucesso!</strong>
+                        </div>
+                        <button class="alert-close" onclick="closeAlert('default', event)">×</button>
+                    </div>
+                    <div class="alert-preview">
+                        <small>Explore o dashboard para encontrar as melhores oportunidades</small>
+                    </div>
                 </div>
             """)
         
-        return '<div class="row mb-3"><div class="col-12">' + ''.join(alertas) + '</div></div>'
+        return '<div class="alerts-container mb-3">' + ''.join(alertas) + '</div>'
     
     def _gerar_tabela_analise_completa(self, dados):
-        """Gera tabela completa com todas as colunas solicitadas"""
+        """Gera tabela completa com todas as colunas solicitadas e ordenação corrigida"""
         colunas = [
             ('Parceiro', 'Parceiro', 'texto'),
             ('Status_Casa', 'Status', 'texto'),
@@ -1598,10 +806,10 @@ class LiveloAnalytics:
             ('Gasto_Formatado', 'Gasto', 'texto'),
             ('Pontos_Atual', 'Pontos Atual', 'numero'),
             ('Variacao_Pontos', 'Variação %', 'numero'),
-            ('Data_Anterior', 'Data Anterior', 'texto'),
+            ('Data_Anterior', 'Data Anterior', 'data'),  # CORRIGIDO: marcado como 'data'
             ('Pontos_Anterior', 'Pontos Anterior', 'numero'),
             ('Dias_Desde_Mudanca', 'Dias Mudança', 'numero'),
-            ('Data_Ultima_Oferta', 'Última Oferta', 'texto'),
+            ('Data_Ultima_Oferta', 'Última Oferta', 'data'),  # CORRIGIDO: marcado como 'data'
             ('Dias_Desde_Ultima_Oferta', 'Dias s/ Oferta', 'numero'),
             ('Frequencia_Ofertas', 'Freq. Ofertas %', 'numero'),
             ('Total_Ofertas_Historicas', 'Total Ofertas', 'numero'),
@@ -1642,7 +850,12 @@ class LiveloAnalytics:
                 elif col in ['Pontos_Atual', 'Pontos_Anterior', 'Total_Ofertas_Historicas', 'Dias_Desde_Mudanca', 'Dias_Desde_Ultima_Oferta']:
                     html += f'<td>{int(valor) if pd.notnull(valor) and valor >= 0 else "-"}</td>'
                 elif col in ['Data_Anterior', 'Data_Ultima_Oferta']:
-                    html += f'<td>{valor if pd.notnull(valor) else "Nunca"}</td>'
+                    # CORREÇÃO: Formatação de datas para ordenação correta
+                    if pd.notnull(valor):
+                        data_formatada = valor.strftime('%d/%m/%Y') if hasattr(valor, 'strftime') else str(valor)
+                        html += f'<td>{data_formatada}</td>'
+                    else:
+                        html += f'<td>Nunca</td>'
                 else:
                     html += f'<td>{valor}</td>'
             html += '</tr>'
@@ -1662,6 +875,1373 @@ class LiveloAnalytics:
             display_text = f"{row['Parceiro']} ({row['Moeda']})"
             html += f'<option value="{chave_unica}">{display_text}</option>'
         
+        return html
+    
+    def gerar_html_completo(self):
+        """Gera HTML com todas as funcionalidades - VERSÃO MELHORADA COM ORDENAÇÃO DE DATAS CORRIGIDA"""
+        dados = self.analytics['dados_completos']
+        metricas = self.analytics['metricas']
+        graficos = self.analytics['graficos']
+        mudancas = self.analytics['mudancas_ofertas']
+        
+        # Converter gráficos para HTML
+        graficos_html = {}
+        for key, fig in graficos.items():
+            graficos_html[key] = fig.to_html(full_html=False, include_plotlyjs='cdn')
+        
+        # Preparar dados para JavaScript
+        dados_json = dados.to_json(orient='records', date_format='iso')
+        dados_historicos_completos = self.df_completo.copy()
+        dados_historicos_completos['Timestamp'] = dados_historicos_completos['Timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
+        dados_historicos_json = dados_historicos_completos.to_json(orient='records')
+        dados_raw_json = self.df_completo.to_json(orient='records', date_format='iso')
+        
+        # Preparar alertas dinâmicos
+        alertas_html = self._gerar_alertas_dinamicos(mudancas, metricas)
+        
+        html = f"""
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Livelo Analytics Pro - {metricas['ultima_atualizacao']}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <style>
+        :root {{
+            --livelo-rosa: {LIVELO_ROSA};
+            --livelo-azul: {LIVELO_AZUL};
+            --livelo-rosa-claro: {LIVELO_ROSA_CLARO};
+            --livelo-azul-claro: {LIVELO_AZUL_CLARO};
+        }}
+        
+        /* TEMA CLARO (padrão) */
+        :root {{
+            --bg-primary: #f8f9fa;
+            --bg-secondary: #e9ecef;
+            --bg-card: white;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --border-color: #dee2e6;
+            --shadow: rgba(0,0,0,0.06);
+            --shadow-hover: rgba(0,0,0,0.1);
+        }}
+        
+        /* TEMA ESCURO */
+        [data-theme="dark"] {{
+            --bg-primary: #1a1d23;
+            --bg-secondary: #2d3139;
+            --bg-card: #343a46;
+            --text-primary: #ffffff;
+            --text-secondary: #b8bcc8;
+            --border-color: #495057;
+            --shadow: rgba(0,0,0,0.3);
+            --shadow-hover: rgba(0,0,0,0.5);
+        }}
+        
+        [data-theme="dark"] .table th {{
+            background-color: var(--livelo-azul) !important;
+            color: white !important;
+        }}
+        
+        [data-theme="dark"] .table td {{
+            background-color: var(--bg-card) !important;
+            color: var(--text-primary) !important;
+            border-color: var(--border-color) !important;
+        }}
+        
+        [data-theme="dark"] .table tbody tr:hover {{
+            background-color: rgba(255, 10, 140, 0.1) !important;
+        }}
+        
+        * {{ box-sizing: border-box; }}
+        
+        body {{
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 14px;
+            line-height: 1.4;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }}
+        
+        .container-fluid {{ 
+            max-width: 100%; 
+            padding: 10px 15px; 
+        }}
+        
+        /* THEME TOGGLE */
+        .theme-toggle {{
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 25px;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px var(--shadow);
+        }}
+        
+        .theme-toggle:hover {{
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px var(--shadow-hover);
+        }}
+        
+        .theme-toggle i {{
+            font-size: 1.2rem;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }}
+        
+        /* ALERTAS COMPACTOS */
+        .alerts-container {{
+            margin-bottom: 20px;
+        }}
+        
+        .alert-compact {{
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin-bottom: 10px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px var(--shadow);
+        }}
+        
+        .alert-compact:hover {{
+            box-shadow: 0 4px 15px var(--shadow-hover);
+            transform: translateY(-1px);
+        }}
+        
+        .alert-header {{
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s ease;
+        }}
+        
+        .alert-header:hover {{
+            background: rgba(255, 10, 140, 0.05);
+        }}
+        
+        .alert-title {{
+            display: flex;
+            align-items: center;
+            flex: 1;
+            color: var(--text-primary);
+        }}
+        
+        .alert-title strong {{
+            margin-right: 10px;
+        }}
+        
+        .alert-chevron {{
+            margin-left: auto;
+            margin-right: 10px;
+            transition: transform 0.3s ease;
+            color: var(--text-secondary);
+        }}
+        
+        .alert-compact.expanded .alert-chevron {{
+            transform: rotate(180deg);
+        }}
+        
+        .alert-close {{
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }}
+        
+        .alert-close:hover {{
+            background: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+        }}
+        
+        .alert-preview {{
+            padding: 0 15px 12px 15px;
+            color: var(--text-secondary);
+        }}
+        
+        .alert-details {{
+            border-top: 1px solid var(--border-color);
+            background: rgba(0,0,0,0.02);
+            animation: slideDown 0.3s ease;
+        }}
+        
+        [data-theme="dark"] .alert-details {{
+            background: rgba(255,255,255,0.05);
+        }}
+        
+        .alert-content {{
+            padding: 15px;
+        }}
+        
+        .alert-content h6 {{
+            margin-bottom: 10px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }}
+        
+        /* GRIDS E LISTAS DOS ALERTAS */
+        .partners-grid {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 10px;
+        }}
+        
+        .partner-tag, .lost-tag {{
+            background: var(--livelo-rosa);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 500;
+        }}
+        
+        .lost-tag {{
+            background: #dc3545;
+        }}
+        
+        .ranking-list, .rare-opportunities, .increases-list, .newbies-list {{
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }}
+        
+        .rank-item, .rare-item, .increase-item, .newbie-item {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 10px;
+            background: var(--bg-primary);
+            border-radius: 6px;
+            font-size: 0.8rem;
+        }}
+        
+        .rank-number {{
+            background: var(--livelo-rosa);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 0.7rem;
+            min-width: 25px;
+            text-align: center;
+        }}
+        
+        .rank-points, .rare-points {{
+            background: var(--livelo-azul);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.7rem;
+        }}
+        
+        .rare-freq {{
+            background: #ffc107;
+            color: #212529;
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 500;
+        }}
+        
+        .increase-percent {{
+            font-weight: bold;
+            font-size: 0.8rem;
+        }}
+        
+        .lost-offers {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }}
+        
+        /* CORES DOS ALERTAS */
+        .alert-success {{ border-left: 4px solid #28a745; }}
+        .alert-danger {{ border-left: 4px solid #dc3545; }}
+        .alert-warning {{ border-left: 4px solid #ffc107; }}
+        .alert-info {{ border-left: 4px solid #17a2b8; }}
+        .alert-default {{ border-left: 4px solid var(--livelo-rosa); }}
+        
+        /* ANIMAÇÃO */
+        @keyframes slideDown {{
+            from {{
+                opacity: 0;
+                max-height: 0;
+            }}
+            to {{
+                opacity: 1;
+                max-height: 500px;
+            }}
+        }}
+        
+        .card {{
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px var(--shadow);
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }}
+        
+        .card:hover {{ 
+            transform: translateY(-1px); 
+            box-shadow: 0 4px 20px var(--shadow-hover); 
+        }}
+        
+        .metric-card {{
+            background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-primary) 100%);
+            border-left: 3px solid var(--livelo-rosa);
+            padding: 15px;
+        }}
+        
+        .metric-value {{
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--livelo-azul);
+            margin: 0;
+            line-height: 1;
+        }}
+        
+        .metric-label {{
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }}
+        
+        .metric-change {{
+            font-size: 0.7rem;
+            margin-top: 3px;
+        }}
+        
+        .nav-pills .nav-link.active {{ background-color: var(--livelo-rosa); }}
+        .nav-pills .nav-link {{ 
+            color: var(--livelo-azul); 
+            padding: 8px 16px;
+            margin-right: 5px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }}
+        
+        .table-container {{
+            background: var(--bg-card);
+            border-radius: 12px;
+            overflow: hidden;
+            max-height: 70vh;
+            overflow-y: auto;
+            overflow-x: auto;
+        }}
+        
+        .table {{ 
+            margin: 0; 
+            font-size: 0.85rem;
+            white-space: nowrap;
+            min-width: 100%;
+        }}
+        
+        .table th {{
+            background-color: var(--livelo-azul) !important;
+            color: white !important;
+            border: none !important;
+            padding: 12px 8px !important;
+            font-weight: 600 !important;
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 10 !important;
+            font-size: 0.8rem !important;
+            cursor: pointer !important;
+            user-select: none !important;
+            transition: all 0.2s ease !important;
+            text-align: center !important;
+            vertical-align: middle !important;
+            white-space: nowrap !important;
+            min-width: 100px;
+        }}
+        
+        .table th:hover {{ 
+            background-color: var(--livelo-rosa) !important;
+            transform: translateY(-1px);
+        }}
+        
+        .table td {{
+            padding: 8px !important;
+            border-bottom: 1px solid var(--border-color) !important;
+            vertical-align: middle !important;
+            font-size: 0.8rem !important;
+            white-space: nowrap !important;
+            text-align: center !important;
+            background: var(--bg-card) !important;
+            color: var(--text-primary) !important;
+        }}
+        
+        .table tbody tr:hover {{ 
+            background-color: rgba(255, 10, 140, 0.05) !important; 
+        }}
+        
+        .table td:first-child {{
+            text-align: left !important;
+            font-weight: 500;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }}
+        
+        .badge-status {{
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            min-width: 60px;
+            text-align: center;
+            white-space: nowrap;
+        }}
+        
+        .search-input {{
+            border-radius: 20px;
+            border: 2px solid var(--border-color);
+            padding: 8px 15px;
+            font-size: 0.9rem;
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }}
+        
+        .search-input:focus {{
+            border-color: var(--livelo-rosa);
+            box-shadow: 0 0 0 0.2rem rgba(255, 10, 140, 0.25);
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }}
+        
+        .btn-download {{
+            background: linear-gradient(135deg, var(--livelo-rosa) 0%, var(--livelo-azul) 100%);
+            border: none;
+            border-radius: 20px;
+            color: white;
+            padding: 8px 20px;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }}
+        
+        .btn-download:hover {{ 
+            color: white; 
+            transform: translateY(-1px); 
+        }}
+        
+        .individual-analysis {{
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }}
+        
+        .sort-indicator {{
+            margin-left: 5px;
+            opacity: 0.3;
+            transition: all 0.2s ease;
+        }}
+        
+        .sort-indicator.active {{ 
+            opacity: 1; 
+            color: #FFD700 !important;
+        }}
+        
+        .table th:hover .sort-indicator {{
+            opacity: 0.7;
+            color: #FFD700 !important;
+        }}
+        
+        .table-responsive {{ 
+            border-radius: 12px; 
+        }}
+        
+        .plotly {{ 
+            width: 100% !important; 
+        }}
+        
+        .footer {{
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            border-top: 1px solid var(--border-color);
+        }}
+        
+        .footer small {{
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }}
+        
+        .footer small:hover {{
+            color: var(--livelo-azul);
+        }}
+        
+        /* MOBILE RESPONSIVENESS */
+        @media (max-width: 768px) {{
+            .theme-toggle {{
+                top: 10px;
+                right: 10px;
+                width: 40px;
+                height: 40px;
+            }}
+            
+            .theme-toggle i {{
+                font-size: 1rem;
+            }}
+            
+            .container-fluid {{ 
+                padding: 5px 8px; 
+            }}
+            
+            .metric-value {{ 
+                font-size: 1.4rem; 
+            }}
+            
+            .metric-label {{
+                font-size: 0.65rem;
+            }}
+            
+            .alert-compact {{
+                margin-bottom: 8px;
+            }}
+            
+            .alert-header {{
+                padding: 10px 12px;
+            }}
+            
+            .alert-preview {{
+                padding: 0 12px 10px 12px;
+            }}
+            
+            .partners-grid {{
+                gap: 3px;
+            }}
+            
+            .partner-tag, .lost-tag {{
+                font-size: 0.65rem;
+                padding: 2px 6px;
+            }}
+            
+            .table {{ 
+                font-size: 0.7rem; 
+            }}
+            
+            .table th {{
+                padding: 8px 4px !important;
+                font-size: 0.7rem !important;
+                min-width: 80px;
+            }}
+            
+            .table td {{
+                padding: 6px 4px !important;
+                font-size: 0.7rem !important;
+            }}
+            
+            .nav-pills .nav-link {{ 
+                padding: 6px 10px; 
+                font-size: 0.75rem; 
+                margin-right: 2px;
+            }}
+            
+            .card {{
+                margin-bottom: 10px;
+            }}
+            
+            .individual-analysis {{
+                padding: 15px;
+            }}
+            
+            .btn-download {{
+                font-size: 0.8rem;
+                padding: 6px 15px;
+            }}
+            
+            .row.g-2 {{
+                margin: 0 -2px;
+            }}
+            
+            .row.g-2 > * {{
+                padding-right: 2px;
+                padding-left: 2px;
+            }}
+            
+            .table-container {{
+                max-height: 60vh;
+            }}
+            
+            .metric-card {{
+                padding: 10px;
+            }}
+        }}
+        
+        @media (max-width: 576px) {{
+            .table th {{
+                min-width: 70px;
+                padding: 6px 3px !important;
+                font-size: 0.65rem !important;
+            }}
+            
+            .table td {{
+                padding: 5px 3px !important;
+                font-size: 0.65rem !important;
+            }}
+            
+            .nav-pills .nav-link {{
+                font-size: 0.7rem;
+                padding: 5px 8px;
+            }}
+            
+            .metric-value {{
+                font-size: 1.2rem;
+            }}
+            
+            .card-header h6 {{
+                font-size: 0.9rem;
+            }}
+        }}
+        
+        /* Melhor scroll em dispositivos touch */
+        .table-container {{
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+        }}
+        
+        .table-container::-webkit-scrollbar {{
+            width: 6px;
+            height: 6px;
+        }}
+        
+        .table-container::-webkit-scrollbar-track {{
+            background: var(--bg-primary);
+            border-radius: 3px;
+        }}
+        
+        .table-container::-webkit-scrollbar-thumb {{
+            background: var(--livelo-azul-claro);
+            border-radius: 3px;
+        }}
+        
+        .table-container::-webkit-scrollbar-thumb:hover {{
+            background: var(--livelo-azul);
+        }}
+    </style>
+</head>
+<body>
+    <!-- Theme Toggle -->
+    <div class="theme-toggle" onclick="toggleTheme()" title="Alternar tema claro/escuro">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
+    </div>
+    
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="text-center mb-3">
+            <h1 class="h3 fw-bold mb-1" style="color: var(--livelo-azul);">
+                <i class="bi bi-graph-up me-2"></i>Livelo Analytics Pro
+            </h1>
+            <small class="text-muted">Atualizado em {metricas['ultima_atualizacao']} | {metricas['total_parceiros']} parceiros no site hoje</small><br>
+            <small class="text-muted" style="font-size: 0.75rem;">Dados coletados em: {metricas['data_coleta_mais_recente']}</small>
+        </div>
+        
+        <!-- Alertas Dinâmicos Compactos -->
+        {alertas_html}
+        
+        <!-- Métricas Principais -->
+        <div class="row g-2 mb-3">
+            <div class="col-lg-2 col-md-4 col-6">
+                <div class="metric-card text-center">
+                    <div class="metric-value">{metricas['total_parceiros']}</div>
+                    <div class="metric-label">Parceiros Hoje</div>
+                    <div class="metric-change" style="color: {'green' if metricas['variacao_parceiros'] >= 0 else 'red'};">
+                        {'+' if metricas['variacao_parceiros'] > 0 else ''}{metricas['variacao_parceiros']} vs ontem
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 col-6">
+                <div class="metric-card text-center">
+                    <div class="metric-value">{metricas['total_com_oferta']}</div>
+                    <div class="metric-label">Com Oferta</div>
+                    <div class="metric-change" style="color: {'green' if metricas['variacao_ofertas'] >= 0 else 'red'};">
+                        {'+' if metricas['variacao_ofertas'] > 0 else ''}{metricas['variacao_ofertas']} vs ontem
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 col-6">
+                <div class="metric-card text-center">
+                    <div class="metric-value">{metricas['percentual_ofertas_hoje']:.1f}%</div>
+                    <div class="metric-label">% Ofertas</div>
+                    <div class="metric-change">
+                        {metricas['percentual_ofertas_ontem']:.1f}% ontem
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 col-6">
+                <div class="metric-card text-center">
+                    <div class="metric-value">{metricas['compre_agora']}</div>
+                    <div class="metric-label">Compre Agora!</div>
+                    <div class="metric-change text-success">
+                        Oportunidades hoje
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 col-6">
+                <div class="metric-card text-center">
+                    <div class="metric-value">{metricas['oportunidades_raras']}</div>
+                    <div class="metric-label">Oport. Raras</div>
+                    <div class="metric-change text-warning">
+                        Baixa frequência
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 col-6">
+                <div class="metric-card text-center">
+                    <div class="metric-value">{metricas['sempre_oferta']}</div>
+                    <div class="metric-label">Sempre Oferta</div>
+                    <div class="metric-change text-info">
+                        Qualquer hora
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Navegação -->
+        <ul class="nav nav-pills justify-content-center mb-3" id="mainTabs" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#dashboard">
+                    <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#analise">
+                    <i class="bi bi-table me-1"></i>Análise Completa
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#individual">
+                    <i class="bi bi-person-check me-1"></i>Análise Individual
+                </button>
+            </li>
+        </ul>
+        
+        <div class="tab-content">
+            <!-- Dashboard -->
+            <div class="tab-pane fade show active" id="dashboard">
+                <div class="row g-3">
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header"><h6 class="mb-0">Top Ofertas HOJE</h6></div>
+                            <div class="card-body p-2">{graficos_html.get('top_ofertas', '<p>Gráfico não disponível</p>')}</div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header"><h6 class="mb-0">Mudanças de Ofertas (Hoje vs Ontem)</h6></div>
+                            <div class="card-body p-2">{graficos_html.get('mudancas_ofertas', '<p>Ainda sem dados de comparação</p>')}</div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header"><h6 class="mb-0">Matriz Estratégica</h6></div>
+                            <div class="card-body p-2">{graficos_html.get('matriz_estrategica', '<p>Gráfico não disponível</p>')}</div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header"><h6 class="mb-0">Comparação Temporal</h6></div>
+                            <div class="card-body p-2">{graficos_html.get('comparacao_temporal', '<p>Dados de ontem não disponíveis</p>')}</div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header"><h6 class="mb-0">Classificação Estratégica</h6></div>
+                            <div class="card-body p-2">{graficos_html.get('oportunidades', '<p>Gráfico não disponível</p>')}</div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header"><h6 class="mb-0">Tempo de Casa</h6></div>
+                            <div class="card-body p-2">{graficos_html.get('status_casa', '<p>Gráfico não disponível</p>')}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Análise Completa -->
+            <div class="tab-pane fade" id="analise">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">Análise Completa - {metricas['total_parceiros']} Parceiros HOJE</h6>
+                        <button class="btn btn-download btn-sm" onclick="downloadAnaliseCompleta()">
+                            <i class="bi bi-download me-1"></i>Download Excel
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="p-3 border-bottom">
+                            <input type="text" class="form-control search-input" id="searchInput" placeholder="🔍 Buscar parceiro...">
+                        </div>
+                        <div class="table-responsive table-container">
+                            {self._gerar_tabela_analise_completa(dados)}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Análise Individual -->
+            <div class="tab-pane fade" id="individual">
+                <div class="individual-analysis">
+                    <div class="row align-items-center mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Selecionar Parceiro:</label>
+                            <select class="form-select" id="parceiroSelect" onchange="carregarAnaliseIndividual()">
+                                {self._gerar_opcoes_parceiros(dados)}
+                            </select>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <button class="btn btn-download" onclick="downloadAnaliseIndividual()">
+                                <i class="bi bi-download me-1"></i>Download Parceiro
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0" id="tituloAnaliseIndividual">Histórico Detalhado</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive table-container">
+                            <div id="tabelaIndividual">Selecione um parceiro para ver o histórico...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Rodapé -->
+        <div class="footer">
+            <small onclick="downloadDadosRaw()" title="Download dados brutos">Desenvolvido por gc</small>
+        </div>
+    </div>
+    
+    <script>
+        // Dados para análise
+        const todosOsDados = {dados_json};
+        const dadosHistoricosCompletos = {dados_historicos_json};
+        const dadosRawCompletos = {dados_raw_json};
+        let parceiroSelecionado = null;
+        
+        // GERENCIAMENTO DE TEMA
+        function initTheme() {{
+            const savedTheme = localStorage.getItem('livelo-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeIcon(savedTheme);
+        }}
+        
+        function toggleTheme() {{
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('livelo-theme', newTheme);
+            updateThemeIcon(newTheme);
+        }}
+        
+        function updateThemeIcon(theme) {{
+            const icon = document.getElementById('theme-icon');
+            if (theme === 'dark') {{
+                icon.className = 'bi bi-moon-fill';
+            }} else {{
+                icon.className = 'bi bi-sun-fill';
+            }}
+        }}
+        
+        // GERENCIAMENTO DE ALERTAS
+        function toggleAlert(alertId) {{
+            const alert = document.querySelector(`[data-alert-id="${{alertId}}"]`);
+            if (!alert) return;
+            
+            const details = alert.querySelector('.alert-details');
+            const chevron = alert.querySelector('.alert-chevron');
+            
+            if (details.style.display === 'none' || details.style.display === '') {{
+                details.style.display = 'block';
+                alert.classList.add('expanded');
+            }} else {{
+                details.style.display = 'none';
+                alert.classList.remove('expanded');
+            }}
+        }}
+        
+        function closeAlert(alertId, event) {{
+            event.stopPropagation(); // Impede que o clique no X expanda o alerta
+            const alert = document.querySelector(`[data-alert-id="${{alertId}}"]`);
+            if (alert) {{
+                alert.style.animation = 'slideUp 0.3s ease';
+                setTimeout(() => {{
+                    alert.remove();
+                }}, 300);
+            }}
+        }}
+        
+        // Animação de slide up para fechar alertas
+        const slideUpKeyframes = `
+            @keyframes slideUp {{
+                from {{
+                    opacity: 1;
+                    max-height: 200px;
+                    transform: translateY(0);
+                }}
+                to {{
+                    opacity: 0;
+                    max-height: 0;
+                    transform: translateY(-10px);
+                }}
+            }}
+        `;
+        const style = document.createElement('style');
+        style.textContent = slideUpKeyframes;
+        document.head.appendChild(style);
+        
+        // FUNÇÃO AUXILIAR MELHORADA PARA PARSE DE DATAS EM PT-BR
+        function parseDataBR(dataString) {{
+            if (!dataString || dataString === '-' || dataString === 'Nunca') {{
+                return new Date(1900, 0, 1); // Data muito antiga para ordenação
+            }}
+            
+            // Limpar e normalizar a string
+            let cleanDate = dataString.trim();
+            
+            // Padrões de data suportados:
+            // dd/mm/yyyy, dd/mm/yyyy hh:mm:ss, yyyy-mm-dd, yyyy-mm-dd hh:mm:ss
+            
+            // Se tem espaço, separar data e hora
+            let [datePart, timePart] = cleanDate.split(' ');
+            
+            let year, month, day, hour = 0, minute = 0, second = 0;
+            
+            // Parse da parte da data
+            if (datePart.includes('/')) {{
+                // Formato brasileiro: dd/mm/yyyy
+                let [d, m, y] = datePart.split('/');
+                day = parseInt(d);
+                month = parseInt(m) - 1; // Mês em JS é 0-indexado
+                year = parseInt(y);
+            }} else if (datePart.includes('-')) {{
+                // Formato ISO: yyyy-mm-dd
+                let [y, m, d] = datePart.split('-');
+                day = parseInt(d);
+                month = parseInt(m) - 1;
+                year = parseInt(y);
+            }} else {{
+                // Tentar parse direto
+                return new Date(dataString);
+            }}
+            
+            // Parse da parte do tempo se existir
+            if (timePart) {{
+                let timeParts = timePart.split(':');
+                hour = parseInt(timeParts[0]) || 0;
+                minute = parseInt(timeParts[1]) || 0;
+                second = parseInt(timeParts[2]) || 0;
+            }}
+            
+            return new Date(year, month, day, hour, minute, second);
+        }}
+        
+        // Busca na tabela
+        document.getElementById('searchInput').addEventListener('input', function() {{
+            const filter = this.value.toLowerCase();
+            const rows = document.querySelectorAll('#tabelaAnalise tbody tr');
+            
+            rows.forEach(row => {{
+                const parceiro = row.cells[0].textContent.toLowerCase();
+                row.style.display = parceiro.includes(filter) ? '' : 'none';
+            }});
+        }});
+        
+        // Ordenação da tabela principal - VERSÃO CORRIGIDA
+        let estadoOrdenacao = {{}};
+        
+        function ordenarTabela(indiceColuna, tipoColuna) {{
+            const tabela = document.querySelector('#tabelaAnalise');
+            if (!tabela) return;
+            
+            const tbody = tabela.querySelector('tbody');
+            const linhas = Array.from(tbody.querySelectorAll('tr'));
+            
+            const estadoAtual = estadoOrdenacao[indiceColuna] || 'neutro';
+            let novaOrdem;
+            if (estadoAtual === 'neutro' || estadoAtual === 'desc') {{
+                novaOrdem = 'asc';
+            }} else {{
+                novaOrdem = 'desc';
+            }}
+            estadoOrdenacao[indiceColuna] = novaOrdem;
+            
+            tabela.querySelectorAll('th .sort-indicator').forEach(indicator => {{
+                indicator.className = 'bi bi-arrows-expand sort-indicator';
+            }});
+            
+            const headerAtual = tabela.querySelectorAll('th')[indiceColuna];
+            const indicatorAtual = headerAtual.querySelector('.sort-indicator');
+            indicatorAtual.className = `bi bi-arrow-${{novaOrdem === 'asc' ? 'up' : 'down'}} sort-indicator active`;
+            
+            linhas.sort((linhaA, linhaB) => {{
+                let textoA = linhaA.cells[indiceColuna].textContent.trim();
+                let textoB = linhaB.cells[indiceColuna].textContent.trim();
+                
+                const badgeA = linhaA.cells[indiceColuna].querySelector('.badge');
+                const badgeB = linhaB.cells[indiceColuna].querySelector('.badge');
+                if (badgeA) textoA = badgeA.textContent.trim();
+                if (badgeB) textoB = badgeB.textContent.trim();
+                
+                let resultado = 0;
+                
+                if (tipoColuna === 'numero') {{
+                    let numA = parseFloat(textoA.replace(/[^\\d.-]/g, '')) || 0;
+                    let numB = parseFloat(textoB.replace(/[^\\d.-]/g, '')) || 0;
+                    
+                    if (textoA === '-' || textoA === 'Nunca') numA = novaOrdem === 'asc' ? -999999 : 999999;
+                    if (textoB === '-' || textoB === 'Nunca') numB = novaOrdem === 'asc' ? -999999 : 999999;
+                    
+                    resultado = numA - numB;
+                }} else if (tipoColuna === 'data') {{
+                    // ORDENAÇÃO DE DATAS CORRIGIDA
+                    let dataA = parseDataBR(textoA);
+                    let dataB = parseDataBR(textoB);
+                    
+                    resultado = dataA.getTime() - dataB.getTime();
+                }} else {{
+                    if (textoA === '-' || textoA === 'Nunca') textoA = novaOrdem === 'asc' ? 'zzz' : '';
+                    if (textoB === '-' || textoB === 'Nunca') textoB = novaOrdem === 'asc' ? 'zzz' : '';
+                    
+                    resultado = textoA.localeCompare(textoB, 'pt-BR', {{ numeric: true }});
+                }}
+                
+                return novaOrdem === 'asc' ? resultado : -resultado;
+            }});
+            
+            linhas.forEach(linha => tbody.appendChild(linha));
+        }}
+        
+        // ORDENAÇÃO DA TABELA INDIVIDUAL - VERSÃO CORRIGIDA
+        let estadoOrdenacaoIndividual = {{}};
+        
+        function ordenarTabelaIndividual(indiceColuna, tipoColuna) {{
+            const tabela = document.querySelector('#tabelaIndividual table');
+            if (!tabela) return;
+            
+            const tbody = tabela.querySelector('tbody');
+            const linhas = Array.from(tbody.querySelectorAll('tr'));
+            
+            const estadoAtual = estadoOrdenacaoIndividual[indiceColuna] || 'neutro';
+            let novaOrdem;
+            if (estadoAtual === 'neutro' || estadoAtual === 'desc') {{
+                novaOrdem = 'asc';
+            }} else {{
+                novaOrdem = 'desc';
+            }}
+            estadoOrdenacaoIndividual[indiceColuna] = novaOrdem;
+            
+            // Atualizar indicadores visuais
+            tabela.querySelectorAll('th .sort-indicator').forEach(indicator => {{
+                indicator.className = 'bi bi-arrows-expand sort-indicator';
+            }});
+            
+            const headerAtual = tabela.querySelectorAll('th')[indiceColuna];
+            const indicatorAtual = headerAtual.querySelector('.sort-indicator');
+            if (indicatorAtual) {{
+                indicatorAtual.className = `bi bi-arrow-${{novaOrdem === 'asc' ? 'up' : 'down'}} sort-indicator active`;
+            }}
+            
+            // Ordenar linhas
+            linhas.sort((linhaA, linhaB) => {{
+                let textoA = linhaA.cells[indiceColuna].textContent.trim();
+                let textoB = linhaB.cells[indiceColuna].textContent.trim();
+                
+                const badgeA = linhaA.cells[indiceColuna].querySelector('.badge');
+                const badgeB = linhaB.cells[indiceColuna].querySelector('.badge');
+                if (badgeA) textoA = badgeA.textContent.trim();
+                if (badgeB) textoB = badgeB.textContent.trim();
+                
+                let resultado = 0;
+                
+                if (tipoColuna === 'numero') {{
+                    let numA = parseFloat(textoA.replace(/[^\\d.-]/g, '')) || 0;
+                    let numB = parseFloat(textoB.replace(/[^\\d.-]/g, '')) || 0;
+                    resultado = numA - numB;
+                }} else if (tipoColuna === 'data') {{
+                    // ORDENAÇÃO DE DATAS CORRIGIDA PARA TABELA INDIVIDUAL
+                    let dataA = parseDataBR(textoA);
+                    let dataB = parseDataBR(textoB);
+                    
+                    resultado = dataA.getTime() - dataB.getTime();
+                }} else {{
+                    resultado = textoA.localeCompare(textoB, 'pt-BR', {{ numeric: true }});
+                }}
+                
+                return novaOrdem === 'asc' ? resultado : -resultado;
+            }});
+            
+            linhas.forEach(linha => tbody.appendChild(linha));
+        }}
+        
+        // Download Excel - Análise Completa
+        function downloadAnaliseCompleta() {{
+            const dadosVisiveis = todosOsDados.filter(item => {{
+                const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+                return !searchTerm || item.Parceiro.toLowerCase().includes(searchTerm);
+            }});
+            
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(dadosVisiveis);
+            XLSX.utils.book_append_sheet(wb, ws, "Análise Completa");
+            XLSX.writeFile(wb, "livelo_analise_completa_{metricas['ultima_atualizacao'].replace('/', '_')}.xlsx");
+        }}
+        
+        // CARREGAR ANÁLISE INDIVIDUAL - VERSÃO MELHORADA
+        function carregarAnaliseIndividual() {{
+            const chaveUnica = document.getElementById('parceiroSelect').value;
+            if (!chaveUnica) return;
+            
+            // Resetar estado de ordenação
+            estadoOrdenacaoIndividual = {{}};
+            
+            const [parceiro, moeda] = chaveUnica.split('|');
+            parceiroSelecionado = `${{parceiro}} (${{moeda}})`;
+            
+            const historicoCompleto = dadosHistoricosCompletos.filter(item => 
+                item.Parceiro === parceiro && item.Moeda === moeda
+            );
+            
+            const dadosResumo = todosOsDados.filter(item => 
+                item.Parceiro === parceiro && item.Moeda === moeda
+            );
+            
+            document.getElementById('tituloAnaliseIndividual').textContent = 
+                `Histórico Detalhado - ${{parceiro}} (${{moeda}}) - ${{historicoCompleto.length}} registros`;
+            
+            if (historicoCompleto.length === 0) {{
+                document.getElementById('tabelaIndividual').innerHTML = 
+                    '<div class="p-3 text-center text-muted">Nenhum dado encontrado para este parceiro.</div>';
+                return;
+            }}
+            
+            // Montar tabela do histórico COM ORDENAÇÃO CORRIGIDA
+            let html = `
+                <table class="table table-hover table-sm">
+                    <thead>
+                        <tr>
+                            <th onclick="ordenarTabelaIndividual(0, 'data')" style="cursor: pointer;">
+                                Data/Hora <i class="bi bi-arrows-expand sort-indicator"></i>
+                            </th>
+                            <th onclick="ordenarTabelaIndividual(1, 'numero')" style="cursor: pointer;">
+                                Pontos <i class="bi bi-arrows-expand sort-indicator"></i>
+                            </th>
+                            <th onclick="ordenarTabelaIndividual(2, 'numero')" style="cursor: pointer;">
+                                Valor <i class="bi bi-arrows-expand sort-indicator"></i>
+                            </th>
+                            <th onclick="ordenarTabelaIndividual(3, 'texto')" style="cursor: pointer;">
+                                Moeda <i class="bi bi-arrows-expand sort-indicator"></i>
+                            </th>
+                            <th onclick="ordenarTabelaIndividual(4, 'texto')" style="cursor: pointer;">
+                                Oferta <i class="bi bi-arrows-expand sort-indicator"></i>
+                            </th>
+                            <th onclick="ordenarTabelaIndividual(5, 'numero')" style="cursor: pointer;">
+                                Pontos/Moeda <i class="bi bi-arrows-expand sort-indicator"></i>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            // Ordenar por data (mais recente primeiro)
+            historicoCompleto.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
+            
+            historicoCompleto.forEach(item => {{
+                const dataFormatada = new Date(item.Timestamp).toLocaleString('pt-BR');
+                const pontosPorMoeda = item.Valor > 0 ? (item.Pontos / item.Valor).toFixed(2) : '0.00';
+                const corOferta = item.Oferta === 'Sim' ? 'success' : 'secondary';
+                const valorFormatado = (item.Valor || 0).toFixed(2).replace('.', ',');
+                
+                html += `
+                    <tr>
+                        <td style="font-size: 0.75rem;">${{dataFormatada}}</td>
+                        <td><strong>${{item.Pontos || 0}}</strong></td>
+                        <td>${{item.Moeda}} ${{valorFormatado}}</td>
+                        <td><span class="badge bg-info">${{item.Moeda}}</span></td>
+                        <td><span class="badge bg-${{corOferta}}">${{item.Oferta}}</span></td>
+                        <td><strong>${{pontosPorMoeda}}</strong></td>
+                    </tr>
+                `;
+            }});
+            
+            html += '</tbody></table>';
+            
+            // Adicionar resumo estatístico se disponível
+            if (dadosResumo.length > 0) {{
+                const resumo = dadosResumo[0];
+                html += `
+                    <div class="mt-3 p-3 bg-light rounded">
+                        <h6 class="mb-3"><i class="bi bi-bar-chart me-2"></i>Resumo Estatístico</h6>
+                        <div class="row g-2">
+                            <div class="col-md-3 col-6">
+                                <div class="card border-0 bg-white text-center p-2">
+                                    <div class="fw-bold text-primary">${{resumo.Status_Casa}}</div>
+                                    <small class="text-muted">Status</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="card border-0 bg-white text-center p-2">
+                                    <div class="fw-bold text-success">${{resumo.Dias_Casa}}</div>
+                                    <small class="text-muted">Dias na casa</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="card border-0 bg-white text-center p-2">
+                                    <div class="fw-bold text-warning">${{resumo.Total_Ofertas_Historicas}}</div>
+                                    <small class="text-muted">Total ofertas</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="card border-0 bg-white text-center p-2">
+                                    <div class="fw-bold text-info">${{resumo.Frequencia_Ofertas.toFixed(1)}}%</div>
+                                    <small class="text-muted">Freq. ofertas</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-2 mt-2">
+                            <div class="col-md-4">
+                                <div class="card border-0 bg-white text-center p-2">
+                                    <div class="fw-bold" style="color: ${{resumo.Variacao_Pontos >= 0 ? '#28a745' : '#dc3545'}}">
+                                        ${{resumo.Variacao_Pontos > 0 ? '+' : ''}}${{resumo.Variacao_Pontos.toFixed(1)}}%
+                                    </div>
+                                    <small class="text-muted">Variação</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card border-0 bg-white text-center p-2">
+                                    <div class="fw-bold text-secondary">${{resumo.Categoria_Estrategica}}</div>
+                                    <small class="text-muted">Categoria</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card border-0 bg-white text-center p-2">
+                                    <div class="fw-bold text-dark">${{resumo.Gasto_Formatado}}</div>
+                                    <small class="text-muted">Gasto atual</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }}
+            
+            document.getElementById('tabelaIndividual').innerHTML = html;
+        }}
+        
+        // Download Excel - Individual
+        function downloadAnaliseIndividual() {{
+            const chaveUnica = document.getElementById('parceiroSelect').value;
+            if (!chaveUnica) {{
+                alert('Selecione um parceiro primeiro');
+                return;
+            }}
+            
+            const [parceiro, moeda] = chaveUnica.split('|');
+            
+            const historicoCompleto = dadosHistoricosCompletos.filter(item => 
+                item.Parceiro === parceiro && item.Moeda === moeda
+            );
+            const dadosResumo = todosOsDados.filter(item => 
+                item.Parceiro === parceiro && item.Moeda === moeda
+            );
+            
+            const wb = XLSX.utils.book_new();
+            
+            if (historicoCompleto.length > 0) {{
+                const ws1 = XLSX.utils.json_to_sheet(historicoCompleto);
+                XLSX.utils.book_append_sheet(wb, ws1, "Histórico Completo");
+            }}
+            
+            if (dadosResumo.length > 0) {{
+                const ws2 = XLSX.utils.json_to_sheet(dadosResumo);
+                XLSX.utils.book_append_sheet(wb, ws2, "Análise Resumo");
+            }}
+            
+            const nomeArquivo = `livelo_${{parceiro.replace(/[^a-zA-Z0-9]/g, '_')}}_${{moeda}}_completo.xlsx`;
+            XLSX.writeFile(wb, nomeArquivo);
+        }}
+        
+        // NOVA FUNÇÃO: Download dados RAW (escondido no footer)
+        function downloadDadosRaw() {{
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(dadosRawCompletos);
+            XLSX.utils.book_append_sheet(wb, ws, "Dados Raw Livelo");
+            
+            const dataAtual = new Date().toISOString().slice(0, 10).replace(/-/g, '_');
+            XLSX.writeFile(wb, `livelo_dados_raw_${{dataAtual}}.xlsx`);
+        }}
+        
+        // Auto-carregar primeiro parceiro quando entrar na aba
+        document.querySelector('[data-bs-target="#individual"]').addEventListener('click', function() {{
+            setTimeout(() => {{
+                const select = document.getElementById('parceiroSelect');
+                if (select && select.selectedIndex === 0 && select.options.length > 1) {{
+                    select.selectedIndex = 1;
+                    carregarAnaliseIndividual();
+                }}
+            }}, 200);
+        }});
+        
+        // INICIALIZAÇÃO
+        document.addEventListener('DOMContentLoaded', function() {{
+            // Inicializar tema
+            initTheme();
+            
+            // Carregar análise individual se necessário
+            setTimeout(() => {{
+                if (document.querySelector('#individual.show.active')) {{
+                    const select = document.getElementById('parceiroSelect');
+                    if (select && select.options.length > 1) {{
+                        select.selectedIndex = 1;
+                        carregarAnaliseIndividual();
+                    }}
+                }}
+            }}, 1000);
+        }});
+    </script>
+</body>
+</html>
+        """
         return html
     
     def executar_analise_completa(self):
