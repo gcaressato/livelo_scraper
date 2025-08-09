@@ -1,3 +1,5 @@
+Executando livelo_scraper.py...
+Saída de livelo_scraper.py:
 === LIVELO SCRAPER ===
 Iniciando navegador...
 ✓ Navegador iniciado
@@ -39,3 +41,30 @@ Substituindo dados de 2025-08-09...
 ✓ Cópia salva: output/livelo_parceiros.xlsx
 ✓ Navegador encerrado
 ✓ Processo concluído com sucesso!
+
+Executando livelo_reporter.py...
+Saída de livelo_reporter.py:
+🚀 Iniciando Livelo Analytics Pro...
+📊 Carregando dados...
+✓ 4390 registros carregados
+📋 Dados iniciais: 4390 registros
+✓ 4390 registros válidos processados
+📅 Datas disponíveis: 17 dias de coleta
+✓ HOJE (2025-08-09): 267 registros no site
+✓ ONTEM (2025-08-08): 267 registros para comparação
+🔍 Detectando mudanças entre ontem e hoje...
+🎯 0 combinações ganharam oferta hoje
+📉 41 combinações perderam oferta hoje
+🆕 0 novas combinações detectadas
+👻 0 combinações sumiram do site
+⚡ 41 grandes mudanças de pontos
+🔍 Analisando histórico completo...
+📋 Processando 267 combinações parceiro+moeda ativas hoje...
+✓ Análise concluída para 267 combinações parceiro+moeda ativas hoje
+📄 Gerando relatório HTML...
+✅ Relatório salvo: relatorios/livelo_analytics.html
+✅ GitHub Pages: relatorio_livelo.html
+📊 267 parceiros HOJE | 25 com oferta | 0 ganharam oferta
+🎉 Livelo Analytics Pro concluído!
+
+Todos os scripts foram executados com sucesso.
