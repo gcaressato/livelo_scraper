@@ -55,11 +55,11 @@ class LiveloAnalytics:
             parceiro = row['Parceiro']
             if parceiro in self.dimensoes:
                 dim = self.dimensoes[parceiro]
-                df.at[idx, 'Categoria_Dimensao'] = dim.get('categoria', 'Não definido')
-                df.at[idx, 'Tier'] = dim.get('tier', 'Não definido')
-                df.at[idx, 'URL_Parceiro'] = dim.get('url', '')
-                df.at[idx, 'Logo_Link'] = dim.get('logo_link', '')
-                df.at[idx, 'Codigo_Parceiro'] = dim.get('codigo', '')
+                df.at[idx, 'Categoria_Dimensao'] = str(dim.get('categoria', 'Não definido'))
+                df.at[idx, 'Tier'] = str(dim.get('tier', 'Não definido'))
+                df.at[idx, 'URL_Parceiro'] = str(dim.get('url', ''))
+                df.at[idx, 'Logo_Link'] = str(dim.get('logo_link', ''))
+                df.at[idx, 'Codigo_Parceiro'] = str(dim.get('codigo', ''))
             else:
                 df.at[idx, 'Categoria_Dimensao'] = 'Não mapeado'
                 df.at[idx, 'Tier'] = 'Não mapeado'
@@ -943,11 +943,11 @@ class LiveloAnalytics:
     
     def _gerar_filtros_avancados(self, dados):
         """Gera filtros avançados para Categoria, Tier, Moeda e Tipo"""
-        # Obter valores únicos
-        categorias = sorted(dados['Categoria_Dimensao'].unique())
-        tiers = sorted(dados['Tier'].unique())
-        moedas = sorted(dados['Moeda'].unique())
-        tipos = sorted(dados['Categoria_Estrategica'].unique())
+        # Obter valores únicos e converter para string para evitar erros de ordenação
+        categorias = sorted([str(x) for x in dados['Categoria_Dimensao'].unique() if pd.notnull(x)])
+        tiers = sorted([str(x) for x in dados['Tier'].unique() if pd.notnull(x)])
+        moedas = sorted([str(x) for x in dados['Moeda'].unique() if pd.notnull(x)])
+        tipos = sorted([str(x) for x in dados['Categoria_Estrategica'].unique() if pd.notnull(x)])
         
         html = f"""
         <div class="row g-2 mb-3" id="filtrosAvancados">
