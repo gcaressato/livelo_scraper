@@ -577,7 +577,7 @@ class LiveloAnalytics:
         return graficos
     
     def gerar_html_completo(self):
-        """Gera HTML com todas as funcionalidades - VERSÃO CORRIGIDA"""
+        """Gera HTML com todas as funcionalidades - VERSÃO MELHORADA"""
         dados = self.analytics['dados_completos']
         metricas = self.analytics['metricas']
         graficos = self.analytics['graficos']
@@ -593,6 +593,7 @@ class LiveloAnalytics:
         dados_historicos_completos = self.df_completo.copy()
         dados_historicos_completos['Timestamp'] = dados_historicos_completos['Timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
         dados_historicos_json = dados_historicos_completos.to_json(orient='records')
+        dados_raw_json = self.df_completo.to_json(orient='records', date_format='iso')
         
         # Preparar alertas dinâmicos
         alertas_html = self._gerar_alertas_dinamicos(mudancas, metricas)
@@ -626,7 +627,10 @@ class LiveloAnalytics:
                 line-height: 1.4;
             }}
             
-            .container-fluid {{ max-width: 100%; padding: 10px 15px; }}
+            .container-fluid {{ 
+                max-width: 100%; 
+                padding: 10px 15px; 
+            }}
             
             .card {{
                 border: none;
@@ -636,7 +640,10 @@ class LiveloAnalytics:
                 margin-bottom: 15px;
             }}
             
-            .card:hover {{ transform: translateY(-1px); box-shadow: 0 4px 20px rgba(0,0,0,0.1); }}
+            .card:hover {{ 
+                transform: translateY(-1px); 
+                box-shadow: 0 4px 20px rgba(0,0,0,0.1); 
+            }}
             
             .metric-card {{
                 background: linear-gradient(135deg, white 0%, #f8f9fa 100%);
@@ -691,41 +698,60 @@ class LiveloAnalytics:
                 overflow: hidden;
                 max-height: 70vh;
                 overflow-y: auto;
+                overflow-x: auto;
             }}
             
             .table {{ 
                 margin: 0; 
                 font-size: 0.85rem;
+                white-space: nowrap;
+                min-width: 100%;
             }}
             
             .table th {{
-                background: linear-gradient(135deg, var(--livelo-azul) 0%, var(--livelo-azul-claro) 100%);
-                color: white;
-                border: none;
-                padding: 10px 8px;
-                font-weight: 600;
-                position: sticky;
-                top: 0;
-                z-index: 10;
-                font-size: 0.8rem;
-                cursor: pointer;
-                user-select: none;
-                transition: background-color 0.2s ease;
+                background-color: var(--livelo-azul) !important;
+                color: white !important;
+                border: none !important;
+                padding: 12px 8px !important;
+                font-weight: 600 !important;
+                position: sticky !important;
+                top: 0 !important;
+                z-index: 10 !important;
+                font-size: 0.8rem !important;
+                cursor: pointer !important;
+                user-select: none !important;
+                transition: all 0.2s ease !important;
+                text-align: center !important;
+                vertical-align: middle !important;
+                white-space: nowrap !important;
+                min-width: 100px;
             }}
             
             .table th:hover {{ 
-                background: linear-gradient(135deg, var(--livelo-rosa) 0%, var(--livelo-rosa-claro) 100%);
+                background-color: var(--livelo-rosa) !important;
                 transform: translateY(-1px);
             }}
             
             .table td {{
-                padding: 8px;
-                border-bottom: 1px solid #f0f0f0;
-                vertical-align: middle;
-                font-size: 0.8rem;
+                padding: 8px !important;
+                border-bottom: 1px solid #f0f0f0 !important;
+                vertical-align: middle !important;
+                font-size: 0.8rem !important;
+                white-space: nowrap !important;
+                text-align: center !important;
             }}
             
-            .table tbody tr:hover {{ background-color: rgba(255, 10, 140, 0.05); }}
+            .table tbody tr:hover {{ 
+                background-color: rgba(255, 10, 140, 0.05) !important; 
+            }}
+            
+            .table td:first-child {{
+                text-align: left !important;
+                font-weight: 500;
+                max-width: 200px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }}
             
             .badge-status {{
                 padding: 4px 8px;
@@ -734,6 +760,7 @@ class LiveloAnalytics:
                 font-weight: 500;
                 min-width: 60px;
                 text-align: center;
+                white-space: nowrap;
             }}
             
             .search-input {{
@@ -758,20 +785,16 @@ class LiveloAnalytics:
                 font-size: 0.9rem;
             }}
             
-            .btn-download:hover {{ color: white; transform: translateY(-1px); }}
+            .btn-download:hover {{ 
+                color: white; 
+                transform: translateY(-1px); 
+            }}
             
             .individual-analysis {{
                 background: #f8f9fa;
                 border-radius: 12px;
                 padding: 20px;
                 margin-bottom: 20px;
-            }}
-            
-            @media (max-width: 768px) {{
-                .container-fluid {{ padding: 5px 10px; }}
-                .metric-value {{ font-size: 1.5rem; }}
-                .table {{ font-size: 0.75rem; }}
-                .nav-pills .nav-link {{ padding: 6px 12px; font-size: 0.8rem; }}
             }}
             
             .sort-indicator {{
@@ -782,16 +805,21 @@ class LiveloAnalytics:
             
             .sort-indicator.active {{ 
                 opacity: 1; 
-                color: var(--livelo-rosa) !important;
+                color: #FFD700 !important;
             }}
             
             .table th:hover .sort-indicator {{
                 opacity: 0.7;
+                color: #FFD700 !important;
             }}
             
-            .table-responsive {{ border-radius: 12px; }}
+            .table-responsive {{ 
+                border-radius: 12px; 
+            }}
             
-            .plotly {{ width: 100% !important; }}
+            .plotly {{ 
+                width: 100% !important; 
+            }}
             
             .footer {{
                 text-align: center;
@@ -800,6 +828,142 @@ class LiveloAnalytics:
                 color: #6c757d;
                 font-size: 0.9rem;
                 border-top: 1px solid #e9ecef;
+            }}
+            
+            .footer small {{
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }}
+            
+            .footer small:hover {{
+                color: var(--livelo-azul);
+            }}
+            
+            /* MOBILE RESPONSIVENESS */
+            @media (max-width: 768px) {{
+                .container-fluid {{ 
+                    padding: 5px 8px; 
+                }}
+                
+                .metric-value {{ 
+                    font-size: 1.4rem; 
+                }}
+                
+                .metric-label {{
+                    font-size: 0.65rem;
+                }}
+                
+                .table {{ 
+                    font-size: 0.7rem; 
+                }}
+                
+                .table th {{
+                    padding: 8px 4px !important;
+                    font-size: 0.7rem !important;
+                    min-width: 80px;
+                }}
+                
+                .table td {{
+                    padding: 6px 4px !important;
+                    font-size: 0.7rem !important;
+                }}
+                
+                .nav-pills .nav-link {{ 
+                    padding: 6px 10px; 
+                    font-size: 0.75rem; 
+                    margin-right: 2px;
+                }}
+                
+                .card {{
+                    margin-bottom: 10px;
+                }}
+                
+                .individual-analysis {{
+                    padding: 15px;
+                }}
+                
+                .btn-download {{
+                    font-size: 0.8rem;
+                    padding: 6px 15px;
+                }}
+                
+                .row.g-2 {{
+                    margin: 0 -2px;
+                }}
+                
+                .row.g-2 > * {{
+                    padding-right: 2px;
+                    padding-left: 2px;
+                }}
+                
+                .table-container {{
+                    max-height: 60vh;
+                }}
+                
+                .metric-card {{
+                    padding: 10px;
+                }}
+                
+                .alert-card {{
+                    padding: 8px 12px;
+                    margin-bottom: 8px;
+                }}
+                
+                /* Scrolling horizontal para tabelas em mobile */
+                .table-responsive {{
+                    -webkit-overflow-scrolling: touch;
+                }}
+            }}
+            
+            @media (max-width: 576px) {{
+                .table th {{
+                    min-width: 70px;
+                    padding: 6px 3px !important;
+                    font-size: 0.65rem !important;
+                }}
+                
+                .table td {{
+                    padding: 5px 3px !important;
+                    font-size: 0.65rem !important;
+                }}
+                
+                .nav-pills .nav-link {{
+                    font-size: 0.7rem;
+                    padding: 5px 8px;
+                }}
+                
+                .metric-value {{
+                    font-size: 1.2rem;
+                }}
+                
+                .card-header h6 {{
+                    font-size: 0.9rem;
+                }}
+            }}
+            
+            /* Melhor scroll em dispositivos touch */
+            .table-container {{
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: thin;
+            }}
+            
+            .table-container::-webkit-scrollbar {{
+                width: 6px;
+                height: 6px;
+            }}
+            
+            .table-container::-webkit-scrollbar-track {{
+                background: #f1f1f1;
+                border-radius: 3px;
+            }}
+            
+            .table-container::-webkit-scrollbar-thumb {{
+                background: var(--livelo-azul-claro);
+                border-radius: 3px;
+            }}
+            
+            .table-container::-webkit-scrollbar-thumb:hover {{
+                background: var(--livelo-azul);
             }}
         </style>
     </head>
@@ -990,7 +1154,7 @@ class LiveloAnalytics:
             
             <!-- Rodapé -->
             <div class="footer">
-                <small>Desenvolvido por gc</small>
+                <small onclick="downloadDadosRaw()" title="Download dados brutos">Desenvolvido por gc</small>
             </div>
         </div>
         
@@ -998,6 +1162,7 @@ class LiveloAnalytics:
             // Dados para análise
             const todosOsDados = {dados_json};
             const dadosHistoricosCompletos = {dados_historicos_json};
+            const dadosRawCompletos = {dados_raw_json};
             let parceiroSelecionado = null;
             
             // Busca na tabela
@@ -1011,7 +1176,7 @@ class LiveloAnalytics:
                 }});
             }});
             
-            // Ordenação da tabela
+            // Ordenação da tabela principal
             let estadoOrdenacao = {{}};
             
             function ordenarTabela(indiceColuna, tipoColuna) {{
@@ -1070,6 +1235,67 @@ class LiveloAnalytics:
                 linhas.forEach(linha => tbody.appendChild(linha));
             }}
             
+            // NOVA FUNÇÃO: Ordenação da tabela individual
+            let estadoOrdenacaoIndividual = {{}};
+            
+            function ordenarTabelaIndividual(indiceColuna, tipoColuna) {{
+                const tabela = document.querySelector('#tabelaIndividual table');
+                if (!tabela) return;
+                
+                const tbody = tabela.querySelector('tbody');
+                const linhas = Array.from(tbody.querySelectorAll('tr'));
+                
+                const estadoAtual = estadoOrdenacaoIndividual[indiceColuna] || 'neutro';
+                let novaOrdem;
+                if (estadoAtual === 'neutro' || estadoAtual === 'desc') {{
+                    novaOrdem = 'asc';
+                }} else {{
+                    novaOrdem = 'desc';
+                }}
+                estadoOrdenacaoIndividual[indiceColuna] = novaOrdem;
+                
+                // Atualizar indicadores visuais
+                tabela.querySelectorAll('th .sort-indicator').forEach(indicator => {{
+                    indicator.className = 'bi bi-arrows-expand sort-indicator';
+                }});
+                
+                const headerAtual = tabela.querySelectorAll('th')[indiceColuna];
+                const indicatorAtual = headerAtual.querySelector('.sort-indicator');
+                if (indicatorAtual) {{
+                    indicatorAtual.className = `bi bi-arrow-${{novaOrdem === 'asc' ? 'up' : 'down'}} sort-indicator active`;
+                }}
+                
+                // Ordenar linhas
+                linhas.sort((linhaA, linhaB) => {{
+                    let textoA = linhaA.cells[indiceColuna].textContent.trim();
+                    let textoB = linhaB.cells[indiceColuna].textContent.trim();
+                    
+                    const badgeA = linhaA.cells[indiceColuna].querySelector('.badge');
+                    const badgeB = linhaB.cells[indiceColuna].querySelector('.badge');
+                    if (badgeA) textoA = badgeA.textContent.trim();
+                    if (badgeB) textoB = badgeB.textContent.trim();
+                    
+                    let resultado = 0;
+                    
+                    if (tipoColuna === 'numero') {{
+                        let numA = parseFloat(textoA.replace(/[^\\d.-]/g, '')) || 0;
+                        let numB = parseFloat(textoB.replace(/[^\\d.-]/g, '')) || 0;
+                        resultado = numA - numB;
+                    }} else if (tipoColuna === 'data') {{
+                        // Ordenação especial para datas
+                        let dataA = new Date(textoA.split(' ')[0].split('/').reverse().join('-') + ' ' + (textoA.split(' ')[1] || '00:00:00'));
+                        let dataB = new Date(textoB.split(' ')[0].split('/').reverse().join('-') + ' ' + (textoB.split(' ')[1] || '00:00:00'));
+                        resultado = dataA - dataB;
+                    }} else {{
+                        resultado = textoA.localeCompare(textoB, 'pt-BR', {{ numeric: true }});
+                    }}
+                    
+                    return novaOrdem === 'asc' ? resultado : -resultado;
+                }});
+                
+                linhas.forEach(linha => tbody.appendChild(linha));
+            }}
+            
             // Download Excel - Análise Completa
             function downloadAnaliseCompleta() {{
                 const dadosVisiveis = todosOsDados.filter(item => {{
@@ -1083,29 +1309,24 @@ class LiveloAnalytics:
                 XLSX.writeFile(wb, "livelo_analise_completa_{metricas['ultima_atualizacao'].replace('/', '_')}.xlsx");
             }}
             
-            // CARREGAR ANÁLISE INDIVIDUAL - VERSÃO CORRIGIDA
+            // CARREGAR ANÁLISE INDIVIDUAL - VERSÃO MELHORADA
             function carregarAnaliseIndividual() {{
                 const chaveUnica = document.getElementById('parceiroSelect').value;
                 if (!chaveUnica) return;
                 
-                // Extrair parceiro e moeda da chave
+                // Resetar estado de ordenação
+                estadoOrdenacaoIndividual = {{}};
+                
                 const [parceiro, moeda] = chaveUnica.split('|');
                 parceiroSelecionado = `${{parceiro}} (${{moeda}})`;
                 
-                console.log('Buscando dados para:', parceiro, moeda);
-                
-                // Buscar histórico completo - filtrar por parceiro E moeda
                 const historicoCompleto = dadosHistoricosCompletos.filter(item => 
                     item.Parceiro === parceiro && item.Moeda === moeda
                 );
                 
-                // Buscar dados de resumo
                 const dadosResumo = todosOsDados.filter(item => 
                     item.Parceiro === parceiro && item.Moeda === moeda
                 );
-                
-                console.log('Histórico encontrado:', historicoCompleto.length, 'registros');
-                console.log('Resumo encontrado:', dadosResumo.length, 'registros');
                 
                 document.getElementById('tituloAnaliseIndividual').textContent = 
                     `Histórico Detalhado - ${{parceiro}} (${{moeda}}) - ${{historicoCompleto.length}} registros`;
@@ -1116,17 +1337,29 @@ class LiveloAnalytics:
                     return;
                 }}
                 
-                // Montar tabela do histórico
+                // Montar tabela do histórico COM ORDENAÇÃO
                 let html = `
                     <table class="table table-hover table-sm">
                         <thead>
                             <tr>
-                                <th>Data/Hora</th>
-                                <th>Pontos</th>
-                                <th>Valor</th>
-                                <th>Moeda</th>
-                                <th>Oferta</th>
-                                <th>Pontos/Moeda</th>
+                                <th onclick="ordenarTabelaIndividual(0, 'data')" style="cursor: pointer;">
+                                    Data/Hora <i class="bi bi-arrows-expand sort-indicator"></i>
+                                </th>
+                                <th onclick="ordenarTabelaIndividual(1, 'numero')" style="cursor: pointer;">
+                                    Pontos <i class="bi bi-arrows-expand sort-indicator"></i>
+                                </th>
+                                <th onclick="ordenarTabelaIndividual(2, 'numero')" style="cursor: pointer;">
+                                    Valor <i class="bi bi-arrows-expand sort-indicator"></i>
+                                </th>
+                                <th onclick="ordenarTabelaIndividual(3, 'texto')" style="cursor: pointer;">
+                                    Moeda <i class="bi bi-arrows-expand sort-indicator"></i>
+                                </th>
+                                <th onclick="ordenarTabelaIndividual(4, 'texto')" style="cursor: pointer;">
+                                    Oferta <i class="bi bi-arrows-expand sort-indicator"></i>
+                                </th>
+                                <th onclick="ordenarTabelaIndividual(5, 'numero')" style="cursor: pointer;">
+                                    Pontos/Moeda <i class="bi bi-arrows-expand sort-indicator"></i>
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1162,25 +1395,25 @@ class LiveloAnalytics:
                         <div class="mt-3 p-3 bg-light rounded">
                             <h6 class="mb-3"><i class="bi bi-bar-chart me-2"></i>Resumo Estatístico</h6>
                             <div class="row g-2">
-                                <div class="col-md-3">
+                                <div class="col-md-3 col-6">
                                     <div class="card border-0 bg-white text-center p-2">
                                         <div class="fw-bold text-primary">${{resumo.Status_Casa}}</div>
                                         <small class="text-muted">Status</small>
                                     </div>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-3 col-6">
                                     <div class="card border-0 bg-white text-center p-2">
                                         <div class="fw-bold text-success">${{resumo.Dias_Casa}}</div>
                                         <small class="text-muted">Dias na casa</small>
                                     </div>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-3 col-6">
                                     <div class="card border-0 bg-white text-center p-2">
                                         <div class="fw-bold text-warning">${{resumo.Total_Ofertas_Historicas}}</div>
                                         <small class="text-muted">Total ofertas</small>
                                     </div>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-3 col-6">
                                     <div class="card border-0 bg-white text-center p-2">
                                         <div class="fw-bold text-info">${{resumo.Frequencia_Ofertas.toFixed(1)}}%</div>
                                         <small class="text-muted">Freq. ofertas</small>
@@ -1248,6 +1481,16 @@ class LiveloAnalytics:
                 
                 const nomeArquivo = `livelo_${{parceiro.replace(/[^a-zA-Z0-9]/g, '_')}}_${{moeda}}_completo.xlsx`;
                 XLSX.writeFile(wb, nomeArquivo);
+            }}
+            
+            // NOVA FUNÇÃO: Download dados RAW (escondido no footer)
+            function downloadDadosRaw() {{
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.json_to_sheet(dadosRawCompletos);
+                XLSX.utils.book_append_sheet(wb, ws, "Dados Raw Livelo");
+                
+                const dataAtual = new Date().toISOString().slice(0, 10).replace(/-/g, '_');
+                XLSX.writeFile(wb, `livelo_dados_raw_${{dataAtual}}.xlsx`);
             }}
             
             // Auto-carregar primeiro parceiro quando entrar na aba
