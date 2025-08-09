@@ -56,13 +56,27 @@ class LiveloAnalytics:
         self.df_completo['Valor'] = pd.to_numeric(self.df_completo['Valor'], errors='coerce')
         self.df_completo['Pontos'] = pd.to_numeric(self.df_completo['Pontos'], errors='coerce')
         
-        # Apenas remover registros claramente inválidos
+        # CORREÇÃO: Apenas remover registros claramente inválidos - mais conservador
         antes_limpeza = len(self.df_completo)
+        
+        # Remover apenas se Parceiro estiver vazio/nulo
         self.df_completo = self.df_completo.dropna(subset=['Parceiro'])
-        self.df_completo = self.df_completo[(self.df_completo['Pontos'] > 0) | (self.df_completo['Valor'] > 0)]
+        
+        # Remover apenas se AMBOS Pontos E Valor forem NaN (não zero, mas realmente nulos)
+        # Manter registros onde pelo menos um dos valores seja válido (incluindo zero)
+        mask_validos = (
+            (~self.df_completo['Pontos'].isna()) | 
+            (~self.df_completo['Valor'].isna())
+        )
+        self.df_completo = self.df_completo[mask_validos]
+        
+        # Preencher NaN com 0 para evitar problemas nos cálculos
+        self.df_completo['Pontos'] = self.df_completo['Pontos'].fillna(0)
+        self.df_completo['Valor'] = self.df_completo['Valor'].fillna(0)
+        
         removidos = antes_limpeza - len(self.df_completo)
         if removidos > 0:
-            print(f"📝 Removidos {removidos} registros inválidos")
+            print(f"📝 Removidos {removidos} registros realmente inválidos (sem parceiro ou dados)")
         
         print(f"✓ {len(self.df_completo)} registros válidos processados")
         
@@ -72,7 +86,7 @@ class LiveloAnalytics:
         )
         
         # Ordenar cronologicamente
-        self.df_completo = self.df_completo.sort_values(['Timestamp', 'Parceiro'])
+        self.df_completo = self.df_completo.sort_values(['Timestamp', 'Parceiro', 'Moeda'])
         
         # Obter datas únicas
         datas_unicas = sorted(self.df_completo['Timestamp'].dt.date.unique(), reverse=True)
@@ -84,7 +98,7 @@ class LiveloAnalytics:
             self.df_completo['Timestamp'].dt.date == data_mais_recente
         ].copy()
         
-        print(f"✓ HOJE ({data_mais_recente}): {len(self.df_hoje)} parceiros no site")
+        print(f"✓ HOJE ({data_mais_recente}): {len(self.df_hoje)} registros no site")
         
         # Dados de ontem (se existir)
         if len(datas_unicas) > 1:
@@ -92,7 +106,7 @@ class LiveloAnalytics:
             self.df_ontem = self.df_completo[
                 self.df_completo['Timestamp'].dt.date == data_ontem
             ].copy()
-            print(f"✓ ONTEM ({data_ontem}): {len(self.df_ontem)} parceiros para comparação")
+            print(f"✓ ONTEM ({data_ontem}): {len(self.df_ontem)} registros para comparação")
         else:
             self.df_ontem = pd.DataFrame()
             print("⚠️ Apenas um dia de dados - sem comparação com ontem")
@@ -139,10 +153,13 @@ class LiveloAnalytics:
         
         print("🔍 Detectando mudanças entre ontem e hoje...")
         
-        # Preparar dados para comparação
+        # CORREÇÃO: Preparar dados considerando Parceiro + Moeda como chave única
         hoje_dict = {}
         for _, row in self.df_hoje.iterrows():
-            hoje_dict[row['Parceiro']] = {
+            chave_unica = f"{row['Parceiro']}|{row['Moeda']}"  # Combinação única
+            hoje_dict[chave_unica] = {
+                'parceiro': row['Parceiro'],
+                'moeda': row['Moeda'],
                 'oferta': row['Oferta'] == 'Sim',
                 'pontos': row['Pontos'],
                 'valor': row['Valor']
@@ -150,30 +167,34 @@ class LiveloAnalytics:
         
         ontem_dict = {}
         for _, row in self.df_ontem.iterrows():
-            ontem_dict[row['Parceiro']] = {
+            chave_unica = f"{row['Parceiro']}|{row['Moeda']}"  # Combinação única
+            ontem_dict[chave_unica] = {
+                'parceiro': row['Parceiro'],
+                'moeda': row['Moeda'],
                 'oferta': row['Oferta'] == 'Sim',
                 'pontos': row['Pontos'],
                 'valor': row['Valor']
             }
         
         # Detectar mudanças
-        for parceiro in hoje_dict:
-            if parceiro not in ontem_dict:
-                # Novo parceiro
+        for chave_unica in hoje_dict:
+            if chave_unica not in ontem_dict:
+                # Novo parceiro+moeda
+                dados_hoje = hoje_dict[chave_unica]
                 mudancas['novos_parceiros'].append({
-                    'parceiro': parceiro,
-                    'pontos_hoje': hoje_dict[parceiro]['pontos'],
-                    'tem_oferta': hoje_dict[parceiro]['oferta']
+                    'parceiro': f"{dados_hoje['parceiro']} ({dados_hoje['moeda']})",
+                    'pontos_hoje': dados_hoje['pontos'],
+                    'tem_oferta': dados_hoje['oferta']
                 })
             else:
-                # Parceiro existente - verificar mudanças
-                hoje_data = hoje_dict[parceiro]
-                ontem_data = ontem_dict[parceiro]
+                # Parceiro+moeda existente - verificar mudanças
+                hoje_data = hoje_dict[chave_unica]
+                ontem_data = ontem_dict[chave_unica]
                 
                 # Ganhou oferta
                 if hoje_data['oferta'] and not ontem_data['oferta']:
                     mudancas['ganharam_oferta'].append({
-                        'parceiro': parceiro,
+                        'parceiro': f"{hoje_data['parceiro']} ({hoje_data['moeda']})",
                         'pontos_hoje': hoje_data['pontos'],
                         'pontos_ontem': ontem_data['pontos']
                     })
@@ -181,7 +202,7 @@ class LiveloAnalytics:
                 # Perdeu oferta
                 elif not hoje_data['oferta'] and ontem_data['oferta']:
                     mudancas['perderam_oferta'].append({
-                        'parceiro': parceiro,
+                        'parceiro': f"{hoje_data['parceiro']} ({hoje_data['moeda']})",
                         'pontos_hoje': hoje_data['pontos'],
                         'pontos_ontem': ontem_data['pontos']
                     })
@@ -191,27 +212,28 @@ class LiveloAnalytics:
                     variacao = ((hoje_data['pontos'] - ontem_data['pontos']) / ontem_data['pontos']) * 100
                     if abs(variacao) >= 20:
                         mudancas['grandes_mudancas_pontos'].append({
-                            'parceiro': parceiro,
+                            'parceiro': f"{hoje_data['parceiro']} ({hoje_data['moeda']})",
                             'pontos_hoje': hoje_data['pontos'],
                             'pontos_ontem': ontem_data['pontos'],
                             'variacao': variacao,
                             'tipo': 'Aumento' if variacao > 0 else 'Diminuição'
                         })
         
-        # Parceiros que sumiram
-        for parceiro in ontem_dict:
-            if parceiro not in hoje_dict:
+        # Parceiros+moeda que sumiram
+        for chave_unica in ontem_dict:
+            if chave_unica not in hoje_dict:
+                dados_ontem = ontem_dict[chave_unica]
                 mudancas['parceiros_sumidos'].append({
-                    'parceiro': parceiro,
-                    'pontos_ontem': ontem_dict[parceiro]['pontos'],
-                    'tinha_oferta': ontem_dict[parceiro]['oferta']
+                    'parceiro': f"{dados_ontem['parceiro']} ({dados_ontem['moeda']})",
+                    'pontos_ontem': dados_ontem['pontos'],
+                    'tinha_oferta': dados_ontem['oferta']
                 })
         
         # Estatísticas
-        print(f"🎯 {len(mudancas['ganharam_oferta'])} parceiros ganharam oferta hoje")
-        print(f"📉 {len(mudancas['perderam_oferta'])} parceiros perderam oferta hoje")
-        print(f"🆕 {len(mudancas['novos_parceiros'])} novos parceiros detectados")
-        print(f"👻 {len(mudancas['parceiros_sumidos'])} parceiros sumiram do site")
+        print(f"🎯 {len(mudancas['ganharam_oferta'])} combinações ganharam oferta hoje")
+        print(f"📉 {len(mudancas['perderam_oferta'])} combinações perderam oferta hoje")
+        print(f"🆕 {len(mudancas['novos_parceiros'])} novas combinações detectadas")
+        print(f"👻 {len(mudancas['parceiros_sumidos'])} combinações sumiram do site")
         print(f"⚡ {len(mudancas['grandes_mudancas_pontos'])} grandes mudanças de pontos")
         
         return mudancas
@@ -221,16 +243,26 @@ class LiveloAnalytics:
         print("🔍 Analisando histórico completo...")
         
         resultados = []
-        parceiros_hoje = self.df_hoje['Parceiro'].unique()
-        print(f"📋 Processando {len(parceiros_hoje)} parceiros ativos hoje...")
+        # CORREÇÃO: Considerar cada linha única (Parceiro + Moeda)
+        linhas_hoje = self.df_hoje[['Parceiro', 'Moeda']].drop_duplicates()
+        print(f"📋 Processando {len(linhas_hoje)} combinações parceiro+moeda ativas hoje...")
         
-        for i, parceiro in enumerate(parceiros_hoje):
+        for i, (_, linha_atual) in enumerate(linhas_hoje.iterrows()):
             try:
-                # Dados atuais (de hoje)
-                dados_atual = self.df_hoje[self.df_hoje['Parceiro'] == parceiro].iloc[0]
+                parceiro = linha_atual['Parceiro']
+                moeda = linha_atual['Moeda']
                 
-                # Histórico completo do parceiro
-                historico = self.df_completo[self.df_completo['Parceiro'] == parceiro].sort_values('Timestamp')
+                # Dados atuais (de hoje) - buscar a combinação específica
+                dados_atual = self.df_hoje[
+                    (self.df_hoje['Parceiro'] == parceiro) & 
+                    (self.df_hoje['Moeda'] == moeda)
+                ].iloc[0]
+                
+                # Histórico completo da combinação parceiro+moeda
+                historico = self.df_completo[
+                    (self.df_completo['Parceiro'] == parceiro) & 
+                    (self.df_completo['Moeda'] == moeda)
+                ].sort_values('Timestamp')
                 
                 # Dados básicos atuais
                 resultado = {
@@ -337,13 +369,13 @@ class LiveloAnalytics:
                 resultados.append(resultado)
                 
             except Exception as e:
-                print(f"⚠️ Erro ao processar {parceiro}: {e}")
+                print(f"⚠️ Erro ao processar {parceiro} ({moeda}): {e}")
                 continue
         
         # Converter para DataFrame
         self.analytics['dados_completos'] = pd.DataFrame(resultados)
         
-        print(f"✓ Análise concluída para {len(resultados)} parceiros ativos hoje")
+        print(f"✓ Análise concluída para {len(resultados)} combinações parceiro+moeda ativas hoje")
         return self.analytics['dados_completos']
     
     def calcular_metricas_dashboard(self):
@@ -561,7 +593,10 @@ class LiveloAnalytics:
         dados_historicos_completos = self.df_completo.copy()
         dados_historicos_completos['Timestamp'] = dados_historicos_completos['Timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
         dados_historicos_json = dados_historicos_completos.to_json(orient='records')
-        parceiros_lista = sorted(dados['Parceiro'].unique().tolist())
+        parceiros_lista = sorted([
+            f"{row['Parceiro']} ({row['Moeda']})" 
+            for _, row in dados[['Parceiro', 'Moeda']].drop_duplicates().iterrows()
+        ])
         
         # Preparar alertas dinâmicos
         alertas_html = self._gerar_alertas_dinamicos(mudancas, metricas)
@@ -1306,8 +1341,8 @@ class LiveloAnalytics:
     def _gerar_opcoes_parceiros(self, parceiros_lista):
         """Gera opções do select de parceiros"""
         html = '<option value="">Selecione um parceiro...</option>'
-        for parceiro in parceiros_lista:
-            html += f'<option value="{parceiro}">{parceiro}</option>'
+        for parceiro_completo in parceiros_lista:
+            html += f'<option value="{parceiro_completo}">{parceiro_completo}</option>'
         return html
     
     def executar_analise_completa(self):
