@@ -854,7 +854,7 @@ class LiveloAnalytics:
         return graficos
     
     def _gerar_grafico_evolucao_temporal_com_filtros(self):
-        """Gera o gráfico de evolução temporal com filtros avançados de Mês e Ano"""
+        """Gera o gráfico de evolução temporal - RETORNA APENAS O FIGURE OBJECT"""
         
         # Preparar dados históricos diários
         df_historico_diario = self.df_completo.copy()
@@ -871,13 +871,11 @@ class LiveloAnalytics:
         evolucao_diaria['Mes'] = pd.to_datetime(evolucao_diaria['Data']).dt.month
         evolucao_diaria['Data_ISO'] = pd.to_datetime(evolucao_diaria['Data']).dt.strftime('%Y-%m-%d')
         
-        anos_disponiveis = sorted(evolucao_diaria['Ano'].unique())
-        meses_nomes = [
-            'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-            'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-        ]
+        # Salvar dados para JavaScript (armazenar na classe)
+        self.dados_evolucao_temporal = evolucao_diaria.to_json(orient='records', date_format='iso')
+        self.anos_disponiveis = sorted(evolucao_diaria['Ano'].unique())
         
-        # Criar gráfico base
+        # Criar gráfico base (IGUAL AO ORIGINAL)
         fig = go.Figure()
         
         # Parceiros (coluna azul) COM RÓTULOS
@@ -889,8 +887,7 @@ class LiveloAnalytics:
             offsetgroup=1,
             text=evolucao_diaria['Total_Parceiros'],
             textposition='outside',
-            textfont=dict(size=10, color=LIVELO_AZUL),
-            customdata=evolucao_diaria['Data_ISO']  # Para filtros JavaScript
+            textfont=dict(size=10, color=LIVELO_AZUL)
         ))
         
         # Ofertas (coluna rosa) COM RÓTULOS
@@ -902,19 +899,14 @@ class LiveloAnalytics:
             offsetgroup=2,
             text=evolucao_diaria['Total_Ofertas'],
             textposition='outside',
-            textfont=dict(size=10, color=LIVELO_ROSA),
-            customdata=evolucao_diaria['Data_ISO']  # Para filtros JavaScript
+            textfont=dict(size=10, color=LIVELO_ROSA)
         ))
         
-        # Preparar dados JSON para JavaScript
-        dados_grafico_json = evolucao_diaria.to_json(orient='records', date_format='iso')
-        
-        # Layout com controles avançados
+        # Layout com ID específico para JavaScript
         fig.update_layout(
             title='📈 Evolução Temporal - Parceiros vs Ofertas por Dia',
             xaxis=dict(
                 title='Data',
-                # BOTÕES EXISTENTES + NOVOS CONTROLES
                 rangeselector=dict(
                     buttons=list([
                         dict(count=7, label="7d", step="day", stepmode="backward"),
@@ -943,15 +935,26 @@ class LiveloAnalytics:
             margin=dict(t=120)  # Mais espaço no topo para controles
         )
         
-        # Converter para HTML com ID específico para controle JavaScript
-        grafico_html = fig.to_html(full_html=False, include_plotlyjs='cdn', div_id="evolucaoTemporalPlot")
+        # RETORNAR APENAS O FIGURE OBJECT (como os outros gráficos)
+        return fig
+    
+    def _gerar_controles_evolucao_temporal(self):
+        """Gera os controles HTML para os filtros temporais"""
         
-        # CRIAR CONTROLES CUSTOMIZADOS INTEGRADOS
+        # Se não tiver dados, retornar vazio
+        if not hasattr(self, 'dados_evolucao_temporal') or not hasattr(self, 'anos_disponiveis'):
+            return ""
+        
+        meses_nomes = [
+            'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+            'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+        ]
+        
         controles_html = f"""
         <!-- Dados para JavaScript -->
         <script>
-        window.dadosEvolucaoTemporal = {dados_grafico_json};
-        window.anosDisponiveis = {anos_disponiveis};
+        window.dadosEvolucaoTemporal = {self.dados_evolucao_temporal};
+        window.anosDisponiveis = {self.anos_disponiveis};
         </script>
         
         <!-- Controles de Filtro -->
@@ -969,7 +972,7 @@ class LiveloAnalytics:
                 <div class="col-auto">
                     <select class="form-select form-select-sm" id="filtroAno" onchange="aplicarFiltrosTemporal()" style="min-width: 100px;">
                         <option value="">Todos os anos</option>
-                        {chr(10).join([f'<option value="{ano}">{ano}</option>' for ano in anos_disponiveis])}
+                        {chr(10).join([f'<option value="{ano}">{ano}</option>' for ano in self.anos_disponiveis])}
                     </select>
                 </div>
                 <div class="col-auto">
@@ -984,8 +987,12 @@ class LiveloAnalytics:
         </div>
         """
         
-        # JavaScript para controle dos filtros
-        javascript_filtros = """
+        return controles_html
+    
+    def _gerar_javascript_filtros_temporal(self):
+        """Gera o JavaScript para controle dos filtros temporais"""
+        
+        return """
         <script>
         // Dados originais do gráfico
         let dadosOriginais = null;
@@ -999,7 +1006,18 @@ class LiveloAnalytics:
         
         function inicializarFiltrosTemporal() {
             try {
-                graficoEvolucaoPlot = document.getElementById('evolucaoTemporalPlot');
+                // Buscar o gráfico pelo div que contém o plotly
+                const plotlyDivs = document.querySelectorAll('.plotly-graph-div');
+                for (let div of plotlyDivs) {
+                    if (div.closest('.card-body')) {
+                        const cardHeader = div.closest('.card').querySelector('.card-header h6');
+                        if (cardHeader && cardHeader.textContent.includes('Evolução Temporal')) {
+                            graficoEvolucaoPlot = div;
+                            break;
+                        }
+                    }
+                }
+                
                 if (graficoEvolucaoPlot && window.dadosEvolucaoTemporal) {
                     dadosOriginais = window.dadosEvolucaoTemporal;
                     console.log('Filtros temporais inicializados com', dadosOriginais.length, 'registros');
@@ -1015,14 +1033,20 @@ class LiveloAnalytics:
         function interceptarBotoesRange() {
             // Aguardar os botões serem criados pelo Plotly
             setTimeout(() => {
-                const botoes = document.querySelectorAll('.rangeselector-button');
+                if (!graficoEvolucaoPlot) return;
+                
+                const botoes = graficoEvolucaoPlot.querySelectorAll('.rangeselector-button');
                 botoes.forEach(botao => {
                     botao.addEventListener('click', function() {
                         // Limpar dropdowns quando usar botões de range
                         setTimeout(() => {
-                            document.getElementById('filtroMes').value = '';
-                            document.getElementById('filtroAno').value = '';
-                            atualizarStatusFiltro();
+                            const filtroMes = document.getElementById('filtroMes');
+                            const filtroAno = document.getElementById('filtroAno');
+                            if (filtroMes && filtroAno) {
+                                filtroMes.value = '';
+                                filtroAno.value = '';
+                                atualizarStatusFiltro();
+                            }
                         }, 100);
                     });
                 });
@@ -1035,8 +1059,16 @@ class LiveloAnalytics:
                 return;
             }
             
-            const mesSelecionado = document.getElementById('filtroMes').value;
-            const anoSelecionado = document.getElementById('filtroAno').value;
+            const filtroMes = document.getElementById('filtroMes');
+            const filtroAno = document.getElementById('filtroAno');
+            
+            if (!filtroMes || !filtroAno) {
+                console.warn('Elementos de filtro não encontrados');
+                return;
+            }
+            
+            const mesSelecionado = filtroMes.value;
+            const anoSelecionado = filtroAno.value;
             
             let dadosFiltrados = dadosOriginais;
             
@@ -1093,18 +1125,28 @@ class LiveloAnalytics:
         }
         
         function limparFiltrosTemporal() {
-            // Limpar dropdowns
-            document.getElementById('filtroMes').value = '';
-            document.getElementById('filtroAno').value = '';
+            const filtroMes = document.getElementById('filtroMes');
+            const filtroAno = document.getElementById('filtroAno');
             
-            // Aplicar filtros (que agora mostrará todos os dados)
-            aplicarFiltrosTemporal();
+            if (filtroMes && filtroAno) {
+                // Limpar dropdowns
+                filtroMes.value = '';
+                filtroAno.value = '';
+                
+                // Aplicar filtros (que agora mostrará todos os dados)
+                aplicarFiltrosTemporal();
+            }
         }
         
         function atualizarStatusFiltro(totalRegistros = null) {
-            const mesSelecionado = document.getElementById('filtroMes').value;
-            const anoSelecionado = document.getElementById('filtroAno').value;
+            const filtroMes = document.getElementById('filtroMes');
+            const filtroAno = document.getElementById('filtroAno');
             const status = document.getElementById('statusFiltroTemporal');
+            
+            if (!filtroMes || !filtroAno || !status) return;
+            
+            const mesSelecionado = filtroMes.value;
+            const anoSelecionado = filtroAno.value;
             
             if (!mesSelecionado && !anoSelecionado) {
                 status.textContent = 'Mostrando todos os dados';
@@ -1142,11 +1184,6 @@ class LiveloAnalytics:
         }
         </script>
         """
-        
-        # Retornar HTML completo
-        html_completo = controles_html + grafico_html + javascript_filtros
-        
-        return html_completo
     
     def _gerar_alertas_dinamicos(self, mudancas, metricas):
         """Gera alertas dinâmicos com melhoria para mostrar TODAS as ofertas perdidas"""
@@ -2549,7 +2586,7 @@ class LiveloAnalytics:
                     <div class="col-12">
                         <div class="card">
                             <div class="card-header"><h6 class="mb-0">📈 Evolução Temporal - Visão Estratégica</h6></div>
-                            <div class="card-body p-2">{graficos_html.get('evolucao_temporal', '<p>Carregando dados temporais...</p>')}</div>
+                            <div class="card-body p-2">{self._gerar_controles_evolucao_temporal()}{graficos_html.get('evolucao_temporal', '<p>Carregando dados temporais...</p>')}{self._gerar_javascript_filtros_temporal()}</div>
                         </div>
                     </div>
                 </div>
