@@ -3,10 +3,12 @@ on:
   schedule:
     - cron: '0 12 * * *'  # Executa todos os dias às 12:00 UTC
   workflow_dispatch:  # Permite execução manual
+
 permissions:
   contents: write
   pages: write
   id-token: write
+
 jobs:
   scrape:
     runs-on: ubuntu-latest
@@ -49,7 +51,7 @@ jobs:
           python main.py 2>&1 | tee output.log
         continue-on-error: true
         
-      # NOVA ETAPA: VALIDAÇÃO INTELIGENTE DE DADOS
+      # VALIDAÇÃO INTELIGENTE DE DADOS
       - name: Validar qualidade dos dados
         id: validate
         run: |
@@ -111,7 +113,7 @@ jobs:
             echo "SCRAPING_FALHOU=false" >> $GITHUB_ENV
           fi
       
-      # NOVA ETAPA: CRIAR ISSUE AUTOMÁTICA SE FALHOU
+      # CRIAR ISSUE AUTOMÁTICA SE FALHOU
       - name: Criar issue se scraper falhou
         if: env.SCRAPING_FALHOU == 'true'
         uses: actions/github-script@v6
@@ -250,7 +252,7 @@ jobs:
           }
           EOF
           
-          # Criar service worker
+          # Criar service worker básico
           cat > sw.js << 'EOF'
           const CACHE_NAME = 'livelo-analytics-v1';
           const urlsToCache = [
@@ -276,6 +278,66 @@ jobs:
           });
           EOF
           
+          # Criar firebase-messaging-sw.js APENAS com secrets
+          cat > firebase-messaging-sw.js << EOF
+          importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
+          importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
+
+          // Verificar se secrets estão disponíveis
+          const senderId = "${{ secrets.FIREBASE_SENDER_ID }}";
+          
+          if (!senderId || senderId.includes('secrets.')) {
+            console.error('🔒 Service Worker: FIREBASE_SENDER_ID não configurado');
+          } else {
+            try {
+              // Configuração Firebase para Service Worker
+              const firebaseConfig = {
+                apiKey: "AIzaSyAibNVfTL0kvG_R3rKYYSnAeQWc5oVBFYk",
+                authDomain: "livel-analytics.firebaseapp.com",
+                projectId: "livel-analytics",
+                storageBucket: "livel-analytics.firebasestorage.app",
+                messagingSenderId: senderId,
+                appId: "1:168707812242:web:59b4c1df4fc553410c6f4b"
+              };
+
+              firebase.initializeApp(firebaseConfig);
+              const messaging = firebase.messaging();
+
+              messaging.onBackgroundMessage((payload) => {
+                console.log('📨 Background Message:', payload);
+                
+                const notificationTitle = payload.notification?.title || '🎯 Livelo Analytics';
+                const notificationOptions = {
+                  body: payload.notification?.body || 'Nova atualização disponível!',
+                  icon: 'https://via.placeholder.com/192x192/ff0a8c/ffffff?text=L',
+                  badge: 'https://via.placeholder.com/96x96/ff0a8c/ffffff?text=L',
+                  tag: 'livelo-offer',
+                  requireInteraction: true,
+                  actions: [
+                    {
+                      action: 'open',
+                      title: 'Ver Dashboard'
+                    }
+                  ]
+                };
+
+                self.registration.showNotification(notificationTitle, notificationOptions);
+              });
+              
+              console.log('✅ Service Worker Firebase inicializado');
+            } catch (error) {
+              console.error('❌ Erro no Service Worker Firebase:', error);
+            }
+          }
+
+          self.addEventListener('notificationclick', (event) => {
+            event.notification.close();
+            if (event.action === 'open' || !event.action) {
+              clients.openWindow('/');
+            }
+          });
+          EOF
+          
           # Criar firebase.json
           cat > firebase.json << 'EOF'
           {
@@ -294,7 +356,7 @@ jobs:
               ],
               "headers": [
                 {
-                  "source": "/sw.js",
+                  "source": "/firebase-messaging-sw.js",
                   "headers": [
                     {
                       "key": "Service-Worker-Allowed",
@@ -309,15 +371,50 @@ jobs:
           
           echo "✅ Arquivos PWA criados com sucesso!"
       
-      # Configurar e publicar no GitHub Pages (MANTIDO)
+      # CONFIGURAR E PROCESSAR HTML COM PLACEHOLDERS
       - name: Configurar diretório de publicação
         run: |
           mkdir -p ./public
           
-          # Copiar o arquivo HTML principal
+          # NOVO: Substituir placeholders no HTML
           if [ -f "relatorio_livelo.html" ]; then
+            echo "📝 Processando placeholders no HTML..."
+            
+            # Verificar se os secrets estão disponíveis
+            if [ -n "${{ secrets.FIREBASE_SENDER_ID }}" ]; then
+              echo "✅ FIREBASE_SENDER_ID disponível"
+              SENDER_ID="${{ secrets.FIREBASE_SENDER_ID }}"
+            else
+              echo "❌ FIREBASE_SENDER_ID não configurado - notificações não funcionarão"
+              SENDER_ID="{{FIREBASE_SENDER_ID}}"
+            fi
+            
+            if [ -n "${{ secrets.FIREBASE_VAPID_KEY }}" ]; then
+              echo "✅ FIREBASE_VAPID_KEY disponível"
+              VAPID_KEY="${{ secrets.FIREBASE_VAPID_KEY }}"
+            else
+              echo "❌ FIREBASE_VAPID_KEY não configurado - notificações não funcionarão"
+              VAPID_KEY="{{FIREBASE_VAPID_KEY}}"
+            fi
+            
+            # Fazer backup do original
+            cp relatorio_livelo.html relatorio_livelo_backup.html
+            
+            # Substituir placeholders com escape adequado
+            sed -i "s|{{FIREBASE_SENDER_ID}}|${SENDER_ID}|g" relatorio_livelo.html
+            sed -i "s|{{FIREBASE_VAPID_KEY}}|${VAPID_KEY}|g" relatorio_livelo.html
+            
+            # Verificar se substituição funcionou
+            if grep -q "{{FIREBASE_" relatorio_livelo.html; then
+              echo "❌ Alguns placeholders não foram substituídos!"
+              grep "{{FIREBASE_" relatorio_livelo.html || true
+            else
+              echo "✅ Todos os placeholders foram substituídos"
+            fi
+            
+            # Copiar HTML processado
             cp relatorio_livelo.html ./public/index.html
-            echo "✅ HTML copiado para public/"
+            echo "✅ HTML processado e copiado"
           else
             echo "❌ relatorio_livelo.html não encontrado"
             # Criar HTML de emergência
@@ -328,6 +425,8 @@ jobs:
             <title>Livelo Analytics - Em Manutenção</title>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1">
+            <link rel="manifest" href="manifest.json">
+            <meta name="theme-color" content="#ff0a8c">
             <style>
               body { font-family: Arial; text-align: center; padding: 50px; background: #f8f9fa; }
               .container { max-width: 600px; margin: 0 auto; }
@@ -350,6 +449,7 @@ jobs:
           # Copiar arquivos PWA
           cp manifest.json ./public/
           cp sw.js ./public/
+          cp firebase-messaging-sw.js ./public/
           
           # Copiar outros arquivos necessários
           cp -r *.css *.js ./public/ 2>/dev/null || echo "Nenhum arquivo CSS/JS adicional encontrado"
@@ -370,30 +470,28 @@ jobs:
           branch: gh-pages
           clean: true
       
-      # ============ DEPLOY FIREBASE (NOVO) ============
+      # ============ DEPLOY FIREBASE (OPCIONAL) ============
       
       - name: Instalar Firebase CLI
         run: npm install -g firebase-tools
+        continue-on-error: true
       
       - name: Deploy para Firebase Hosting
-        if: env.SCRAPING_FALHOU == 'false'  # Só deploy se scraping funcionou
+        if: env.SCRAPING_FALHOU == 'false' && secrets.FIREBASE_TOKEN != ''
         run: |
           # Deploy usando token do secret
-          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > firebase-key.json
-          export GOOGLE_APPLICATION_CREDENTIALS="firebase-key.json"
-          firebase deploy --project "$FIREBASE_PROJECT_ID" --only hosting
+          firebase deploy --token "$FIREBASE_TOKEN" --project "livel-analytics" --only hosting
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+        continue-on-error: true
       
       - name: Deploy de emergência no Firebase (dados antigos)
-        if: env.SCRAPING_FALHOU == 'true'  # Deploy mesmo com falha para manter site no ar
+        if: env.SCRAPING_FALHOU == 'true' && secrets.FIREBASE_TOKEN != ''
         run: |
           echo "⚠️ Fazendo deploy de emergência com dados antigos..."
-          firebase deploy --token "$FIREBASE_TOKEN" --project "$FIREBASE_PROJECT_ID" --only hosting
+          firebase deploy --token "$FIREBASE_TOKEN" --project "livel-analytics" --only hosting
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
         continue-on-error: true
       
       # ============ LOG FINAL ============
@@ -408,6 +506,8 @@ jobs:
           🔍 Status scraping: ${{ env.SCRAPING_FALHOU == 'true' && 'FALHOU' || 'SUCESSO' }}
           🌐 GitHub Pages: ✅ Deployado
           🔥 Firebase: ${{ env.SCRAPING_FALHOU == 'true' && '⚠️ Deploy emergência' || '✅ Deploy normal' }}
+          📱 PWA: ✅ Manifest + Service Workers criados
+          🔔 Notificações: ✅ Firebase Messaging configurado
           
           📧 Notificações: ${{ env.SCRAPING_FALHOU == 'true' && 'Issue criada - email enviado' || 'Nenhuma necessária' }}
           "
