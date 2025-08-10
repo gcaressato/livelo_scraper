@@ -285,19 +285,20 @@ jobs:
 
           // Verificar se secrets estão disponíveis
           const senderId = "${{ secrets.FIREBASE_SENDER_ID }}";
+          const projectId = "${{ secrets.FIREBASE_PROJECT_ID }}";
           
-          if (!senderId || senderId.includes('secrets.')) {
-            console.error('🔒 Service Worker: FIREBASE_SENDER_ID não configurado');
+          if (!senderId || senderId.includes('secrets.') || !projectId || projectId.includes('secrets.')) {
+            console.error('🔒 Service Worker: Secrets Firebase não configurados');
           } else {
             try {
               // Configuração Firebase para Service Worker
               const firebaseConfig = {
                 apiKey: "AIzaSyAibNVfTL0kvG_R3rKYYSnAeQWc5oVBFYk",
-                authDomain: "livel-analytics.firebaseapp.com",
-                projectId: "livel-analytics",
-                storageBucket: "livel-analytics.firebasestorage.app",
+                authDomain: projectId + ".firebaseapp.com",
+                projectId: projectId,
+                storageBucket: projectId + ".firebasestorage.app",
                 messagingSenderId: senderId,
-                appId: "1:168707812242:web:59b4c1df4fc553410c6f4b"
+                appId: "1:" + senderId + ":web:59b4c1df4fc553410c6f4b"
               };
 
               firebase.initializeApp(firebaseConfig);
@@ -381,6 +382,14 @@ jobs:
             echo "📝 Processando placeholders no HTML..."
             
             # Verificar se os secrets estão disponíveis
+            if [ -n "${{ secrets.FIREBASE_PROJECT_ID }}" ]; then
+              echo "✅ FIREBASE_PROJECT_ID disponível"
+              PROJECT_ID="${{ secrets.FIREBASE_PROJECT_ID }}"
+            else
+              echo "❌ FIREBASE_PROJECT_ID não configurado"
+              PROJECT_ID="{{FIREBASE_PROJECT_ID}}"
+            fi
+            
             if [ -n "${{ secrets.FIREBASE_SENDER_ID }}" ]; then
               echo "✅ FIREBASE_SENDER_ID disponível"
               SENDER_ID="${{ secrets.FIREBASE_SENDER_ID }}"
@@ -401,6 +410,7 @@ jobs:
             cp relatorio_livelo.html relatorio_livelo_backup.html
             
             # Substituir placeholders com escape adequado
+            sed -i "s|{{FIREBASE_PROJECT_ID}}|${PROJECT_ID}|g" relatorio_livelo.html
             sed -i "s|{{FIREBASE_SENDER_ID}}|${SENDER_ID}|g" relatorio_livelo.html
             sed -i "s|{{FIREBASE_VAPID_KEY}}|${VAPID_KEY}|g" relatorio_livelo.html
             
