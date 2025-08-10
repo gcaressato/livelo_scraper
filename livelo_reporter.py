@@ -604,10 +604,7 @@ class LiveloAnalytics:
                     bordercolor="#ccc",
                     borderwidth=1
                 ),
-                rangeslider=dict(
-                    visible=True,
-                    bgcolor="rgba(255,255,255,0.8)"
-                )
+                rangeslider=dict(visible=False)  # REMOVIDO O MINI GRÁFICO
             ),
             yaxis=dict(
                 title='Quantidade',
@@ -620,7 +617,7 @@ class LiveloAnalytics:
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
             barmode='group'
         )
-        graficos['evolucao_temporal'] = fig1
+        graficos['evolucao_temporal'] = self._gerar_grafico_evolucao_temporal_com_filtros()
         
         # 2. MATRIZ DE OPORTUNIDADES (Scatter estratégico)
         fig2 = px.scatter(
@@ -855,6 +852,301 @@ class LiveloAnalytics:
         
         self.analytics['graficos'] = graficos
         return graficos
+    
+    def _gerar_grafico_evolucao_temporal_com_filtros(self):
+        """Gera o gráfico de evolução temporal com filtros avançados de Mês e Ano"""
+        
+        # Preparar dados históricos diários
+        df_historico_diario = self.df_completo.copy()
+        df_historico_diario['Data'] = df_historico_diario['Timestamp'].dt.date
+        
+        evolucao_diaria = df_historico_diario.groupby('Data').agg({
+            'Parceiro': 'nunique',
+            'Oferta': lambda x: (x == 'Sim').sum()
+        }).reset_index()
+        evolucao_diaria.columns = ['Data', 'Total_Parceiros', 'Total_Ofertas']
+        
+        # Preparar dados para filtros de mês/ano
+        evolucao_diaria['Ano'] = pd.to_datetime(evolucao_diaria['Data']).dt.year
+        evolucao_diaria['Mes'] = pd.to_datetime(evolucao_diaria['Data']).dt.month
+        evolucao_diaria['Data_ISO'] = pd.to_datetime(evolucao_diaria['Data']).dt.strftime('%Y-%m-%d')
+        
+        anos_disponiveis = sorted(evolucao_diaria['Ano'].unique())
+        meses_nomes = [
+            'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+            'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+        ]
+        
+        # Criar gráfico base
+        fig = go.Figure()
+        
+        # Parceiros (coluna azul) COM RÓTULOS
+        fig.add_trace(go.Bar(
+            x=evolucao_diaria['Data'],
+            y=evolucao_diaria['Total_Parceiros'],
+            name='Parceiros Ativos',
+            marker=dict(color=LIVELO_AZUL, opacity=0.8),
+            offsetgroup=1,
+            text=evolucao_diaria['Total_Parceiros'],
+            textposition='outside',
+            textfont=dict(size=10, color=LIVELO_AZUL),
+            customdata=evolucao_diaria['Data_ISO']  # Para filtros JavaScript
+        ))
+        
+        # Ofertas (coluna rosa) COM RÓTULOS
+        fig.add_trace(go.Bar(
+            x=evolucao_diaria['Data'],
+            y=evolucao_diaria['Total_Ofertas'],
+            name='Ofertas Ativas',
+            marker=dict(color=LIVELO_ROSA, opacity=0.8),
+            offsetgroup=2,
+            text=evolucao_diaria['Total_Ofertas'],
+            textposition='outside',
+            textfont=dict(size=10, color=LIVELO_ROSA),
+            customdata=evolucao_diaria['Data_ISO']  # Para filtros JavaScript
+        ))
+        
+        # Preparar dados JSON para JavaScript
+        dados_grafico_json = evolucao_diaria.to_json(orient='records', date_format='iso')
+        
+        # Layout com controles avançados
+        fig.update_layout(
+            title='📈 Evolução Temporal - Parceiros vs Ofertas por Dia',
+            xaxis=dict(
+                title='Data',
+                # BOTÕES EXISTENTES + NOVOS CONTROLES
+                rangeselector=dict(
+                    buttons=list([
+                        dict(count=7, label="7d", step="day", stepmode="backward"),
+                        dict(count=14, label="14d", step="day", stepmode="backward"),
+                        dict(count=30, label="30d", step="day", stepmode="backward"),
+                        dict(step="all", label="Tudo")
+                    ]),
+                    bgcolor="rgba(255,255,255,0.8)",
+                    bordercolor="#ccc",
+                    borderwidth=1,
+                    x=0,  # Posicionar à esquerda para dar espaço aos dropdowns
+                    xanchor="left"
+                ),
+                rangeslider=dict(visible=False)
+            ),
+            yaxis=dict(
+                title='Quantidade',
+                range=[0, max(evolucao_diaria[['Total_Parceiros', 'Total_Ofertas']].max()) * 1.15]
+            ),
+            plot_bgcolor='white',
+            paper_bgcolor='white',
+            font=dict(color=LIVELO_AZUL),
+            height=450,  # Aumentado para acomodar controles
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+            barmode='group',
+            margin=dict(t=120)  # Mais espaço no topo para controles
+        )
+        
+        # Converter para HTML com ID específico para controle JavaScript
+        grafico_html = fig.to_html(full_html=False, include_plotlyjs='cdn', div_id="evolucaoTemporalPlot")
+        
+        # CRIAR CONTROLES CUSTOMIZADOS INTEGRADOS
+        controles_html = f"""
+        <!-- Dados para JavaScript -->
+        <script>
+        window.dadosEvolucaoTemporal = {dados_grafico_json};
+        window.anosDisponiveis = {anos_disponiveis};
+        </script>
+        
+        <!-- Controles de Filtro -->
+        <div class="mb-3 p-3 bg-light rounded">
+            <div class="row align-items-center g-2">
+                <div class="col-auto">
+                    <strong>Filtros Temporais:</strong>
+                </div>
+                <div class="col-auto">
+                    <select class="form-select form-select-sm" id="filtroMes" onchange="aplicarFiltrosTemporal()" style="min-width: 120px;">
+                        <option value="">Todos os meses</option>
+                        {chr(10).join([f'<option value="{i+1}">{mes}</option>' for i, mes in enumerate(meses_nomes)])}
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <select class="form-select form-select-sm" id="filtroAno" onchange="aplicarFiltrosTemporal()" style="min-width: 100px;">
+                        <option value="">Todos os anos</option>
+                        {chr(10).join([f'<option value="{ano}">{ano}</option>' for ano in anos_disponiveis])}
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <button class="btn btn-outline-secondary btn-sm" onclick="limparFiltrosTemporal()" title="Limpar filtros">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                </div>
+                <div class="col-auto">
+                    <small class="text-muted" id="statusFiltroTemporal">Mostrando todos os dados</small>
+                </div>
+            </div>
+        </div>
+        """
+        
+        # JavaScript para controle dos filtros
+        javascript_filtros = """
+        <script>
+        // Dados originais do gráfico
+        let dadosOriginais = null;
+        let graficoEvolucaoPlot = null;
+        
+        // Inicializar após carregamento do DOM
+        document.addEventListener('DOMContentLoaded', function() {
+            // Aguardar o Plotly carregar
+            setTimeout(inicializarFiltrosTemporal, 1000);
+        });
+        
+        function inicializarFiltrosTemporal() {
+            try {
+                graficoEvolucaoPlot = document.getElementById('evolucaoTemporalPlot');
+                if (graficoEvolucaoPlot && window.dadosEvolucaoTemporal) {
+                    dadosOriginais = window.dadosEvolucaoTemporal;
+                    console.log('Filtros temporais inicializados com', dadosOriginais.length, 'registros');
+                    
+                    // Interceptar cliques nos botões de range
+                    interceptarBotoesRange();
+                }
+            } catch (error) {
+                console.error('Erro ao inicializar filtros temporais:', error);
+            }
+        }
+        
+        function interceptarBotoesRange() {
+            // Aguardar os botões serem criados pelo Plotly
+            setTimeout(() => {
+                const botoes = document.querySelectorAll('.rangeselector-button');
+                botoes.forEach(botao => {
+                    botao.addEventListener('click', function() {
+                        // Limpar dropdowns quando usar botões de range
+                        setTimeout(() => {
+                            document.getElementById('filtroMes').value = '';
+                            document.getElementById('filtroAno').value = '';
+                            atualizarStatusFiltro();
+                        }, 100);
+                    });
+                });
+            }, 500);
+        }
+        
+        function aplicarFiltrosTemporal() {
+            if (!dadosOriginais || !graficoEvolucaoPlot) {
+                console.warn('Dados ou gráfico não disponíveis');
+                return;
+            }
+            
+            const mesSelecionado = document.getElementById('filtroMes').value;
+            const anoSelecionado = document.getElementById('filtroAno').value;
+            
+            let dadosFiltrados = dadosOriginais;
+            
+            // Aplicar filtros
+            if (mesSelecionado || anoSelecionado) {
+                dadosFiltrados = dadosOriginais.filter(item => {
+                    const data = new Date(item.Data);
+                    const mes = data.getMonth() + 1; // JavaScript months são 0-indexed
+                    const ano = data.getFullYear();
+                    
+                    let incluir = true;
+                    
+                    if (mesSelecionado) {
+                        incluir = incluir && (mes == parseInt(mesSelecionado));
+                    }
+                    
+                    if (anoSelecionado) {
+                        incluir = incluir && (ano == parseInt(anoSelecionado));
+                    }
+                    
+                    return incluir;
+                });
+            }
+            
+            // Preparar dados para atualizar o gráfico
+            const datas = dadosFiltrados.map(item => item.Data);
+            const parceiros = dadosFiltrados.map(item => item.Total_Parceiros);
+            const ofertas = dadosFiltrados.map(item => item.Total_Ofertas);
+            
+            // Atualizar gráfico usando Plotly.restyle
+            const update = {
+                x: [datas, datas],
+                y: [parceiros, ofertas],
+                text: [parceiros, ofertas]
+            };
+            
+            try {
+                Plotly.restyle(graficoEvolucaoPlot, update);
+                
+                // Resetar zoom para mostrar todos os dados filtrados
+                if (dadosFiltrados.length > 0) {
+                    const layout_update = {
+                        'xaxis.autorange': true,
+                        'yaxis.range': [0, Math.max(...parceiros, ...ofertas) * 1.15]
+                    };
+                    Plotly.relayout(graficoEvolucaoPlot, layout_update);
+                }
+                
+                atualizarStatusFiltro(dadosFiltrados.length);
+                
+            } catch (error) {
+                console.error('Erro ao atualizar gráfico:', error);
+            }
+        }
+        
+        function limparFiltrosTemporal() {
+            // Limpar dropdowns
+            document.getElementById('filtroMes').value = '';
+            document.getElementById('filtroAno').value = '';
+            
+            // Aplicar filtros (que agora mostrará todos os dados)
+            aplicarFiltrosTemporal();
+        }
+        
+        function atualizarStatusFiltro(totalRegistros = null) {
+            const mesSelecionado = document.getElementById('filtroMes').value;
+            const anoSelecionado = document.getElementById('filtroAno').value;
+            const status = document.getElementById('statusFiltroTemporal');
+            
+            if (!mesSelecionado && !anoSelecionado) {
+                status.textContent = 'Mostrando todos os dados';
+                status.className = 'text-muted';
+            } else {
+                let textoFiltro = 'Filtrado: ';
+                if (mesSelecionado && anoSelecionado) {
+                    const nomesMeses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 
+                                    'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+                    textoFiltro += `${nomesMeses[parseInt(mesSelecionado)-1]}/${anoSelecionado}`;
+                } else if (mesSelecionado) {
+                    const nomesMeses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+                                    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+                    textoFiltro += `${nomesMeses[parseInt(mesSelecionado)-1]} (todos os anos)`;
+                } else if (anoSelecionado) {
+                    textoFiltro += `${anoSelecionado} (ano completo)`;
+                }
+                
+                if (totalRegistros !== null) {
+                    textoFiltro += ` - ${totalRegistros} dias`;
+                }
+                
+                status.textContent = textoFiltro;
+                status.className = 'text-primary fw-bold';
+            }
+        }
+        
+        // Função para ser chamada quando trocar de aba (se necessário)
+        function redimensionarGraficoTemporal() {
+            if (graficoEvolucaoPlot) {
+                setTimeout(() => {
+                    Plotly.Plots.resize(graficoEvolucaoPlot);
+                }, 100);
+            }
+        }
+        </script>
+        """
+        
+        # Retornar HTML completo
+        html_completo = controles_html + grafico_html + javascript_filtros
+        
+        return html_completo
     
     def _gerar_alertas_dinamicos(self, mudancas, metricas):
         """Gera alertas dinâmicos com melhoria para mostrar TODAS as ofertas perdidas"""
@@ -1852,6 +2144,34 @@ class LiveloAnalytics:
             min-width: 60px;
             text-align: center;
             white-space: nowrap;
+        }}
+        
+        /* BADGES SUAVES PARA MELHOR CONTRASTE */
+        .badge-soft {{
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-align: center;
+            white-space: nowrap;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+        }}
+        
+        .badge-soft:hover {{
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }}
+        
+        /* MODO ESCURO - MELHORAR BADGES */
+        [data-theme="dark"] .badge-soft {{
+            border: 1px solid rgba(255,255,255,0.1);
+            filter: brightness(1.1);
+        }}
+        
+        [data-theme="dark"] .badge-soft:hover {{
+            filter: brightness(1.2);
         }}
         
         .search-input {{
@@ -2862,11 +3182,12 @@ class LiveloAnalytics:
                 'grandes_mudancas': {len(mudancas['grandes_mudancas_pontos'])}
             }});
             
-            // Configurar event listeners para filtros
+            // Configurar event listeners para filtros ATUALIZADOS
             document.getElementById('filtroCategoriaComplex').addEventListener('change', aplicarFiltros);
             document.getElementById('filtroTier').addEventListener('change', aplicarFiltros);
-            document.getElementById('filtroMoeda').addEventListener('change', aplicarFiltros);
-            document.getElementById('filtroTipo').addEventListener('change', aplicarFiltros);
+            document.getElementById('filtroOferta').addEventListener('change', aplicarFiltros);
+            document.getElementById('filtroExperiencia').addEventListener('change', aplicarFiltros);
+            document.getElementById('filtroFrequencia').addEventListener('change', aplicarFiltros);
             
             setTimeout(() => {{
                 if (document.querySelector('#individual.show.active')) {{
