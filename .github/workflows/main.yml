@@ -379,7 +379,9 @@ jobs:
         if: env.SCRAPING_FALHOU == 'false'  # Só deploy se scraping funcionou
         run: |
           # Deploy usando token do secret
-          firebase deploy --token "$FIREBASE_TOKEN" --project "$FIREBASE_PROJECT_ID" --only hosting
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > firebase-key.json
+          export GOOGLE_APPLICATION_CREDENTIALS="firebase-key.json"
+          firebase deploy --project "$FIREBASE_PROJECT_ID" --only hosting
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
