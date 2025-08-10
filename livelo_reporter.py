@@ -2227,20 +2227,6 @@ class LiveloAnalytics:
         <!-- Firebase SDK -->
         <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
         <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js"></script>
-
-        <!-- Firebase Config (será substituído no deploy) -->
-        <script>
-        window.firebaseConfig = {
-        apiKey: "AIzaSyAibNVfTL0kvG_R3rKYYSnAeQWc5oVBFYk",
-        authDomain: "livel-analytics.firebaseapp.com",
-        projectId: "livel-analytics",
-        storageBucket: "livel-analytics.firebasestorage.app",
-        messagingSenderId: "{{FIREBASE_SENDER_ID}}", // Placeholder - será substituído
-        appId: "1:168707812242:web:59b4c1df4fc553410c6f4b"
-        };
-
-        window.vapidKey = "{{FIREBASE_VAPID_KEY}}"; // Placeholder - será substituído
-        </script>
         
         <style>
             :root {{
