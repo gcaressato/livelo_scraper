@@ -7,8 +7,6 @@ permissions:
   contents: write
   pages: write
   id-token: write
-  issues: write
-  pull-requests: write
 jobs:
   scrape:
     runs-on: ubuntu-latest
@@ -224,56 +222,47 @@ jobs:
         with:
           node-version: '18'
       
-      - name: Criar arquivos PWA com configuração segura
+      - name: Criar arquivos PWA
         run: |
           # Criar manifest.json
           cat > manifest.json << 'EOF'
           {
             "name": "Livelo Analytics Pro",
             "short_name": "Livelo",
-            "description": "Dashboard analítico para ofertas Livelo com notificações push",
+            "description": "Dashboard analítico para ofertas Livelo",
             "start_url": "/",
             "display": "standalone",
             "background_color": "#151f4f",
             "theme_color": "#ff0a8c",
             "orientation": "portrait-primary",
-            "categories": ["finance", "shopping"],
-            "lang": "pt-BR",
             "icons": [
               {
                 "src": "https://via.placeholder.com/192x192/ff0a8c/ffffff?text=L",
                 "sizes": "192x192",
-                "type": "image/png",
-                "purpose": "maskable any"
+                "type": "image/png"
               },
               {
                 "src": "https://via.placeholder.com/512x512/ff0a8c/ffffff?text=L", 
                 "sizes": "512x512",
-                "type": "image/png",
-                "purpose": "maskable any"
+                "type": "image/png"
               }
             ]
           }
           EOF
           
-          # Criar service worker principal
+          # Criar service worker
           cat > sw.js << 'EOF'
-          const CACHE_NAME = 'livelo-analytics-v2';
+          const CACHE_NAME = 'livelo-analytics-v1';
           const urlsToCache = [
             '/',
             '/index.html',
-            '/manifest.json',
-            'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
-            'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css'
+            '/manifest.json'
           ];
           
           self.addEventListener('install', (event) => {
             event.waitUntil(
               caches.open(CACHE_NAME)
-                .then((cache) => {
-                  console.log('Cache aberto');
-                  return cache.addAll(urlsToCache);
-                })
+                .then((cache) => cache.addAll(urlsToCache))
             );
           });
           
@@ -281,98 +270,9 @@ jobs:
             event.respondWith(
               caches.match(event.request)
                 .then((response) => {
-                  // Cache hit - return response
-                  if (response) {
-                    return response;
-                  }
-                  return fetch(event.request);
+                  return response || fetch(event.request);
                 })
             );
-          });
-          
-          self.addEventListener('activate', (event) => {
-            event.waitUntil(
-              caches.keys().then((cacheNames) => {
-                return Promise.all(
-                  cacheNames.map((cacheName) => {
-                    if (cacheName !== CACHE_NAME) {
-                      return caches.delete(cacheName);
-                    }
-                  })
-                );
-              })
-            );
-          });
-          EOF
-          
-          # Criar firebase-messaging-sw.js com secrets
-          cat > firebase-messaging-sw.js << EOF
-          importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
-          importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
-
-          firebase.initializeApp({
-            apiKey: "AIzaSyAibNVfTL0kvG_R3rKYYSnAeQWc5oVBFYk",
-            authDomain: "livel-analytics.firebaseapp.com",
-            projectId: "livel-analytics",
-            storageBucket: "livel-analytics.firebasestorage.app",
-            messagingSenderId: "${{ secrets.FIREBASE_SENDER_ID }}",
-            appId: "1:168707812242:web:59b4c1df4fc553410c6f4b"
-          });
-
-          const messaging = firebase.messaging();
-
-          messaging.onBackgroundMessage((payload) => {
-            console.log('📨 Background Message recebida:', payload);
-            
-            const notificationTitle = payload.notification?.title || 'Nova oferta Livelo!';
-            const notificationOptions = {
-              body: payload.notification?.body || 'Confira as novas oportunidades disponíveis',
-              icon: 'https://via.placeholder.com/192x192/ff0a8c/ffffff?text=L',
-              badge: 'https://via.placeholder.com/96x96/ff0a8c/ffffff?text=L',
-              tag: 'livelo-offer',
-              requireInteraction: true,
-              data: payload.data || {},
-              actions: [
-                {
-                  action: 'open',
-                  title: 'Ver Dashboard',
-                  icon: 'https://via.placeholder.com/24x24/ff0a8c/ffffff?text=→'
-                },
-                {
-                  action: 'close',
-                  title: 'Fechar',
-                  icon: 'https://via.placeholder.com/24x24/6c757d/ffffff?text=X'
-                }
-              ]
-            };
-
-            self.registration.showNotification(notificationTitle, notificationOptions);
-          });
-
-          self.addEventListener('notificationclick', (event) => {
-            console.log('🖱️ Notificação clicada:', event);
-            event.notification.close();
-            
-            if (event.action === 'open' || !event.action) {
-              event.waitUntil(
-                clients.matchAll({ type: 'window' }).then((clientList) => {
-                  // Se já há uma aba aberta, focar nela
-                  for (const client of clientList) {
-                    if (client.url === '/' && 'focus' in client) {
-                      return client.focus();
-                    }
-                  }
-                  // Caso contrário, abrir nova aba
-                  if (clients.openWindow) {
-                    return clients.openWindow('/');
-                  }
-                })
-              );
-            }
-          });
-
-          self.addEventListener('notificationclose', (event) => {
-            console.log('❌ Notificação fechada:', event);
           });
           EOF
           
@@ -399,23 +299,6 @@ jobs:
                     {
                       "key": "Service-Worker-Allowed",
                       "value": "/"
-                    },
-                    {
-                      "key": "Cache-Control",
-                      "value": "no-cache"
-                    }
-                  ]
-                },
-                {
-                  "source": "/firebase-messaging-sw.js",
-                  "headers": [
-                    {
-                      "key": "Service-Worker-Allowed",
-                      "value": "/"
-                    },
-                    {
-                      "key": "Cache-Control",
-                      "value": "no-cache"
                     }
                   ]
                 }
@@ -424,157 +307,58 @@ jobs:
           }
           EOF
           
-          echo "✅ Arquivos PWA criados com configuração segura!"
+          echo "✅ Arquivos PWA criados com sucesso!"
       
-      # Configurar e publicar no GitHub Pages
+      # Configurar e publicar no GitHub Pages (MANTIDO)
       - name: Configurar diretório de publicação
         run: |
           mkdir -p ./public
           
-          # ETAPA 1: Processar HTML com substituição de secrets
+          # Copiar o arquivo HTML principal
           if [ -f "relatorio_livelo.html" ]; then
-            echo "🔄 Processando HTML com configurações seguras..."
-            
-            # Criar arquivo temporário com substituições
-            cp relatorio_livelo.html temp_relatorio.html
-            
-            # Substituir placeholders pelos valores dos secrets
-            sed -i "s/{{FIREBASE_SENDER_ID}}/${{ secrets.FIREBASE_SENDER_ID }}/g" temp_relatorio.html
-            sed -i "s/{{FIREBASE_VAPID_KEY}}/${{ secrets.FIREBASE_VAPID_KEY }}/g" temp_relatorio.html
-            
-            # Verificar se substituições foram feitas
-            if grep -q "{{FIREBASE" temp_relatorio.html; then
-              echo "⚠️ Alguns placeholders não foram substituídos"
-              grep "{{FIREBASE" temp_relatorio.html || true
-            else
-              echo "✅ Todos os placeholders foram substituídos"
-            fi
-            
-            # Copiar HTML processado
-            cp temp_relatorio.html ./public/index.html
-            
-            # Limpar arquivo temporário
-            rm temp_relatorio.html
-            
-            echo "✅ HTML processado e copiado para public/"
+            cp relatorio_livelo.html ./public/index.html
+            echo "✅ HTML copiado para public/"
           else
             echo "❌ relatorio_livelo.html não encontrado"
-            # Criar HTML de emergência com PWA
+            # Criar HTML de emergência
             cat > ./public/index.html << 'EOF'
           <!DOCTYPE html>
-          <html lang="pt-BR">
+          <html>
           <head>
+            <title>Livelo Analytics - Em Manutenção</title>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1">
-            <title>Livelo Analytics - Em Manutenção</title>
-            
-            <!-- PWA -->
-            <link rel="manifest" href="manifest.json">
-            <meta name="theme-color" content="#ff0a8c">
-            
             <style>
-              body { 
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                text-align: center; 
-                padding: 50px; 
-                background: linear-gradient(135deg, #151f4f 0%, #ff0a8c 100%);
-                color: white;
-                min-height: 100vh;
-                margin: 0;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-              }
-              .container { 
-                max-width: 600px; 
-                background: rgba(255,255,255,0.1);
-                padding: 40px;
-                border-radius: 20px;
-                backdrop-filter: blur(10px);
-              }
-              .error { color: #ffeb3b; margin: 20px 0; }
-              .info { color: #e1e1e1; margin-top: 20px; }
-              .spinner {
-                border: 4px solid rgba(255,255,255,0.3);
-                border-radius: 50%;
-                border-top: 4px solid #ffeb3b;
-                width: 40px;
-                height: 40px;
-                animation: spin 2s linear infinite;
-                margin: 20px auto;
-              }
-              @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-              }
+              body { font-family: Arial; text-align: center; padding: 50px; background: #f8f9fa; }
+              .container { max-width: 600px; margin: 0 auto; }
+              .error { color: #dc3545; }
+              .info { color: #6c757d; margin-top: 20px; }
             </style>
           </head>
           <body>
             <div class="container">
               <h1>🚧 Livelo Analytics</h1>
-              <div class="spinner"></div>
               <p class="error">Dashboard temporariamente indisponível</p>
               <p class="info">O sistema está em manutenção. Tente novamente em alguns minutos.</p>
               <p class="info"><small>Última tentativa: $(date)</small></p>
             </div>
-            
-            <!-- PWA Registration -->
-            <script>
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                  navigator.serviceWorker.register('/sw.js')
-                    .then((registration) => console.log('SW registered'))
-                    .catch((registrationError) => console.log('SW registration failed'));
-                });
-              }
-            </script>
           </body>
           </html>
           EOF
           fi
           
-          # ETAPA 2: Copiar arquivos PWA
-          echo "📱 Copiando arquivos PWA..."
+          # Copiar arquivos PWA
           cp manifest.json ./public/
           cp sw.js ./public/
-          cp firebase-messaging-sw.js ./public/
           
-          # ETAPA 3: Copiar outros arquivos necessários
-          echo "📂 Copiando arquivos adicionais..."
-          
-          # Copiar CSS/JS se existirem
-          for file in *.css *.js; do
-            if [ -f "$file" ] && [ "$file" != "sw.js" ] && [ "$file" != "firebase-messaging-sw.js" ]; then
-              cp "$file" ./public/ 2>/dev/null || true
-            fi
-          done
-          
-          # Copiar conteúdo de relatórios se existir
+          # Copiar outros arquivos necessários
+          cp -r *.css *.js ./public/ 2>/dev/null || echo "Nenhum arquivo CSS/JS adicional encontrado"
           if [ -d "relatorios" ]; then
             cp -r relatorios/* ./public/ 2>/dev/null || echo "Nenhum arquivo encontrado em relatórios"
           fi
           
-          echo "📋 Conteúdo final do diretório public:"
+          echo "Arquivos no diretório public:"
           ls -la ./public/
-          
-          echo "🔍 Verificando configuração PWA:"
-          if [ -f "./public/manifest.json" ]; then
-            echo "✅ manifest.json presente"
-          else
-            echo "❌ manifest.json ausente"
-          fi
-          
-          if [ -f "./public/sw.js" ]; then
-            echo "✅ service worker presente"
-          else
-            echo "❌ service worker ausente"
-          fi
-          
-          if [ -f "./public/firebase-messaging-sw.js" ]; then
-            echo "✅ firebase messaging SW presente"
-          else
-            echo "❌ firebase messaging SW ausente"
-          fi
           
       - name: Setup Pages
         uses: actions/configure-pages@v3
@@ -586,54 +370,33 @@ jobs:
           branch: gh-pages
           clean: true
       
-      # ============ DEPLOY FIREBASE ============
+      # ============ DEPLOY FIREBASE (NOVO) ============
       
       - name: Instalar Firebase CLI
         run: npm install -g firebase-tools
       
       - name: Deploy para Firebase Hosting
-        if: env.SCRAPING_FALHOU == 'false'
+        if: env.SCRAPING_FALHOU == 'false'  # Só deploy se scraping funcionou
         run: |
-          echo "🚀 Fazendo deploy para Firebase com dados atualizados..."
-          
-          # Autenticar usando service account
+          # Deploy usando token do secret
           echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > firebase-key.json
           export GOOGLE_APPLICATION_CREDENTIALS="firebase-key.json"
-          
-          # Deploy
-          firebase deploy --project "${{ secrets.FIREBASE_PROJECT_ID }}" --only hosting
-          
-          echo "✅ Deploy do Firebase concluído com sucesso!"
-        continue-on-error: false
+          firebase deploy --project "$FIREBASE_PROJECT_ID" --only hosting
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
       
-      - name: Deploy de emergência no Firebase
-        if: env.SCRAPING_FALHOU == 'true'
+      - name: Deploy de emergência no Firebase (dados antigos)
+        if: env.SCRAPING_FALHOU == 'true'  # Deploy mesmo com falha para manter site no ar
         run: |
-          echo "⚠️ Fazendo deploy de emergência com página de manutenção..."
-          
-          # Autenticar usando service account
-          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > firebase-key.json
-          export GOOGLE_APPLICATION_CREDENTIALS="firebase-key.json"
-          
-          # Deploy mesmo com falha para manter site no ar
-          firebase deploy --project "${{ secrets.FIREBASE_PROJECT_ID }}" --only hosting
-          
-          echo "⚠️ Deploy de emergência concluído"
+          echo "⚠️ Fazendo deploy de emergência com dados antigos..."
+          firebase deploy --token "$FIREBASE_TOKEN" --project "$FIREBASE_PROJECT_ID" --only hosting
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
         continue-on-error: true
       
-      # ============ LOG FINAL E NOTIFICAÇÕES ============
-      
-      - name: Testar notificações (se habilitadas)
-        if: env.SCRAPING_FALHOU == 'false'
-        run: |
-          echo "🔔 Sistema de notificações configurado e pronto para uso"
-          echo "Os usuários podem ativar notificações diretamente no dashboard"
-          echo "Secrets configurados:"
-          echo "- FIREBASE_SENDER_ID: ✅ Configurado"
-          echo "- FIREBASE_VAPID_KEY: ✅ Configurado" 
-          echo "- FIREBASE_SERVICE_ACCOUNT: ✅ Configurado"
-          echo "- FIREBASE_PROJECT_ID: ✅ Configurado"
-        continue-on-error: true
+      # ============ LOG FINAL ============
       
       - name: Resumo da execução
         run: |
@@ -642,20 +405,15 @@ jobs:
           =====================
           ⏰ Horário: $(date)
           📁 Arquivos gerados: $(ls -la ./public/ | wc -l) arquivos
-          🔍 Status scraping: ${{ env.SCRAPING_FALHOU == 'true' && '❌ FALHOU' || '✅ SUCESSO' }}
+          🔍 Status scraping: ${{ env.SCRAPING_FALHOU == 'true' && 'FALHOU' || 'SUCESSO' }}
           🌐 GitHub Pages: ✅ Deployado
           🔥 Firebase: ${{ env.SCRAPING_FALHOU == 'true' && '⚠️ Deploy emergência' || '✅ Deploy normal' }}
-          📱 PWA: ✅ Configurado com notificações
-          🔐 Secrets: ✅ Protegidos e funcionais
           
-          🔔 Notificações: ${{ env.SCRAPING_FALHOU == 'true' && '⚠️ Disponível após correção' || '✅ Totalmente funcionais' }}
-          📧 Issues: ${{ env.SCRAPING_FALHOU == 'true' && '✅ Issue criada automaticamente' || '✅ Nenhuma necessária' }}
+          📧 Notificações: ${{ env.SCRAPING_FALHOU == 'true' && 'Issue criada - email enviado' || 'Nenhuma necessária' }}
           "
           
           if [ "${{ env.SCRAPING_FALHOU }}" = "true" ]; then
             echo "::warning::Scraper falhou mas deploy foi mantido com dados antigos"
-            echo "::notice::Issue criada automaticamente - você receberá email do GitHub"
           else
-            echo "::notice::✅ Execução completada com sucesso!"
-            echo "::notice::🔔 Sistema de notificações PWA totalmente funcional"
+            echo "::notice::Execução completada com sucesso!"
           fi
