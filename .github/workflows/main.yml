@@ -24,7 +24,7 @@ jobs:
         
       - name: Instalar dependências
         run: |
-          pip install selenium webdriver-manager pandas openpyxl selenium-stealth plotly numpy
+          pip install selenium webdriver-manager pandas openpyxl selenium-stealth plotly numpy requests
           # Verificar versão do Selenium e Chrome
           python -c "import selenium; print(f'Selenium version: {selenium.__version__}')"
           google-chrome --version
@@ -100,6 +100,64 @@ jobs:
           " 2>&1 | tee validation.log
         continue-on-error: true
         
+      # ============ NOVO: SISTEMA DE NOTIFICAÇÕES FIREBASE ============
+      
+      - name: Preparar configuração Firebase
+        if: success()
+        run: |
+          # Criar arquivo de configuração Firebase para o frontend
+          cat > firebase-config.json << 'EOF'
+          {
+            "apiKey": "${{ secrets.FIREBASE_API_KEY }}",
+            "authDomain": "${{ secrets.FIREBASE_PROJECT_ID }}.firebaseapp.com",
+            "projectId": "${{ secrets.FIREBASE_PROJECT_ID }}",
+            "storageBucket": "${{ secrets.FIREBASE_PROJECT_ID }}.appspot.com",
+            "messagingSenderId": "${{ secrets.FIREBASE_SENDER_ID }}",
+            "appId": "${{ secrets.FIREBASE_APP_ID }}"
+          }
+          EOF
+          
+          echo "✅ Configuração Firebase preparada"
+      
+      - name: Atualizar Service Worker com configuração Firebase
+        if: success()
+        run: |
+          # Substituir placeholders no service worker
+          sed -i "s/API_KEY_PLACEHOLDER/${{ secrets.FIREBASE_API_KEY }}/g" sw.js
+          sed -i "s/PROJECT_ID/${{ secrets.FIREBASE_PROJECT_ID }}/g" sw.js
+          sed -i "s/SENDER_ID/${{ secrets.FIREBASE_SENDER_ID }}/g" sw.js
+          sed -i "s/APP_ID/${{ secrets.FIREBASE_APP_ID }}/g" sw.js
+          
+          echo "✅ Service Worker atualizado com configuração Firebase"
+      
+      - name: Atualizar HTML com configuração Firebase
+        if: success()
+        run: |
+          # Substituir placeholders no HTML gerado
+          if [ -f "relatorio_livelo.html" ]; then
+            sed -i "s/API_KEY_PLACEHOLDER/${{ secrets.FIREBASE_API_KEY }}/g" relatorio_livelo.html
+            sed -i "s/PROJECT_ID/${{ secrets.FIREBASE_PROJECT_ID }}/g" relatorio_livelo.html
+            sed -i "s/SENDER_ID/${{ secrets.FIREBASE_SENDER_ID }}/g" relatorio_livelo.html
+            sed -i "s/APP_ID/${{ secrets.FIREBASE_APP_ID }}/g" relatorio_livelo.html
+            sed -i "s/YOUR_VAPID_KEY_HERE/${{ secrets.FIREBASE_VAPID_KEY }}/g" relatorio_livelo.html
+            
+            echo "✅ HTML atualizado com configuração Firebase"
+          else
+            echo "⚠️ HTML não encontrado para atualização"
+          fi
+      
+      - name: Enviar notificações push para usuários
+        if: success()
+        run: |
+          echo "🔔 Iniciando envio de notificações push..."
+          python notification_sender.py 2>&1 | tee notifications.log
+        env:
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_SERVER_KEY: ${{ secrets.FIREBASE_SERVER_KEY }}
+        continue-on-error: true
+      
+      # ============ FIM NOTIFICAÇÕES ============
+        
       - name: Verificar falhas na execução
         run: |
           if cat output.log | grep -q "Falha no scraper\|Falha no reporter\|ERRO FATAL"; then
@@ -170,6 +228,8 @@ jobs:
           ls -la *.log || echo "Nenhum arquivo de log encontrado"
           echo "Screenshots gerados:"
           ls -la *.png || echo "Nenhum screenshot encontrado"
+          echo "Arquivos de notificação:"
+          ls -la notification*.json firebase*.json || echo "Nenhum arquivo de notificação encontrado"
       
       - name: Configurar Git para commit
         run: |
@@ -183,8 +243,12 @@ jobs:
             cp output.log logs/scraper_$(date +%Y%m%d_%H%M%S).log
           fi
           
+          if [ -f "notifications.log" ]; then
+            cp notifications.log logs/notifications_$(date +%Y%m%d_%H%M%S).log
+          fi
+          
           # Adicionar arquivos de diagnóstico individualmente para evitar problemas
-          for file in debug_*.html debug_*.png debug_*.txt *.log; do
+          for file in debug_*.html debug_*.png debug_*.txt *.log notification*.json firebase*.json; do
             if [ -f "$file" ]; then
               git add -f "$file" || echo "Não foi possível adicionar $file"
             fi
@@ -209,8 +273,17 @@ jobs:
             git add relatorio_livelo.html || echo "Não foi possível adicionar relatorio_livelo.html"
           fi
           
+          # Adicionar arquivos PWA atualizados
+          if [ -f "sw.js" ]; then
+            git add sw.js || echo "Não foi possível adicionar sw.js"
+          fi
+          
+          if [ -f "manifest.json" ]; then
+            git add manifest.json || echo "Não foi possível adicionar manifest.json"
+          fi
+          
           # Tentar commit com verificação se há algo para comitar
-          git diff --staged --quiet || git commit -m "Atualização automática [$(date)]"
+          git diff --staged --quiet || git commit -m "Atualização automática com notificações [$(date)]"
           
           # Push com tratamento de erro
           git push || echo "Falha ao fazer push, verifique os logs para mais detalhes"
@@ -222,14 +295,15 @@ jobs:
         with:
           node-version: '18'
       
-      - name: Criar arquivos PWA
+      - name: Criar/Atualizar arquivos PWA
         run: |
-          # Criar manifest.json
-          cat > manifest.json << 'EOF'
+          # Criar manifest.json (se não existir)
+          if [ ! -f "manifest.json" ]; then
+            cat > manifest.json << 'EOF'
           {
             "name": "Livelo Analytics Pro",
             "short_name": "Livelo",
-            "description": "Dashboard analítico para ofertas Livelo",
+            "description": "Dashboard analítico para ofertas Livelo com notificações push",
             "start_url": "/",
             "display": "standalone",
             "background_color": "#151f4f",
@@ -249,35 +323,11 @@ jobs:
             ]
           }
           EOF
+          fi
           
-          # Criar service worker
-          cat > sw.js << 'EOF'
-          const CACHE_NAME = 'livelo-analytics-v1';
-          const urlsToCache = [
-            '/',
-            '/index.html',
-            '/manifest.json'
-          ];
-          
-          self.addEventListener('install', (event) => {
-            event.waitUntil(
-              caches.open(CACHE_NAME)
-                .then((cache) => cache.addAll(urlsToCache))
-            );
-          });
-          
-          self.addEventListener('fetch', (event) => {
-            event.respondWith(
-              caches.match(event.request)
-                .then((response) => {
-                  return response || fetch(event.request);
-                })
-            );
-          });
-          EOF
-          
-          # Criar firebase.json
-          cat > firebase.json << 'EOF'
+          # Criar firebase.json (se não existir)
+          if [ ! -f "firebase.json" ]; then
+            cat > firebase.json << 'EOF'
           {
             "hosting": {
               "public": "./public",
@@ -306,8 +356,9 @@ jobs:
             }
           }
           EOF
+          fi
           
-          echo "✅ Arquivos PWA criados com sucesso!"
+          echo "✅ Arquivos PWA verificados/criados com sucesso!"
       
       # Configurar e publicar no GitHub Pages (MANTIDO)
       - name: Configurar diretório de publicação
@@ -348,8 +399,9 @@ jobs:
           fi
           
           # Copiar arquivos PWA
-          cp manifest.json ./public/
-          cp sw.js ./public/
+          cp manifest.json ./public/ 2>/dev/null || echo "manifest.json não encontrado"
+          cp sw.js ./public/ 2>/dev/null || echo "sw.js não encontrado"
+          cp firebase-config.json ./public/ 2>/dev/null || echo "firebase-config.json não encontrado"
           
           # Copiar outros arquivos necessários
           cp -r *.css *.js ./public/ 2>/dev/null || echo "Nenhum arquivo CSS/JS adicional encontrado"
@@ -370,7 +422,7 @@ jobs:
           branch: gh-pages
           clean: true
       
-      # ============ DEPLOY FIREBASE (NOVO) ============
+      # ============ DEPLOY FIREBASE (ATUALIZADO COM NOTIFICAÇÕES) ============
       
       - name: Instalar Firebase CLI
         run: npm install -g firebase-tools
@@ -396,7 +448,7 @@ jobs:
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
         continue-on-error: true
       
-      # ============ LOG FINAL ============
+      # ============ LOG FINAL COM NOTIFICAÇÕES ============
       
       - name: Resumo da execução
         run: |
@@ -408,9 +460,16 @@ jobs:
           🔍 Status scraping: ${{ env.SCRAPING_FALHOU == 'true' && 'FALHOU' || 'SUCESSO' }}
           🌐 GitHub Pages: ✅ Deployado
           🔥 Firebase: ${{ env.SCRAPING_FALHOU == 'true' && '⚠️ Deploy emergência' || '✅ Deploy normal' }}
+          🔔 Notificações: $([ -f notifications.log ] && echo '✅ Processadas' || echo '⚠️ Não executadas')
           
-          📧 Notificações: ${{ env.SCRAPING_FALHOU == 'true' && 'Issue criada - email enviado' || 'Nenhuma necessária' }}
+          📧 Issues: ${{ env.SCRAPING_FALHOU == 'true' && 'Issue criada - email enviado' || 'Nenhuma necessária' }}
           "
+          
+          # Mostrar estatísticas de notificações se disponíveis
+          if [ -f "notification_stats.json" ]; then
+            echo "📊 ESTATÍSTICAS DE NOTIFICAÇÕES:"
+            cat notification_stats.json | python3 -m json.tool || echo "Erro ao exibir estatísticas"
+          fi
           
           if [ "${{ env.SCRAPING_FALHOU }}" = "true" ]; then
             echo "::warning::Scraper falhou mas deploy foi mantido com dados antigos"
