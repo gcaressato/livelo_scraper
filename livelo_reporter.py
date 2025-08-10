@@ -445,15 +445,34 @@ class LiveloAnalytics:
         print(f"✓ Análise concluída para {len(resultados)} combinações parceiro+moeda ativas hoje")
         return self.analytics['dados_completos']
     
-    def _obter_melhor_tier_disponivel(self, dados):
-        """Obtém dados do melhor tier disponível na hierarquia: Tier 1 → Tier 2 → Tier 3"""
-        for tier in ['1', '2', '3']:
-            dados_tier = dados[dados['Tier'] == tier]
-            if len(dados_tier) > 0:
-                return dados_tier, tier
+    def _obter_top_10_hierarquico(self, dados):
+        """Obtém exatamente 10 ofertas seguindo hierarquia Tier 1 → 2 → 3"""
+        dados_com_oferta = dados[dados['Tem_Oferta_Hoje']].copy()
+        top_10 = pd.DataFrame()
         
-        # Se não encontrar nenhum tier específico, retorna todos
-        return dados, 'Todos'
+        # Tier 1 primeiro
+        tier1 = dados_com_oferta[dados_com_oferta['Tier'] == '1'].nlargest(10, 'Pontos_por_Moeda_Atual')
+        top_10 = pd.concat([top_10, tier1])
+        
+        # Se ainda precisar de mais, adicionar Tier 2
+        if len(top_10) < 10:
+            restante = 10 - len(top_10)
+            tier2 = dados_com_oferta[dados_com_oferta['Tier'] == '2'].nlargest(restante, 'Pontos_por_Moeda_Atual')
+            top_10 = pd.concat([top_10, tier2])
+        
+        # Se ainda precisar de mais, adicionar Tier 3
+        if len(top_10) < 10:
+            restante = 10 - len(top_10)
+            tier3 = dados_com_oferta[dados_com_oferta['Tier'] == '3'].nlargest(restante, 'Pontos_por_Moeda_Atual')
+            top_10 = pd.concat([top_10, tier3])
+        
+        # Se ainda não tiver 10, pegar outros tiers
+        if len(top_10) < 10:
+            restante = 10 - len(top_10)
+            outros = dados_com_oferta[~dados_com_oferta['Tier'].isin(['1', '2', '3'])].nlargest(restante, 'Pontos_por_Moeda_Atual')
+            top_10 = pd.concat([top_10, outros])
+        
+        return top_10.head(10)  # Garantir exatamente 10
     
     def calcular_metricas_dashboard(self):
         """Calcula métricas aprimoradas para o dashboard"""
@@ -505,11 +524,8 @@ class LiveloAnalytics:
             'sempre_oferta': len(dados[dados['Categoria_Estrategica'] == 'Sempre em oferta'])
         }
         
-        # Top ofertas - HIERARQUIA TIER 1 → 2 → 3
-        dados_com_oferta = dados[dados['Tem_Oferta_Hoje']]
-        dados_tier_melhor, tier_usado = self._obter_melhor_tier_disponivel(dados_com_oferta)
-        metricas['tier_usado_top'] = tier_usado
-        metricas['top_ofertas'] = dados_tier_melhor.nlargest(10, 'Pontos_por_Moeda_Atual')
+        # Top ofertas - EXATAMENTE 10 com hierarquia
+        metricas['top_ofertas'] = self._obter_top_10_hierarquico(dados)
         
         metricas['top_geral'] = dados.nlargest(10, 'Pontos_por_Moeda_Atual')
         metricas['top_novos'] = dados[dados['Status_Casa'] == 'Novo'].nlargest(10, 'Pontos_por_Moeda_Atual')
@@ -543,36 +559,36 @@ class LiveloAnalytics:
         
         fig1 = go.Figure()
         
-        # Parceiros (linha)
-        fig1.add_trace(go.Scatter(
+        # Parceiros (coluna azul)
+        fig1.add_trace(go.Bar(
             x=evolucao_diaria['Data'],
             y=evolucao_diaria['Total_Parceiros'],
-            mode='lines+markers',
             name='Parceiros Ativos',
-            line=dict(color=LIVELO_AZUL, width=3),
-            marker=dict(size=8),
-            yaxis='y2'
+            marker=dict(color=LIVELO_AZUL, opacity=0.8),
+            offsetgroup=1
         ))
         
-        # Ofertas (colunas)
+        # Ofertas (coluna rosa)
         fig1.add_trace(go.Bar(
             x=evolucao_diaria['Data'],
             y=evolucao_diaria['Total_Ofertas'],
             name='Ofertas Ativas',
-            marker=dict(color=LIVELO_ROSA, opacity=0.7),
-            yaxis='y'
+            marker=dict(color=LIVELO_ROSA, opacity=0.8),
+            offsetgroup=2
         ))
         
         fig1.update_layout(
-            title='📈 Evolução Temporal - Parceiros vs Ofertas',
+            title='📈 Evolução Temporal - Parceiros vs Ofertas por Dia',
             xaxis=dict(title='Data'),
-            yaxis=dict(title='Quantidade de Ofertas', side='left'),
-            yaxis2=dict(title='Quantidade de Parceiros', side='right', overlaying='y'),
+            yaxis=dict(title='Quantidade'),
             plot_bgcolor='white',
             paper_bgcolor='white',
             font=dict(color=LIVELO_AZUL),
             height=400,
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+            barmode='group',
+            # Scroll horizontal para muitos dias
+            xaxis_rangeslider_visible=True if len(evolucao_diaria) > 30 else False
         )
         graficos['evolucao_temporal'] = fig1
         
@@ -596,39 +612,44 @@ class LiveloAnalytics:
         )
         graficos['matriz_oportunidades'] = fig2
         
-        # 3. DISTRIBUIÇÃO HIERÁRQUICA (Donut)
-        tier_counts = dados['Tier'].value_counts()
+        # 3. DISTRIBUIÇÃO POR CATEGORIAS (Donut)
+        categoria_counts = dados['Categoria_Dimensao'].value_counts()
+        # Filtrar categorias não mapeadas para o gráfico
+        categoria_counts = categoria_counts[categoria_counts.index != 'Não mapeado']
+        
         fig3 = go.Figure(data=[go.Pie(
-            labels=tier_counts.index,
-            values=tier_counts.values,
+            labels=categoria_counts.index,
+            values=categoria_counts.values,
             hole=.4,
-            marker=dict(colors=[colors[i % len(colors)] for i in range(len(tier_counts))])
+            marker=dict(colors=[colors[i % len(colors)] for i in range(len(categoria_counts))])
         )])
         
         fig3.update_layout(
-            title='🏆 Distribuição por Tier',
+            title='🏆 Distribuição por Categorias',
             plot_bgcolor='white',
             paper_bgcolor='white',
             font=dict(color=LIVELO_AZUL),
             height=350,
             annotations=[dict(text=f'{len(dados)}<br>Parceiros', x=0.5, y=0.5, font_size=20, showarrow=False)]
         )
-        graficos['distribuicao_tier'] = fig3
+        graficos['distribuicao_categorias'] = fig3
         
-        # 4. TOP 10 OFERTAS (Bar Horizontal compacto)
-        if len(metricas['top_ofertas']) > 0:
-            top_10 = metricas['top_ofertas'].head(10)
+        # 4. TOP 10 OFERTAS (Bar Horizontal compacto) - EXATAMENTE 10
+        top_10 = self._obter_top_10_hierarquico(dados)
+        if len(top_10) > 0:
             fig4 = go.Figure(data=[go.Bar(
                 y=top_10['Parceiro'],
                 x=top_10['Pontos_por_Moeda_Atual'],
                 orientation='h',
                 marker=dict(color=LIVELO_ROSA),
                 text=top_10['Pontos_por_Moeda_Atual'].round(1),
-                textposition='inside'
+                textposition='inside',
+                customdata=top_10['Tier'],
+                hovertemplate='<b>%{y}</b><br>Pontos: %{x}<br>Tier: %{customdata}<extra></extra>'
             )])
             
             fig4.update_layout(
-                title='🥇 Top 10 Ofertas',
+                title='🥇 Top 10 Ofertas (Hierarquia Tier 1→2→3)',
                 plot_bgcolor='white',
                 paper_bgcolor='white',
                 font=dict(color=LIVELO_AZUL),
@@ -637,12 +658,15 @@ class LiveloAnalytics:
             )
             graficos['top_ofertas'] = fig4
         
-        # 5. MUDANÇAS HOJE (Bar agrupado)
-        if mudancas['ganharam_oferta'] or mudancas['perderam_oferta']:
+        # 5. MUDANÇAS HOJE (Bar agrupado) - VERIFICAR LÓGICA
+        ganharam = len(mudancas['ganharam_oferta'])
+        perderam = len(mudancas['perderam_oferta'])
+        
+        if ganharam > 0 or perderam > 0:
             fig5 = go.Figure()
             
             categorias = ['Ganharam Oferta', 'Perderam Oferta']
-            valores = [len(mudancas['ganharam_oferta']), len(mudancas['perderam_oferta'])]
+            valores = [ganharam, perderam]
             cores_mudancas = ['#28a745', '#dc3545']
             
             fig5.add_trace(go.Bar(
@@ -654,12 +678,31 @@ class LiveloAnalytics:
             ))
             
             fig5.update_layout(
-                title='⚡ Mudanças Hoje',
+                title='⚡ Mudanças de Ofertas Hoje vs Ontem',
                 plot_bgcolor='white',
                 paper_bgcolor='white',
                 font=dict(color=LIVELO_AZUL),
                 height=300,
                 showlegend=False
+            )
+            graficos['mudancas_hoje'] = fig5
+        else:
+            # Criar gráfico vazio com mensagem
+            fig5 = go.Figure()
+            fig5.add_annotation(
+                text="Nenhuma mudança detectada hoje",
+                xref="paper", yref="paper",
+                x=0.5, y=0.5, xanchor='center', yanchor='middle',
+                showarrow=False, font=dict(size=16, color=LIVELO_AZUL)
+            )
+            fig5.update_layout(
+                title='⚡ Mudanças de Ofertas Hoje vs Ontem',
+                plot_bgcolor='white',
+                paper_bgcolor='white',
+                font=dict(color=LIVELO_AZUL),
+                height=300,
+                xaxis=dict(visible=False),
+                yaxis=dict(visible=False)
             )
             graficos['mudancas_hoje'] = fig5
         
@@ -672,7 +715,7 @@ class LiveloAnalytics:
         )])
         
         fig6.update_layout(
-            title='⏰ Tempo de Casa',
+            title='⏰ Maturidade da Base de Parceiros',
             plot_bgcolor='white',
             paper_bgcolor='white',
             font=dict(color=LIVELO_AZUL),
@@ -681,7 +724,7 @@ class LiveloAnalytics:
         )
         graficos['tempo_casa'] = fig6
         
-        # 7. TENDÊNCIA SEMANAL (Area Chart)
+        # 7. TENDÊNCIA SEMANAL (Area Chart) - TÍTULO MAIS CLARO
         ultimas_2_semanas = self.df_completo[
             self.df_completo['Timestamp'] >= self.df_completo['Timestamp'].max() - timedelta(days=14)
         ].copy()
@@ -700,14 +743,17 @@ class LiveloAnalytics:
                 x=trend_diaria['Data'],
                 y=trend_diaria['Ofertas_Count'],
                 fill='tonexty',
-                mode='lines',
-                name='Quantidade Ofertas',
+                mode='lines+markers',
+                name='Ofertas por Dia',
                 line=dict(color=LIVELO_ROSA),
-                fillcolor=f'rgba(255, 10, 140, 0.3)'
+                fillcolor=f'rgba(255, 10, 140, 0.3)',
+                marker=dict(size=6)
             ))
             
             fig7.update_layout(
-                title='📊 Tendência Últimas 2 Semanas',
+                title='📊 Quantidade de Ofertas Ativas por Dia (Últimas 2 Semanas)',
+                xaxis=dict(title='Data'),
+                yaxis=dict(title='Número de Ofertas'),
                 plot_bgcolor='white',
                 paper_bgcolor='white',
                 font=dict(color=LIVELO_AZUL),
@@ -715,28 +761,42 @@ class LiveloAnalytics:
             )
             graficos['tendencia_semanal'] = fig7
         
-        # 8. MAPA DE CATEGORIAS (Treemap)
+        # 8. MAPA DE CATEGORIAS (Treemap com Hover detalhado)
         if 'Categoria_Dimensao' in dados.columns:
             cat_stats = dados.groupby('Categoria_Dimensao').agg({
-                'Parceiro': 'count',
+                'Parceiro': ['count', lambda x: list(x)],
                 'Pontos_por_Moeda_Atual': 'mean'
             }).reset_index()
-            cat_stats.columns = ['Categoria', 'Quantidade', 'Media_Pontos']
+            
+            # Achatar as colunas multi-level
+            cat_stats.columns = ['Categoria', 'Quantidade', 'Lista_Parceiros', 'Media_Pontos']
             cat_stats = cat_stats[cat_stats['Categoria'] != 'Não mapeado']
             
             if len(cat_stats) > 0:
+                # Criar texto hover com parceiros
+                hover_texts = []
+                for _, row in cat_stats.iterrows():
+                    parceiros_str = '<br>'.join(row['Lista_Parceiros'][:5])  # Primeiros 5
+                    if len(row['Lista_Parceiros']) > 5:
+                        parceiros_str += f'<br>... e mais {len(row["Lista_Parceiros"]) - 5}'
+                    hover_texts.append(f"<b>{row['Categoria']}</b><br>Parceiros: {row['Quantidade']}<br>Média Pontos: {row['Media_Pontos']:.1f}<br><br>Exemplos:<br>{parceiros_str}")
+                
                 fig8 = go.Figure(go.Treemap(
                     labels=cat_stats['Categoria'],
                     values=cat_stats['Quantidade'],
                     parents=[""] * len(cat_stats),
+                    text=cat_stats['Categoria'],
+                    hovertext=hover_texts,
+                    hovertemplate='%{hovertext}<extra></extra>',
                     marker=dict(
                         colorscale='Viridis',
-                        cmid=cat_stats['Media_Pontos'].mean()
+                        colorbar=dict(title="Média de Pontos"),
+                        colorbar_x=1.02
                     )
                 ))
                 
                 fig8.update_layout(
-                    title='🎨 Mapa de Categorias',
+                    title='🎨 Mapa de Categorias (Hover para ver parceiros)',
                     plot_bgcolor='white',
                     paper_bgcolor='white',
                     font=dict(color=LIVELO_AZUL),
@@ -788,9 +848,7 @@ class LiveloAnalytics:
             """)
         
         # 2. Top 5 melhores ofertas (Hierarquia de Tiers)
-        dados_com_oferta = dados[dados['Tem_Oferta_Hoje']]
-        dados_tier_melhor, tier_usado = self._obter_melhor_tier_disponivel(dados_com_oferta)
-        top_ofertas_hoje = dados_tier_melhor.nlargest(5, 'Pontos_por_Moeda_Atual')
+        top_ofertas_hoje = self._obter_top_10_hierarquico(dados).head(5)
         
         if len(top_ofertas_hoje) > 0:
             preview_tops = top_ofertas_hoje.head(3)['Parceiro'].tolist()
@@ -1264,6 +1322,33 @@ class LiveloAnalytics:
         [data-theme="dark"] .search-input:focus {{
             background-color: #374151 !important;
             color: #f9fafb !important;
+        }}
+        
+        /* MELHORAR TÍTULO E ABAS NO MODO ESCURO */
+        [data-theme="dark"] h1 {{
+            color: #f9fafb !important;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }}
+        
+        [data-theme="dark"] .text-muted {{
+            color: #d1d5db !important;
+        }}
+        
+        [data-theme="dark"] .nav-pills .nav-link {{
+            color: #f9fafb !important;
+            background-color: #4b5563;
+            border: 1px solid #6b7280;
+        }}
+        
+        [data-theme="dark"] .nav-pills .nav-link:hover {{
+            background-color: #6b7280 !important;
+            color: #ffffff !important;
+        }}
+        
+        [data-theme="dark"] .nav-pills .nav-link.active {{
+            background-color: var(--livelo-rosa) !important;
+            color: #ffffff !important;
+            border-color: var(--livelo-rosa) !important;
         }}
         
         * {{ box-sizing: border-box; }}
@@ -2024,8 +2109,8 @@ class LiveloAnalytics:
                     </div>
                     <div class="col-lg-6">
                         <div class="card">
-                            <div class="card-header"><h6 class="mb-0">🏆 Distribuição Hierárquica</h6></div>
-                            <div class="card-body p-2">{graficos_html.get('distribuicao_tier', '<p>Distribuição não disponível</p>')}</div>
+                            <div class="card-header"><h6 class="mb-0">🏆 Distribuição por Categorias</h6></div>
+                            <div class="card-body p-2">{graficos_html.get('distribuicao_categorias', '<p>Distribuição não disponível</p>')}</div>
                         </div>
                     </div>
                 </div>
@@ -2633,6 +2718,15 @@ class LiveloAnalytics:
         // INICIALIZAÇÃO
         document.addEventListener('DOMContentLoaded', function() {{
             initTheme();
+            
+            // DEBUG: Verificar mudanças detectadas
+            console.log('Mudanças detectadas:', {{
+                'ganharam_oferta': {len(mudancas['ganharam_oferta'])},
+                'perderam_oferta': {len(mudancas['perderam_oferta'])},
+                'novos_parceiros': {len(mudancas['novos_parceiros'])},
+                'parceiros_sumidos': {len(mudancas['parceiros_sumidos'])},
+                'grandes_mudancas': {len(mudancas['grandes_mudancas_pontos'])}
+            }});
             
             // Configurar event listeners para filtros
             document.getElementById('filtroCategoriaComplex').addEventListener('change', aplicarFiltros);
