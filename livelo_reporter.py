@@ -853,6 +853,492 @@ class LiveloAnalytics:
         self.analytics['graficos'] = graficos
         return graficos
     
+    def _gerar_alertas_dinamicos_inteligentes(self, mudancas, metricas, dados):
+        """Gera alertas dinâmicos + NOVOS ALERTAS INTELIGENTES baseados em padrões"""
+        alertas = []
+        
+        # ALERTAS INTELIGENTES - ANÁLISE DE PADRÕES
+        alertas_inteligentes = self._analisar_padroes_inteligentes(dados)
+        
+        # 1. Parceiros que ganharam oferta HOJE
+        if mudancas['ganharam_oferta']:
+            parceiros_preview = [item['parceiro'] for item in mudancas['ganharam_oferta'][:3]]
+            todos_parceiros = [item['parceiro'] for item in mudancas['ganharam_oferta']]
+            
+            preview_str = ', '.join(parceiros_preview)
+            if len(mudancas['ganharam_oferta']) > 3:
+                preview_str += f" +{len(mudancas['ganharam_oferta']) - 3} mais"
+            
+            alertas.append(f"""
+                <div class="alert-compact alert-success" data-alert-id="ganharam-oferta">
+                    <div class="alert-header" onclick="toggleAlert('ganharam-oferta')">
+                        <div class="alert-title">
+                            <strong>🎯 {len(mudancas['ganharam_oferta'])} parceiros ganharam oferta hoje!</strong>
+                            <i class="bi bi-chevron-down alert-chevron"></i>
+                        </div>
+                        <button class="alert-close" onclick="closeAlert('ganharam-oferta', event)">×</button>
+                    </div>
+                    <div class="alert-preview">
+                        <small>Oportunidade de compra: {preview_str}</small>
+                    </div>
+                    <div class="alert-details" style="display: none;">
+                        <div class="alert-content">
+                            <h6><i class="bi bi-target me-2"></i>Todos os parceiros que ganharam oferta:</h6>
+                            <div class="partners-grid">
+                                {''.join([f'<span class="partner-tag">{p}</span>' for p in todos_parceiros])}
+                            </div>
+                            <div class="alert-stats mt-2">
+                                <small class="text-muted">💡 Aproveite agora estas oportunidades - podem ser temporárias!</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            """)
+        
+        # 2. ALERTAS INTELIGENTES - PREDIÇÕES
+        if alertas_inteligentes['predicoes']:
+            alertas.append(f"""
+                <div class="alert-compact alert-intelligent" data-alert-id="predicoes-inteligentes">
+                    <div class="alert-header" onclick="toggleAlert('predicoes-inteligentes')">
+                        <div class="alert-title">
+                            <strong>🧠 {len(alertas_inteligentes['predicoes'])} predições inteligentes!</strong>
+                            <i class="bi bi-chevron-down alert-chevron"></i>
+                        </div>
+                        <button class="alert-close" onclick="closeAlert('predicoes-inteligentes', event)">×</button>
+                    </div>
+                    <div class="alert-preview">
+                        <small>IA detectou padrões - possíveis ofertas em breve</small>
+                    </div>
+                    <div class="alert-details" style="display: none;">
+                        <div class="alert-content">
+                            <h6><i class="bi bi-cpu me-2"></i>Predições baseadas em padrões históricos:</h6>
+                            <div class="predictions-list">
+                                {''.join([f'<div class="prediction-item"><span class="prediction-partner">{pred["parceiro"]}</span><span class="prediction-prob">{pred["probabilidade"]}%</span><span class="prediction-reason">{pred["motivo"]}</span></div>' for pred in alertas_inteligentes['predicoes']])}
+                            </div>
+                            <small class="text-muted">💡 Baseado em análise de frequência e dias da semana</small>
+                        </div>
+                    </div>
+                </div>
+            """)
+        
+        # 3. ALERTAS INTELIGENTES - ANOMALIAS
+        if alertas_inteligentes['anomalias']:
+            alertas.append(f"""
+                <div class="alert-compact alert-warning" data-alert-id="anomalias-detectadas">
+                    <div class="alert-header" onclick="toggleAlert('anomalias-detectadas')">
+                        <div class="alert-title">
+                            <strong>⚠️ {len(alertas_inteligentes['anomalias'])} anomalias detectadas!</strong>
+                            <i class="bi bi-chevron-down alert-chevron"></i>
+                        </div>
+                        <button class="alert-close" onclick="closeAlert('anomalias-detectadas', event)">×</button>
+                    </div>
+                    <div class="alert-preview">
+                        <small>Comportamentos incomuns - verifique mudanças</small>
+                    </div>
+                    <div class="alert-details" style="display: none;">
+                        <div class="alert-content">
+                            <h6><i class="bi bi-exclamation-triangle me-2"></i>Comportamentos anômalos detectados:</h6>
+                            <div class="anomalies-list">
+                                {''.join([f'<div class="anomaly-item"><span class="anomaly-partner">{anom["parceiro"]}</span><span class="anomaly-desc">{anom["descricao"]}</span></div>' for anom in alertas_inteligentes['anomalias']])}
+                            </div>
+                            <small class="text-muted">💡 Monitore estes parceiros - podem ter mudado estratégia</small>
+                        </div>
+                    </div>
+                </div>
+            """)
+        
+        # 4. Top 5 melhores ofertas (Hierarquia de Tiers)
+        top_ofertas_hoje = self._obter_top_10_hierarquico(dados).head(5)
+        
+        if len(top_ofertas_hoje) > 0:
+            preview_tops = top_ofertas_hoje.head(3)['Parceiro'].tolist()
+            
+            alertas.append(f"""
+                <div class="alert-compact alert-info" data-alert-id="top-ofertas">
+                    <div class="alert-header" onclick="toggleAlert('top-ofertas')">
+                        <div class="alert-title">
+                            <strong>🏆 Top {len(top_ofertas_hoje)} melhores ofertas ativas</strong>
+                            <i class="bi bi-chevron-down alert-chevron"></i>
+                        </div>
+                        <button class="alert-close" onclick="closeAlert('top-ofertas', event)">×</button>
+                    </div>
+                    <div class="alert-preview">
+                        <small>Destaques: {', '.join(preview_tops[:3])}</small>
+                    </div>
+                    <div class="alert-details" style="display: none;">
+                        <div class="alert-content">
+                            <h6><i class="bi bi-trophy me-2"></i>Ranking das melhores ofertas hoje:</h6>
+                            <div class="ranking-list">
+                                {''.join([f'<div class="rank-item"><span class="rank-number">{i+1}º</span><span class="rank-partner">{row["Parceiro"]}</span><span class="rank-points">{row["Pontos_por_Moeda_Atual"]:.1f} pts</span></div>' for i, (_, row) in enumerate(top_ofertas_hoje.iterrows())])}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            """)
+        
+        # 5. Oportunidades raras ativas
+        oportunidades_raras = dados[(dados['Categoria_Estrategica'] == 'Oportunidade rara') & (dados['Tem_Oferta_Hoje'])]
+        if len(oportunidades_raras) > 0:
+            alertas.append(f"""
+                <div class="alert-compact alert-warning" data-alert-id="oportunidades-raras">
+                    <div class="alert-header" onclick="toggleAlert('oportunidades-raras')">
+                        <div class="alert-title">
+                            <strong>💎 {len(oportunidades_raras)} oportunidades raras ativas!</strong>
+                            <i class="bi bi-chevron-down alert-chevron"></i>
+                        </div>
+                        <button class="alert-close" onclick="closeAlert('oportunidades-raras', event)">×</button>
+                    </div>
+                    <div class="alert-preview">
+                        <small>Baixa frequência de ofertas - aproveite!</small>
+                    </div>
+                    <div class="alert-details" style="display: none;">
+                        <div class="alert-content">
+                            <h6><i class="bi bi-gem me-2"></i>Parceiros com baixa frequência de ofertas:</h6>
+                            <div class="rare-opportunities">
+                                {''.join([f'<div class="rare-item"><span class="rare-partner">{row["Parceiro"]}</span><span class="rare-freq">{row["Frequencia_Ofertas"]:.1f}% freq</span><span class="rare-points">{row["Pontos_por_Moeda_Atual"]:.1f} pts</span></div>' for _, row in oportunidades_raras.iterrows()])}
+                            </div>
+                            <small class="text-muted">💡 Estes parceiros raramente fazem ofertas - não perca!</small>
+                        </div>
+                    </div>
+                </div>
+            """)
+        
+        # 6. Grandes aumentos de pontos
+        if mudancas['grandes_mudancas_pontos']:
+            aumentos = [x for x in mudancas['grandes_mudancas_pontos'] if x['variacao'] > 0]
+            if aumentos:
+                alertas.append(f"""
+                    <div class="alert-compact alert-success" data-alert-id="grandes-aumentos">
+                        <div class="alert-header" onclick="toggleAlert('grandes-aumentos')">
+                            <div class="alert-title">
+                                <strong>⚡ {len(aumentos)} parceiros com grandes aumentos!</strong>
+                                <i class="bi bi-chevron-down alert-chevron"></i>
+                            </div>
+                            <button class="alert-close" onclick="closeAlert('grandes-aumentos', event)">×</button>
+                        </div>
+                        <div class="alert-preview">
+                            <small>Aumentos superiores a 20% nos pontos</small>
+                        </div>
+                        <div class="alert-details" style="display: none;">
+                            <div class="alert-content">
+                                <h6><i class="bi bi-graph-up-arrow me-2"></i>Maiores aumentos de pontos:</h6>
+                                <div class="increases-list">
+                                    {''.join([f'<div class="increase-item"><span class="increase-partner">{item["parceiro"]}</span><span class="increase-percent text-success">+{item["variacao"]:.1f}%</span></div>' for item in aumentos[:8]])}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                """)
+        
+        # 7. TODAS as ofertas perdidas
+        if mudancas['perderam_oferta']:
+            todas_perdidas = [item['parceiro'] for item in mudancas['perderam_oferta']]
+            preview_perdidas = todas_perdidas[:3]
+            preview_str = ', '.join(preview_perdidas)
+            if len(todas_perdidas) > 3:
+                preview_str += f" +{len(todas_perdidas) - 3} mais"
+            
+            alertas.append(f"""
+                <div class="alert-compact alert-danger" data-alert-id="perderam-oferta">
+                    <div class="alert-header" onclick="toggleAlert('perderam-oferta')">
+                        <div class="alert-title">
+                            <strong>📉 {len(mudancas['perderam_oferta'])} ofertas finalizaram</strong>
+                            <i class="bi bi-chevron-down alert-chevron"></i>
+                        </div>
+                        <button class="alert-close" onclick="closeAlert('perderam-oferta', event)">×</button>
+                    </div>
+                    <div class="alert-preview">
+                        <small>Fique de olho - podem voltar em breve: {preview_str}</small>
+                    </div>
+                    <div class="alert-details" style="display: none;">
+                        <div class="alert-content">
+                            <h6><i class="bi bi-clock-history me-2"></i>Todas as ofertas que saíram do ar hoje:</h6>
+                            <div class="lost-offers">
+                                {''.join([f'<span class="lost-tag">{item["parceiro"]}</span>' for item in mudancas['perderam_oferta']])}
+                            </div>
+                            <small class="text-muted">💡 Monitore para quando voltarem!</small>
+                        </div>
+                    </div>
+                </div>
+            """)
+        
+        # Alerta padrão se não houver informações relevantes
+        if not alertas:
+            alertas.append("""
+                <div class="alert-compact alert-default" data-alert-id="default">
+                    <div class="alert-header">
+                        <div class="alert-title">
+                            <strong>📊 Dados atualizados com sucesso!</strong>
+                        </div>
+                        <button class="alert-close" onclick="closeAlert('default', event)">×</button>
+                    </div>
+                    <div class="alert-preview">
+                        <small>Explore o dashboard para encontrar as melhores oportunidades</small>
+                    </div>
+                </div>
+            """)
+        
+        return '<div class="alerts-container mb-3">' + ''.join(alertas) + '</div>'
+
+    def _analisar_padroes_inteligentes(self, dados):
+        """Análise inteligente de padrões para gerar alertas preditivos"""
+        predicoes = []
+        anomalias = []
+        
+        try:
+            import datetime
+            from datetime import timedelta
+            
+            hoje = datetime.date.today()
+            dia_semana_hoje = hoje.weekday()  # 0=Segunda, 6=Domingo
+            
+            # PREDIÇÕES - Parceiros que costumam fazer oferta em determinados dias
+            for _, parceiro_data in dados.iterrows():
+                parceiro = parceiro_data['Parceiro']
+                moeda = parceiro_data['Moeda']
+                
+                # Filtrar histórico do parceiro
+                historico_parceiro = self.df_completo[
+                    (self.df_completo['Parceiro'] == parceiro) & 
+                    (self.df_completo['Moeda'] == moeda) &
+                    (self.df_completo['Oferta'] == 'Sim')
+                ].copy()
+                
+                if len(historico_parceiro) >= 3:  # Mínimo de 3 ofertas para análise
+                    # Analisar padrão de dias da semana
+                    historico_parceiro['DiaSemana'] = pd.to_datetime(historico_parceiro['Timestamp']).dt.weekday
+                    dias_ofertas = historico_parceiro['DiaSemana'].value_counts()
+                    
+                    # Se 70%+ das ofertas foram no mesmo dia da semana
+                    if len(dias_ofertas) > 0:
+                        dia_mais_comum = dias_ofertas.index[0]
+                        frequencia_dia = dias_ofertas.iloc[0] / len(historico_parceiro)
+                        
+                        if frequencia_dia >= 0.7 and not parceiro_data['Tem_Oferta_Hoje']:
+                            dias_nomes = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo']
+                            
+                            # Calcular dias até próxima ocorrência
+                            dias_ate = (dia_mais_comum - dia_semana_hoje) % 7
+                            if dias_ate == 0:
+                                motivo = f"Costuma fazer oferta às {dias_nomes[dia_mais_comum]}s"
+                            elif dias_ate == 1:
+                                motivo = f"Amanhã é {dias_nomes[dia_mais_comum]} - dia preferido"
+                            else:
+                                motivo = f"Em {dias_ate} dias ({dias_nomes[dia_mais_comum]}) - padrão histórico"
+                            
+                            predicoes.append({
+                                'parceiro': f"{parceiro} ({moeda})",
+                                'probabilidade': int(frequencia_dia * 100),
+                                'motivo': motivo
+                            })
+            
+            # ANOMALIAS - Parceiros com comportamento incomum
+            for _, parceiro_data in dados.iterrows():
+                parceiro = parceiro_data['Parceiro']
+                moeda = parceiro_data['Moeda']
+                dias_sem_oferta = parceiro_data['Dias_Desde_Ultima_Oferta']
+                freq_ofertas = parceiro_data['Frequencia_Ofertas']
+                
+                # Anomalia 1: Parceiro frequente sem oferta há muito tempo
+                if freq_ofertas >= 50 and dias_sem_oferta >= 7:
+                    anomalias.append({
+                        'parceiro': f"{parceiro} ({moeda})",
+                        'descricao': f"Sem oferta há {dias_sem_oferta} dias (frequência {freq_ofertas:.0f}%)"
+                    })
+                
+                # Anomalia 2: Parceiro que nunca fez oferta mas está há muito tempo
+                elif parceiro_data['Total_Ofertas_Historicas'] == 0 and parceiro_data['Dias_Casa'] >= 30:
+                    anomalias.append({
+                        'parceiro': f"{parceiro} ({moeda})",
+                        'descricao': f"Há {parceiro_data['Dias_Casa']} dias sem nenhuma oferta"
+                    })
+            
+            # Limitar resultados
+            predicoes = sorted(predicoes, key=lambda x: x['probabilidade'], reverse=True)[:5]
+            anomalias = anomalias[:5]
+            
+        except Exception as e:
+            print(f"Erro na análise inteligente: {e}")
+            predicoes = []
+            anomalias = []
+        
+        return {
+            'predicoes': predicoes,
+            'anomalias': anomalias
+        }
+
+    def _gerar_tabela_analise_completa_com_favoritos(self, dados):
+        """Gera tabela completa com COLUNA DE FAVORITOS"""
+        colunas = [
+            ('Parceiro', 'Parceiro', 'texto'),
+            ('Favorito', '⭐', 'texto'),  # NOVA COLUNA
+            ('Categoria_Dimensao', 'Categoria', 'texto'),
+            ('Tier', 'Tier', 'texto'),
+            ('Tem_Oferta_Hoje', 'Oferta?', 'texto'),
+            ('Status_Casa', 'Experiência', 'texto'),
+            ('Categoria_Estrategica', 'Frequência', 'texto'),
+            ('Gasto_Formatado', 'Gasto', 'texto'),
+            ('Pontos_Atual', 'Pontos Atual', 'numero'),
+            ('Variacao_Pontos', 'Variação %', 'numero'),
+            ('Data_Anterior', 'Data Anterior', 'data'),
+            ('Pontos_Anterior', 'Pontos Anterior', 'numero'),
+            ('Dias_Desde_Mudanca', 'Dias Mudança', 'numero'),
+            ('Data_Ultima_Oferta', 'Última Oferta', 'data'),
+            ('Dias_Desde_Ultima_Oferta', 'Dias s/ Oferta', 'numero'),
+            ('Frequencia_Ofertas', 'Freq. Ofertas %', 'numero'),
+            ('Total_Ofertas_Historicas', 'Total Ofertas', 'numero'),
+            ('Sazonalidade', 'Sazonalidade', 'texto')
+        ]
+        
+        html = '<table class="table table-hover" id="tabelaAnalise"><thead><tr>'
+        for i, (_, header, tipo) in enumerate(colunas):
+            if header == '⭐':
+                html += f'<th style="text-align: center; width: 50px;">{header}</th>'
+            else:
+                html += f'<th onclick="ordenarTabela({i}, \'{tipo}\')" style="cursor: pointer;">{header} <i class="bi bi-arrows-expand sort-indicator"></i></th>'
+        html += '</tr></thead><tbody>'
+        
+        for _, row in dados.iterrows():
+            html += '<tr>'
+            for col, _, _ in colunas:
+                valor = row[col] if col != 'Favorito' else None
+                
+                if col == 'Parceiro':
+                    # Embutir URL invisível no nome do parceiro
+                    url = row.get('URL_Parceiro', '')
+                    if url:
+                        html += f'<td><span data-url="{url}" style="cursor: pointer;" onclick="window.open(\'{url}\', \'_blank\')">{valor}</span></td>'
+                    else:
+                        html += f'<td>{valor}</td>'
+                elif col == 'Favorito':
+                    # NOVA COLUNA DE FAVORITOS
+                    parceiro = row['Parceiro']
+                    moeda = row['Moeda']
+                    html += f'''<td style="text-align: center;">
+                        <button class="favorito-btn" data-parceiro="{parceiro}" data-moeda="{moeda}" onclick="toggleFavorito('{parceiro}', '{moeda}')" title="Adicionar aos favoritos">
+                            <i class="bi bi-star"></i>
+                        </button>
+                    </td>'''
+                elif col == 'Categoria_Dimensao':
+                    # CORES MAIS SUAVES E INTERESSANTES
+                    cores_categoria_dim = {
+                        'Alimentação e Bebidas': '#E8F5E8',
+                        'Moda e Vestuário': '#FFF0F5',
+                        'Viagens e Turismo': '#E6F3FF',
+                        'Casa e Decoração': '#FFF8E1',
+                        'Saúde e Bem-estar': '#F0F8F0',
+                        'Pet': '#FFE6F0',
+                        'Serviços Financeiros': '#E8F4FD',
+                        'Beleza e Cosméticos': '#FDF2F8',
+                        'Tecnologia': '#F0F0F8',
+                        'Esportes e Fitness': '#E8F8F5',
+                        'Não definido': '#F5F5F5',
+                        'Não mapeado': '#FFE6E6'
+                    }
+                    cores_texto = {
+                        'Alimentação e Bebidas': '#2D5016',
+                        'Moda e Vestuário': '#8B2252',
+                        'Viagens e Turismo': '#1B4F72',
+                        'Casa e Decoração': '#7D6608',
+                        'Saúde e Bem-estar': '#1E4620',
+                        'Pet': '#8B4A6B',
+                        'Serviços Financeiros': '#174A84',
+                        'Beleza e Cosméticos': '#8B2A6B',
+                        'Tecnologia': '#2E2E5A',
+                        'Esportes e Fitness': '#1B5E20',
+                        'Não definido': '#424242',
+                        'Não mapeado': '#C62828'
+                    }
+                    cor_fundo = cores_categoria_dim.get(valor, '#F5F5F5')
+                    cor_texto = cores_texto.get(valor, '#424242')
+                    html += f'<td><span class="badge-soft" style="background-color: {cor_fundo}; color: {cor_texto}; padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 500;">{valor}</span></td>'
+                elif col == 'Tier':
+                    # CORES MAIS SIMPLES E DISCRETAS
+                    cores_tier = {
+                        '1': '#E8F5E8',
+                        '2': '#FFF3E0',
+                        '3': '#FFE6CC',
+                        'Não definido': '#F5F5F5',
+                        'Não mapeado': '#FFE6E6'
+                    }
+                    cores_texto_tier = {
+                        '1': '#2E7D32',
+                        '2': '#F57C00',
+                        '3': '#FF8F00',
+                        'Não definido': '#757575',
+                        'Não mapeado': '#D32F2F'
+                    }
+                    cor_fundo = cores_tier.get(str(valor), '#F5F5F5')
+                    cor_texto = cores_texto_tier.get(str(valor), '#757575')
+                    html += f'<td><span class="badge-soft" style="background-color: {cor_fundo}; color: {cor_texto}; padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 500;">{valor}</span></td>'
+                elif col == 'Tem_Oferta_Hoje':
+                    # NOVA COLUNA OFERTA - VERDE/VERMELHO CLARO
+                    if valor:
+                        html += f'<td><span class="badge-soft" style="background-color: #E8F5E8; color: #2E7D32; padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 500;">Sim</span></td>'
+                    else:
+                        html += f'<td><span class="badge-soft" style="background-color: #FFE6E6; color: #D32F2F; padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 500;">Não</span></td>'
+                elif col == 'Status_Casa':  # EXPERIÊNCIA
+                    cor = row['Cor_Status']
+                    # Tornar cores menos saturadas
+                    cores_experiencia_suaves = {
+                        '#28a745': '#E8F5E8',
+                        '#ff9999': '#FFF0F0',
+                        '#ff6666': '#FFE8E8',
+                        '#ff3333': '#FFE0E0',
+                        '#cc0000': '#FFD8D8',
+                        '#990000': '#FFD0D0'
+                    }
+                    cores_texto_exp = {
+                        '#28a745': '#2E7D32',
+                        '#ff9999': '#8B2252',
+                        '#ff6666': '#C62828',
+                        '#ff3333': '#B71C1C',
+                        '#cc0000': '#B71C1C',
+                        '#990000': '#B71C1C'
+                    }
+                    cor_fundo = cores_experiencia_suaves.get(cor, '#F5F5F5')
+                    cor_texto = cores_texto_exp.get(cor, '#424242')
+                    html += f'<td><span class="badge-soft" style="background-color: {cor_fundo}; color: {cor_texto}; padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 500;">{valor}</span></td>'
+                elif col == 'Categoria_Estrategica':  # FREQUÊNCIA
+                    cores_frequencia = {
+                        'Compre agora!': '#E8F5E8',
+                        'Oportunidade rara': '#FFF8E1',
+                        'Sempre em oferta': '#E6F3FF',
+                        'Normal': '#F5F5F5'
+                    }
+                    cores_texto_freq = {
+                        'Compre agora!': '#2E7D32',
+                        'Oportunidade rara': '#F57C00',
+                        'Sempre em oferta': '#1976D2',
+                        'Normal': '#757575'
+                    }
+                    cor_fundo = cores_frequencia.get(valor, '#F5F5F5')
+                    cor_texto = cores_texto_freq.get(valor, '#757575')
+                    html += f'<td><span class="badge-soft" style="background-color: {cor_fundo}; color: {cor_texto}; padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 500;">{valor}</span></td>'
+                elif col == 'Variacao_Pontos':
+                    if valor > 0:
+                        html += f'<td style="color: #2E7D32; font-weight: 500;">+{valor:.1f}%</td>'
+                    elif valor < 0:
+                        html += f'<td style="color: #D32F2F; font-weight: 500;">{valor:.1f}%</td>'
+                    else:
+                        html += f'<td style="color: #757575;">0%</td>'
+                elif col == 'Frequencia_Ofertas':
+                    html += f'<td>{valor:.1f}%</td>'
+                elif col in ['Pontos_Atual', 'Pontos_Anterior', 'Total_Ofertas_Historicas', 'Dias_Desde_Mudanca', 'Dias_Desde_Ultima_Oferta']:
+                    html += f'<td>{int(valor) if pd.notnull(valor) and valor >= 0 else "-"}</td>'
+                elif col in ['Data_Anterior', 'Data_Ultima_Oferta']:
+                    if pd.notnull(valor):
+                        data_formatada = valor.strftime('%d/%m/%Y') if hasattr(valor, 'strftime') else str(valor)
+                        html += f'<td>{data_formatada}</td>'
+                    else:
+                        html += f'<td>Nunca</td>'
+                else:
+                    html += f'<td>{valor}</td>'
+            html += '</tr>'
+        
+        html += '</tbody></table>'
+        return html
+    
     def _gerar_grafico_evolucao_temporal_com_filtros(self):
         """Gera o gráfico de evolução temporal - RETORNA APENAS O FIGURE OBJECT"""
         
@@ -1716,8 +2202,8 @@ class LiveloAnalytics:
         dados_historicos_json = dados_historicos_completos.to_json(orient='records')
         dados_raw_json = self.df_completo.to_json(orient='records', date_format='iso')
         
-        # Preparar alertas dinâmicos
-        alertas_html = self._gerar_alertas_dinamicos(mudancas, metricas)
+        # Preparar alertas dinâmicos + NOVOS ALERTAS INTELIGENTES
+        alertas_html = self._gerar_alertas_dinamicos_inteligentes(mudancas, metricas, dados)
         
         # Gerar filtros avançados
         filtros_html = self._gerar_filtros_avancados(dados)
@@ -2103,6 +2589,149 @@ class LiveloAnalytics:
                 color: #9ca3af !important;
             }}
             
+            /* ========== RESUMO ESTATÍSTICO - CONTRASTE CORRIGIDO ========== */
+            .resumo-estatistico-container {{
+                background-color: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 12px;
+                margin-top: 20px;
+            }}
+            
+            .resumo-titulo {{
+                color: #495057 !important;
+                font-weight: 600 !important;
+                margin-bottom: 15px !important;
+            }}
+            
+            /* MODO ESCURO - RESUMO ESTATÍSTICO */
+            [data-theme="dark"] .resumo-estatistico-container {{
+                background-color: #374151 !important;
+                border-color: #6b7280 !important;
+            }}
+            
+            [data-theme="dark"] .resumo-titulo {{
+                color: #f9fafb !important;
+                font-weight: 600 !important;
+            }}
+            
+            [data-theme="dark"] .resumo-estatistico-container .card {{
+                background-color: #4b5563 !important;
+                border-color: #6b7280 !important;
+            }}
+            
+            [data-theme="dark"] .resumo-estatistico-container .fw-bold {{
+                color: #ffffff !important;
+            }}
+            
+            [data-theme="dark"] .resumo-estatistico-container .text-primary {{
+                color: #60a5fa !important;
+            }}
+            
+            [data-theme="dark"] .resumo-estatistico-container .text-info {{
+                color: #22d3ee !important;
+            }}
+            
+            [data-theme="dark"] .resumo-estatistico-container .text-success {{
+                color: #4ade80 !important;
+            }}
+            
+            [data-theme="dark"] .resumo-estatistico-container .text-warning {{
+                color: #fbbf24 !important;
+            }}
+            
+            [data-theme="dark"] .resumo-estatistico-container .text-secondary {{
+                color: #d1d5db !important;
+            }}
+            
+            [data-theme="dark"] .resumo-estatistico-container .text-dark {{
+                color: #f9fafb !important;
+            }}
+            
+            [data-theme="dark"] .resumo-estatistico-container .text-muted {{
+                color: #9ca3af !important;
+            }}
+            
+            [data-theme="dark"] .resumo-estatistico-container .btn-outline-primary {{
+                color: #60a5fa !important;
+                border-color: #60a5fa !important;
+            }}
+            
+            [data-theme="dark"] .resumo-estatistico-container .btn-outline-primary:hover {{
+                color: #ffffff !important;
+                background-color: #60a5fa !important;
+                border-color: #60a5fa !important;
+            }}
+            
+            /* ========== MINHA CARTEIRA - ESTILOS ========== */
+            .favorito-btn {{
+                background: none;
+                border: none;
+                cursor: pointer;
+                padding: 2px 5px;
+                border-radius: 50%;
+                transition: all 0.2s ease;
+            }}
+            
+            .favorito-btn:hover {{
+                background: rgba(255, 10, 140, 0.1);
+                transform: scale(1.1);
+            }}
+            
+            .favorito-btn.ativo {{
+                color: #ffc107;
+            }}
+            
+            .favorito-btn:not(.ativo) {{
+                color: #ccc;
+            }}
+            
+            .carteira-vazia {{
+                text-align: center;
+                padding: 40px 20px;
+                color: var(--text-secondary);
+            }}
+            
+            .carteira-item {{
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 10px 15px;
+                background: var(--bg-card);
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                margin-bottom: 10px;
+                transition: all 0.2s ease;
+            }}
+            
+            .carteira-item:hover {{
+                background: rgba(255, 10, 140, 0.05);
+                border-color: var(--livelo-rosa);
+            }}
+            
+            .carteira-nome {{
+                font-weight: 500;
+                color: var(--text-primary);
+            }}
+            
+            .carteira-info {{
+                font-size: 0.85rem;
+                color: var(--text-secondary);
+            }}
+            
+            .carteira-pontos {{
+                font-weight: 600;
+                color: var(--livelo-rosa);
+            }}
+            
+            [data-theme="dark"] .carteira-item {{
+                background: #4b5563;
+                border-color: #6b7280;
+            }}
+            
+            [data-theme="dark"] .carteira-item:hover {{
+                background: rgba(255, 10, 140, 0.1);
+            }}
+            
             * {{ box-sizing: border-box; }}
             
             body {{
@@ -2345,6 +2974,7 @@ class LiveloAnalytics:
             .alert-warning {{ border-left: 4px solid #ffc107; }}
             .alert-info {{ border-left: 4px solid #17a2b8; }}
             .alert-default {{ border-left: 4px solid var(--livelo-rosa); }}
+            .alert-intelligent {{ border-left: 4px solid #9c27b0; }}
             
             /* ANIMAÇÃO */
             @keyframes slideDown {{
@@ -2470,6 +3100,14 @@ class LiveloAnalytics:
                 max-width: 200px;
                 overflow: hidden;
                 text-overflow: ellipsis;
+            }}
+            
+            /* COLUNA DE FAVORITOS NA TABELA */
+            .table td:nth-child(2) {{
+                text-align: center !important;
+                width: 50px !important;
+                min-width: 50px !important;
+                max-width: 50px !important;
             }}
             
             .badge-status {{
@@ -2797,7 +3435,7 @@ class LiveloAnalytics:
                 <small class="text-muted" style="font-size: 0.75rem;">Dados coletados em: {metricas['data_coleta_mais_recente']}</small>
             </div>
             
-            <!-- Alertas Dinâmicos Compactos -->
+            <!-- Alertas Dinâmicos Compactos + INTELIGENTES -->
             {alertas_html}
             
             <!-- Métricas Principais -->
@@ -2858,7 +3496,7 @@ class LiveloAnalytics:
                 </div>
             </div>
             
-            <!-- Navegação -->
+            <!-- Navegação COM NOVA ABA -->
             <ul class="nav nav-pills justify-content-center mb-3" id="mainTabs" role="tablist">
                 <li class="nav-item">
                     <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#dashboard">
@@ -2868,6 +3506,11 @@ class LiveloAnalytics:
                 <li class="nav-item">
                     <button class="nav-link" data-bs-toggle="pill" data-bs-target="#analise">
                         <i class="bi bi-table me-1"></i>Análise Completa
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" data-bs-toggle="pill" data-bs-target="#carteira">
+                        <i class="bi bi-star me-1"></i>Minha Carteira
                     </button>
                 </li>
                 <li class="nav-item">
@@ -2953,6 +3596,23 @@ class LiveloAnalytics:
                     <!-- Filtros Avançados -->
                     {filtros_html}
                     
+                    <!-- BOTÃO RESET FILTROS TEMPORAIS -->
+                    <div class="mb-3">
+                        <div class="row align-items-center">
+                            <div class="col-auto">
+                                <strong class="text-muted">Filtros Temporais:</strong>
+                            </div>
+                            <div class="col-auto">
+                                <button class="btn btn-outline-danger btn-sm" onclick="resetarFiltrosTemporaisCompleta()" title="Resetar todos os filtros temporais">
+                                    <i class="bi bi-arrow-clockwise me-1"></i>Reset Filtros Temporais
+                                </button>
+                            </div>
+                            <div class="col-auto">
+                                <small class="text-muted">Para gráfico da evolução temporal</small>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="card">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">Análise Completa - {metricas['total_parceiros']} Parceiros HOJE</h6>
@@ -2965,7 +3625,40 @@ class LiveloAnalytics:
                                 <input type="text" class="form-control search-input" id="searchInput" placeholder="🔍 Buscar parceiro...">
                             </div>
                             <div class="table-responsive table-container">
-                                {self._gerar_tabela_analise_completa(dados)}
+                                {self._gerar_tabela_analise_completa_com_favoritos(dados)}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- NOVA ABA: MINHA CARTEIRA -->
+                <div class="tab-pane fade" id="carteira">
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0"><i class="bi bi-star-fill me-2" style="color: #ffc107;"></i>Minha Carteira - <span id="contadorFavoritos">0</span> Favoritos</h6>
+                                    <button class="btn btn-outline-danger btn-sm" onclick="limparCarteira()" title="Limpar todos os favoritos">
+                                        <i class="bi bi-trash me-1"></i>Limpar Carteira
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    <div id="listaFavoritos">
+                                        <!-- Preenchido pelo JavaScript -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">📊 Evolução da Carteira</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="graficoCarteira">
+                                        <!-- Gráfico da carteira -->
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -2999,6 +3692,8 @@ class LiveloAnalytics:
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- RESUMO ESTATÍSTICO SERÁ ADICIONADO AQUI PELO JAVASCRIPT (FORA DA TABELA) -->
                 </div>
             </div>
             
@@ -3014,6 +3709,172 @@ class LiveloAnalytics:
             const dadosHistoricosCompletos = {dados_historicos_json};
             const dadosRawCompletos = {dados_raw_json};
             let parceiroSelecionado = null;
+            
+            // ========== SISTEMA DE FAVORITOS - MINHA CARTEIRA ==========
+            let favoritos = JSON.parse(localStorage.getItem('livelo-favoritos') || '[]');
+            
+            function toggleFavorito(parceiro, moeda) {{
+                const chaveUnica = `${{parceiro}}|${{moeda}}`;
+                const index = favoritos.indexOf(chaveUnica);
+                
+                if (index === -1) {{
+                    if (favoritos.length < 10) {{
+                        favoritos.push(chaveUnica);
+                    }} else {{
+                        alert('Máximo de 10 favoritos! Remova algum para adicionar novo.');
+                        return;
+                    }}
+                }} else {{
+                    favoritos.splice(index, 1);
+                }}
+                
+                localStorage.setItem('livelo-favoritos', JSON.stringify(favoritos));
+                atualizarIconesFavoritos();
+                atualizarCarteira();
+            }}
+            
+            function atualizarIconesFavoritos() {{
+                document.querySelectorAll('.favorito-btn').forEach(btn => {{
+                    const parceiro = btn.dataset.parceiro;
+                    const moeda = btn.dataset.moeda;
+                    const chaveUnica = `${{parceiro}}|${{moeda}}`;
+                    
+                    if (favoritos.includes(chaveUnica)) {{
+                        btn.classList.add('ativo');
+                        btn.innerHTML = '<i class="bi bi-star-fill"></i>';
+                    }} else {{
+                        btn.classList.remove('ativo');
+                        btn.innerHTML = '<i class="bi bi-star"></i>';
+                    }}
+                }});
+            }}
+            
+            function atualizarCarteira() {{
+                const container = document.getElementById('listaFavoritos');
+                const contador = document.getElementById('contadorFavoritos');
+                
+                contador.textContent = favoritos.length;
+                
+                if (favoritos.length === 0) {{
+                    container.innerHTML = `
+                        <div class="carteira-vazia">
+                            <i class="bi bi-star" style="font-size: 3rem; color: #ccc; margin-bottom: 15px; display: block;"></i>
+                            <h6>Sua carteira está vazia</h6>
+                            <p class="text-muted">Clique na estrela ⭐ ao lado dos parceiros na tabela para adicioná-los aos favoritos.</p>
+                            <small class="text-muted">Máximo: 10 favoritos</small>
+                        </div>
+                    `;
+                    document.getElementById('graficoCarteira').innerHTML = '<p class="text-center text-muted mt-5">Adicione favoritos para ver o gráfico</p>';
+                    return;
+                }}
+                
+                let html = '';
+                const favoritosData = [];
+                
+                favoritos.forEach(chaveUnica => {{
+                    const [parceiro, moeda] = chaveUnica.split('|');
+                    const dados = todosOsDados.find(item => item.Parceiro === parceiro && item.Moeda === moeda);
+                    
+                    if (dados) {{
+                        favoritosData.push(dados);
+                        const temOferta = dados.Tem_Oferta_Hoje;
+                        const statusClass = temOferta ? 'text-success' : 'text-muted';
+                        const statusIcon = temOferta ? 'bi-check-circle-fill' : 'bi-circle';
+                        
+                        html += `
+                            <div class="carteira-item">
+                                <div>
+                                    <div class="carteira-nome">${{parceiro}} (${{moeda}})</div>
+                                    <div class="carteira-info">
+                                        <i class="bi ${{statusIcon}} ${{statusClass}} me-1"></i>
+                                        ${{temOferta ? 'Com oferta hoje' : 'Sem oferta hoje'}} • 
+                                        ${{dados.Categoria_Dimensao}} • Tier ${{dados.Tier}}
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="carteira-pontos">${{dados.Pontos_por_Moeda_Atual.toFixed(1)}} pts</div>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="removerFavorito('${{chaveUnica}}')" title="Remover">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }}
+                }});
+                
+                container.innerHTML = html;
+                gerarGraficoCarteira(favoritosData);
+            }}
+            
+            function removerFavorito(chaveUnica) {{
+                favoritos = favoritos.filter(f => f !== chaveUnica);
+                localStorage.setItem('livelo-favoritos', JSON.stringify(favoritos));
+                atualizarIconesFavoritos();
+                atualizarCarteira();
+            }}
+            
+            function limparCarteira() {{
+                if (confirm('Tem certeza que deseja limpar toda a carteira?')) {{
+                    favoritos = [];
+                    localStorage.setItem('livelo-favoritos', JSON.stringify(favoritos));
+                    atualizarIconesFavoritos();
+                    atualizarCarteira();
+                }}
+            }}
+            
+            function gerarGraficoCarteira(favoritosData) {{
+                if (favoritosData.length === 0) return;
+                
+                // Gráfico simples de barras dos favoritos
+                const container = document.getElementById('graficoCarteira');
+                let html = '<div class="mb-3"><strong>Pontos por Moeda Atual:</strong></div>';
+                
+                favoritosData.sort((a, b) => b.Pontos_por_Moeda_Atual - a.Pontos_por_Moeda_Atual);
+                
+                favoritosData.forEach(dados => {{
+                    const largura = (dados.Pontos_por_Moeda_Atual / favoritosData[0].Pontos_por_Moeda_Atual) * 100;
+                    const cor = dados.Tem_Oferta_Hoje ? '#28a745' : '#6c757d';
+                    
+                    html += `
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small class="fw-bold">${{dados.Parceiro}}</small>
+                                <small class="text-muted">${{dados.Pontos_por_Moeda_Atual.toFixed(1)}} pts</small>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar" style="width: ${{largura}}%; background-color: ${{cor}};"></div>
+                            </div>
+                        </div>
+                    `;
+                }});
+                
+                container.innerHTML = html;
+            }}
+            
+            // RESET FILTROS TEMPORAIS PARA ABA ANÁLISE COMPLETA
+            function resetarFiltrosTemporaisCompleta() {{
+                const filtroMes = document.getElementById('filtroMes');
+                const filtroAno = document.getElementById('filtroAno');
+                
+                if (filtroMes) filtroMes.value = '';
+                if (filtroAno) filtroAno.value = '';
+                
+                if (typeof aplicarFiltrosTemporal === 'function') {{
+                    aplicarFiltrosTemporal();
+                }}
+                
+                const btn = event.target.closest('button');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="bi bi-check me-1"></i>Resetado!';
+                btn.classList.remove('btn-outline-danger');
+                btn.classList.add('btn-success');
+                
+                setTimeout(() => {{
+                    btn.innerHTML = originalText;
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-outline-danger');
+                }}, 1500);
+            }}
             
             // GERENCIAMENTO DE TEMA
             function initTheme() {{
@@ -3313,11 +4174,11 @@ class LiveloAnalytics:
                 
                 rows.forEach(row => {{
                     const parceiro = row.cells[0].textContent.toLowerCase();
-                    const categoria = row.cells[1].textContent.trim();
-                    const tier = row.cells[2].textContent.trim();
-                    const oferta = row.cells[3].textContent.trim();
-                    const experiencia = row.cells[4].textContent.trim();
-                    const frequencia = row.cells[5].textContent.trim();
+                    const categoria = row.cells[2].textContent.trim(); // Agora na posição 2 por causa da coluna de favoritos
+                    const tier = row.cells[3].textContent.trim();
+                    const oferta = row.cells[4].textContent.trim();
+                    const experiencia = row.cells[5].textContent.trim();
+                    const frequencia = row.cells[6].textContent.trim();
                     
                     const matchParceiro = !searchTerm || parceiro.includes(searchTerm);
                     const matchCategoria = !filtroCategoria || categoria === filtroCategoria;
@@ -3395,6 +4256,9 @@ class LiveloAnalytics:
                 }});
                 
                 linhas.forEach(linha => tbody.appendChild(linha));
+                
+                // Atualizar ícones de favoritos após reordenação
+                atualizarIconesFavoritos();
             }}
             
             // ORDENAÇÃO DA TABELA INDIVIDUAL
@@ -3478,7 +4342,7 @@ class LiveloAnalytics:
                 XLSX.writeFile(wb, "livelo_analise_completa_{metricas['ultima_atualizacao'].replace('/', '_')}.xlsx");
             }}
             
-            // CARREGAR ANÁLISE INDIVIDUAL COM LOGO E NOMES CORRIGIDOS
+            // CARREGAR ANÁLISE INDIVIDUAL COM LOGO E NOMES CORRIGIDOS - RESUMO FORA DA TABELA
             function carregarAnaliseIndividual() {{
                 const chaveUnica = document.getElementById('parceiroSelect').value;
                 if (!chaveUnica) return;
@@ -3509,7 +4373,7 @@ class LiveloAnalytics:
                     return;
                 }}
                 
-                // Montar tabela do histórico
+                // Montar tabela do histórico (SEM o resumo no final)
                 let html = `
                     <table class="table table-hover table-sm">
                         <thead>
@@ -3559,12 +4423,15 @@ class LiveloAnalytics:
                 
                 html += '</tbody></table>';
                 
-                // RESUMO ESTATÍSTICO COM NOMES CONSISTENTES (IGUAIS À ANÁLISE COMPLETA)
+                // DEFINIR HTML DA TABELA
+                document.getElementById('tabelaIndividual').innerHTML = html;
+                
+                // RESUMO ESTATÍSTICO SEPARADO - FORA DA TABELA (com contraste corrigido)
                 if (dadosResumo.length > 0) {{
                     const resumo = dadosResumo[0];
-                    html += `
-                        <div class="mt-3 p-3 bg-light rounded">
-                            <h6 class="mb-3"><i class="bi bi-bar-chart me-2"></i>Resumo Estatístico</h6>
+                    const resumoHtml = `
+                        <div class="mt-3 p-3 resumo-estatistico-container">
+                            <h6 class="mb-3 resumo-titulo"><i class="bi bi-bar-chart me-2"></i>Resumo Estatístico</h6>
                             <div class="row g-2">
                                 <div class="col-md-3 col-6">
                                     <div class="card border-0 bg-white text-center p-2">
@@ -3628,9 +4495,11 @@ class LiveloAnalytics:
                             ` : ''}}
                         </div>
                     `;
+                    
+                    // ADICIONAR RESUMO DEPOIS DO CARD DA TABELA (FORA DELE)
+                    const cardTabela = document.querySelector('#individual .card:last-child');
+                    cardTabela.insertAdjacentHTML('afterend', resumoHtml);
                 }}
-                
-                document.getElementById('tabelaIndividual').innerHTML = html;
             }}
             
             // Download Excel - Individual
@@ -3694,6 +4563,9 @@ class LiveloAnalytics:
                 // Inicializar filtros temporais
                 setTimeout(inicializarFiltrosTemporal, 1000);
                 
+                // Inicializar sistema de favoritos
+                atualizarCarteira();
+                
                 // DEBUG: Verificar mudanças detectadas
                 console.log('Mudanças detectadas:', {{
                     'ganharam_oferta': {len(mudancas['ganharam_oferta'])},
@@ -3709,6 +4581,13 @@ class LiveloAnalytics:
                 document.getElementById('filtroOferta').addEventListener('change', aplicarFiltros);
                 document.getElementById('filtroExperiencia').addEventListener('change', aplicarFiltros);
                 document.getElementById('filtroFrequencia').addEventListener('change', aplicarFiltros);
+                
+                // Atualizar ícones de favoritos quando trocar de aba
+                document.querySelectorAll('[data-bs-toggle="pill"]').forEach(tab => {{
+                    tab.addEventListener('shown.bs.tab', function() {{
+                        setTimeout(atualizarIconesFavoritos, 100);
+                    }});
+                }});
                 
                 setTimeout(() => {{
                     if (document.querySelector('#individual.show.active')) {{
