@@ -445,6 +445,16 @@ class LiveloAnalytics:
         print(f"✓ Análise concluída para {len(resultados)} combinações parceiro+moeda ativas hoje")
         return self.analytics['dados_completos']
     
+    def _obter_melhor_tier_disponivel(self, dados):
+        """Obtém dados do melhor tier disponível na hierarquia: Tier 1 → Tier 2 → Tier 3"""
+        for tier in ['1', '2', '3']:
+            dados_tier = dados[dados['Tier'] == tier]
+            if len(dados_tier) > 0:
+                return dados_tier, tier
+        
+        # Se não encontrar nenhum tier específico, retorna todos
+        return dados, 'Todos'
+    
     def calcular_metricas_dashboard(self):
         """Calcula métricas aprimoradas para o dashboard"""
         dados = self.analytics['dados_completos']
@@ -495,9 +505,12 @@ class LiveloAnalytics:
             'sempre_oferta': len(dados[dados['Categoria_Estrategica'] == 'Sempre em oferta'])
         }
         
-        # Top ofertas - APENAS TIER 1
-        dados_tier1 = dados[dados['Tier'] == '1'] if len(dados[dados['Tier'] == '1']) > 0 else dados
-        metricas['top_ofertas'] = dados_tier1[dados_tier1['Tem_Oferta_Hoje']].nlargest(10, 'Pontos_por_Moeda_Atual')
+        # Top ofertas - HIERARQUIA TIER 1 → 2 → 3
+        dados_com_oferta = dados[dados['Tem_Oferta_Hoje']]
+        dados_tier_melhor, tier_usado = self._obter_melhor_tier_disponivel(dados_com_oferta)
+        metricas['tier_usado_top'] = tier_usado
+        metricas['top_ofertas'] = dados_tier_melhor.nlargest(10, 'Pontos_por_Moeda_Atual')
+        
         metricas['top_geral'] = dados.nlargest(10, 'Pontos_por_Moeda_Atual')
         metricas['top_novos'] = dados[dados['Status_Casa'] == 'Novo'].nlargest(10, 'Pontos_por_Moeda_Atual')
         metricas['maiores_variacoes_pos'] = dados[dados['Variacao_Pontos'] > 0].nlargest(10, 'Variacao_Pontos')
@@ -510,7 +523,7 @@ class LiveloAnalytics:
         return metricas
     
     def gerar_graficos_aprimorados(self):
-        """Gera gráficos mais informativos"""
+        """Gera novo layout estratégico de gráficos"""
         dados = self.analytics['dados_completos']
         metricas = self.analytics['metricas']
         mudancas = self.analytics['mudancas_ofertas']
@@ -518,115 +531,218 @@ class LiveloAnalytics:
         colors = [LIVELO_ROSA, LIVELO_AZUL, LIVELO_ROSA_CLARO, LIVELO_AZUL_CLARO, '#28a745', '#ffc107']
         graficos = {}
         
-        # 1. Distribuição por Status (Tempo de Casa)
-        status_count = dados['Status_Casa'].value_counts()
-        fig1 = px.pie(
-            values=status_count.values,
-            names=status_count.index,
-            title='Distribuição por Tempo de Casa',
-            color_discrete_sequence=colors
+        # 1. EVOLUÇÃO TEMPORAL COM DRILL DOWN (Principal)
+        df_historico_diario = self.df_completo.copy()
+        df_historico_diario['Data'] = df_historico_diario['Timestamp'].dt.date
+        
+        evolucao_diaria = df_historico_diario.groupby('Data').agg({
+            'Parceiro': 'nunique',
+            'Oferta': lambda x: (x == 'Sim').sum()
+        }).reset_index()
+        evolucao_diaria.columns = ['Data', 'Total_Parceiros', 'Total_Ofertas']
+        
+        fig1 = go.Figure()
+        
+        # Parceiros (linha)
+        fig1.add_trace(go.Scatter(
+            x=evolucao_diaria['Data'],
+            y=evolucao_diaria['Total_Parceiros'],
+            mode='lines+markers',
+            name='Parceiros Ativos',
+            line=dict(color=LIVELO_AZUL, width=3),
+            marker=dict(size=8),
+            yaxis='y2'
+        ))
+        
+        # Ofertas (colunas)
+        fig1.add_trace(go.Bar(
+            x=evolucao_diaria['Data'],
+            y=evolucao_diaria['Total_Ofertas'],
+            name='Ofertas Ativas',
+            marker=dict(color=LIVELO_ROSA, opacity=0.7),
+            yaxis='y'
+        ))
+        
+        fig1.update_layout(
+            title='📈 Evolução Temporal - Parceiros vs Ofertas',
+            xaxis=dict(title='Data'),
+            yaxis=dict(title='Quantidade de Ofertas', side='left'),
+            yaxis2=dict(title='Quantidade de Parceiros', side='right', overlaying='y'),
+            plot_bgcolor='white',
+            paper_bgcolor='white',
+            font=dict(color=LIVELO_AZUL),
+            height=400,
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
         )
-        fig1.update_layout(plot_bgcolor='white', paper_bgcolor='white', font=dict(color=LIVELO_AZUL))
-        graficos['status_casa'] = fig1
+        graficos['evolucao_temporal'] = fig1
         
-        # 2. Top 10 Ofertas Atuais (APENAS TIER 1)
-        if len(metricas['top_ofertas']) > 0:
-            fig2 = px.bar(
-                metricas['top_ofertas'].head(10),
-                x='Parceiro',
-                y='Pontos_por_Moeda_Atual',
-                title='Top 10 - Melhores Ofertas HOJE (Tier 1)',
-                color='Pontos_por_Moeda_Atual',
-                color_continuous_scale=[[0, LIVELO_AZUL_MUITO_CLARO], [1, LIVELO_ROSA]]
-            )
-            fig2.update_layout(xaxis_tickangle=-45, plot_bgcolor='white', paper_bgcolor='white', font=dict(color=LIVELO_AZUL))
-            graficos['top_ofertas'] = fig2
-        
-        # 3. Mudanças de Status de Ofertas
-        if mudancas['ganharam_oferta'] or mudancas['perderam_oferta']:
-            fig3 = go.Figure()
-            
-            if mudancas['ganharam_oferta']:
-                parceiros_ganhou = [item['parceiro'] for item in mudancas['ganharam_oferta'][:8]]
-                pontos_ganhou = [item['pontos_hoje'] for item in mudancas['ganharam_oferta'][:8]]
-                fig3.add_trace(go.Bar(
-                    name='Ganharam Oferta Hoje',
-                    x=parceiros_ganhou,
-                    y=pontos_ganhou,
-                    marker_color='#28a745'
-                ))
-            
-            if mudancas['perderam_oferta']:
-                parceiros_perdeu = [item['parceiro'] for item in mudancas['perderam_oferta'][:8]]
-                pontos_perdeu = [item['pontos_hoje'] for item in mudancas['perderam_oferta'][:8]]
-                fig3.add_trace(go.Bar(
-                    name='Perderam Oferta Hoje',
-                    x=parceiros_perdeu,
-                    y=pontos_perdeu,
-                    marker_color='#dc3545'
-                ))
-            
-            fig3.update_layout(
-                title='Mudanças de Status de Ofertas (Hoje vs Ontem)',
-                xaxis_tickangle=-45,
-                plot_bgcolor='white',
-                paper_bgcolor='white',
-                font=dict(color=LIVELO_AZUL)
-            )
-            graficos['mudancas_ofertas'] = fig3
-        
-        # 4. Frequência de Ofertas vs Pontos
-        fig4 = px.scatter(
+        # 2. MATRIZ DE OPORTUNIDADES (Scatter estratégico)
+        fig2 = px.scatter(
             dados,
             x='Frequencia_Ofertas',
             y='Pontos_por_Moeda_Atual',
             color='Categoria_Estrategica',
             size='Total_Ofertas_Historicas',
-            hover_data=['Parceiro'],
-            title='Matriz Estratégica: Frequência vs Pontos',
-            labels={'Frequencia_Ofertas': 'Frequência de Ofertas (%)', 'Pontos_por_Moeda_Atual': 'Pontos por Moeda'}
+            hover_data=['Parceiro', 'Tier'],
+            title='💎 Matriz de Oportunidades',
+            labels={'Frequencia_Ofertas': 'Frequência de Ofertas (%)', 'Pontos_por_Moeda_Atual': 'Pontos por Moeda'},
+            color_discrete_sequence=colors
         )
-        fig4.update_layout(plot_bgcolor='white', paper_bgcolor='white', font=dict(color=LIVELO_AZUL))
-        graficos['matriz_estrategica'] = fig4
+        fig2.update_layout(
+            plot_bgcolor='white', 
+            paper_bgcolor='white', 
+            font=dict(color=LIVELO_AZUL),
+            height=350
+        )
+        graficos['matriz_oportunidades'] = fig2
         
-        # 5. Comparação Hoje vs Ontem
-        if not self.df_ontem.empty:
-            fig5 = go.Figure()
-            fig5.add_trace(go.Bar(
-                name='Ontem',
-                x=['Total Parceiros', 'Com Oferta', '% Ofertas'],
-                y=[metricas['ofertas_ontem'] + metricas['variacao_parceiros'], 
-                   metricas['ofertas_ontem'], 
-                   metricas['percentual_ofertas_ontem']],
-                marker_color=LIVELO_AZUL_CLARO
-            ))
-            fig5.add_trace(go.Bar(
-                name='Hoje',
-                x=['Total Parceiros', 'Com Oferta', '% Ofertas'],
-                y=[metricas['total_parceiros'], 
-                   metricas['total_com_oferta'], 
-                   metricas['percentual_ofertas_hoje']],
-                marker_color=LIVELO_ROSA
-            ))
-            fig5.update_layout(
-                title='Comparação: Hoje vs Ontem',
+        # 3. DISTRIBUIÇÃO HIERÁRQUICA (Donut)
+        tier_counts = dados['Tier'].value_counts()
+        fig3 = go.Figure(data=[go.Pie(
+            labels=tier_counts.index,
+            values=tier_counts.values,
+            hole=.4,
+            marker=dict(colors=[colors[i % len(colors)] for i in range(len(tier_counts))])
+        )])
+        
+        fig3.update_layout(
+            title='🏆 Distribuição por Tier',
+            plot_bgcolor='white',
+            paper_bgcolor='white',
+            font=dict(color=LIVELO_AZUL),
+            height=350,
+            annotations=[dict(text=f'{len(dados)}<br>Parceiros', x=0.5, y=0.5, font_size=20, showarrow=False)]
+        )
+        graficos['distribuicao_tier'] = fig3
+        
+        # 4. TOP 10 OFERTAS (Bar Horizontal compacto)
+        if len(metricas['top_ofertas']) > 0:
+            top_10 = metricas['top_ofertas'].head(10)
+            fig4 = go.Figure(data=[go.Bar(
+                y=top_10['Parceiro'],
+                x=top_10['Pontos_por_Moeda_Atual'],
+                orientation='h',
+                marker=dict(color=LIVELO_ROSA),
+                text=top_10['Pontos_por_Moeda_Atual'].round(1),
+                textposition='inside'
+            )])
+            
+            fig4.update_layout(
+                title='🥇 Top 10 Ofertas',
                 plot_bgcolor='white',
                 paper_bgcolor='white',
-                font=dict(color=LIVELO_AZUL)
+                font=dict(color=LIVELO_AZUL),
+                height=300,
+                yaxis=dict(autorange="reversed")
             )
-            graficos['comparacao_temporal'] = fig5
+            graficos['top_ofertas'] = fig4
         
-        # 6. Oportunidades Estratégicas
-        categorias = dados['Categoria_Estrategica'].value_counts()
-        fig6 = px.bar(
-            x=categorias.index,
-            y=categorias.values,
-            title='Classificação Estratégica dos Parceiros',
-            color=categorias.values,
-            color_continuous_scale=[[0, '#ffc107'], [0.5, '#28a745'], [1, LIVELO_ROSA]]
+        # 5. MUDANÇAS HOJE (Bar agrupado)
+        if mudancas['ganharam_oferta'] or mudancas['perderam_oferta']:
+            fig5 = go.Figure()
+            
+            categorias = ['Ganharam Oferta', 'Perderam Oferta']
+            valores = [len(mudancas['ganharam_oferta']), len(mudancas['perderam_oferta'])]
+            cores_mudancas = ['#28a745', '#dc3545']
+            
+            fig5.add_trace(go.Bar(
+                x=categorias,
+                y=valores,
+                marker=dict(color=cores_mudancas),
+                text=valores,
+                textposition='inside'
+            ))
+            
+            fig5.update_layout(
+                title='⚡ Mudanças Hoje',
+                plot_bgcolor='white',
+                paper_bgcolor='white',
+                font=dict(color=LIVELO_AZUL),
+                height=300,
+                showlegend=False
+            )
+            graficos['mudancas_hoje'] = fig5
+        
+        # 6. TEMPO DE CASA (Pie compacto)
+        status_counts = dados['Status_Casa'].value_counts()
+        fig6 = go.Figure(data=[go.Pie(
+            labels=status_counts.index,
+            values=status_counts.values,
+            marker=dict(colors=colors)
+        )])
+        
+        fig6.update_layout(
+            title='⏰ Tempo de Casa',
+            plot_bgcolor='white',
+            paper_bgcolor='white',
+            font=dict(color=LIVELO_AZUL),
+            height=300,
+            showlegend=True
         )
-        fig6.update_layout(plot_bgcolor='white', paper_bgcolor='white', font=dict(color=LIVELO_AZUL))
-        graficos['oportunidades'] = fig6
+        graficos['tempo_casa'] = fig6
+        
+        # 7. TENDÊNCIA SEMANAL (Area Chart)
+        ultimas_2_semanas = self.df_completo[
+            self.df_completo['Timestamp'] >= self.df_completo['Timestamp'].max() - timedelta(days=14)
+        ].copy()
+        
+        if len(ultimas_2_semanas) > 0:
+            ultimas_2_semanas['Data'] = ultimas_2_semanas['Timestamp'].dt.date
+            trend_diaria = ultimas_2_semanas[ultimas_2_semanas['Oferta'] == 'Sim'].groupby('Data').agg({
+                'Parceiro': 'count',
+                'Pontos': 'mean'
+            }).reset_index()
+            trend_diaria.columns = ['Data', 'Ofertas_Count', 'Media_Pontos']
+            
+            fig7 = go.Figure()
+            
+            fig7.add_trace(go.Scatter(
+                x=trend_diaria['Data'],
+                y=trend_diaria['Ofertas_Count'],
+                fill='tonexty',
+                mode='lines',
+                name='Quantidade Ofertas',
+                line=dict(color=LIVELO_ROSA),
+                fillcolor=f'rgba(255, 10, 140, 0.3)'
+            ))
+            
+            fig7.update_layout(
+                title='📊 Tendência Últimas 2 Semanas',
+                plot_bgcolor='white',
+                paper_bgcolor='white',
+                font=dict(color=LIVELO_AZUL),
+                height=350
+            )
+            graficos['tendencia_semanal'] = fig7
+        
+        # 8. MAPA DE CATEGORIAS (Treemap)
+        if 'Categoria_Dimensao' in dados.columns:
+            cat_stats = dados.groupby('Categoria_Dimensao').agg({
+                'Parceiro': 'count',
+                'Pontos_por_Moeda_Atual': 'mean'
+            }).reset_index()
+            cat_stats.columns = ['Categoria', 'Quantidade', 'Media_Pontos']
+            cat_stats = cat_stats[cat_stats['Categoria'] != 'Não mapeado']
+            
+            if len(cat_stats) > 0:
+                fig8 = go.Figure(go.Treemap(
+                    labels=cat_stats['Categoria'],
+                    values=cat_stats['Quantidade'],
+                    parents=[""] * len(cat_stats),
+                    marker=dict(
+                        colorscale='Viridis',
+                        cmid=cat_stats['Media_Pontos'].mean()
+                    )
+                ))
+                
+                fig8.update_layout(
+                    title='🎨 Mapa de Categorias',
+                    plot_bgcolor='white',
+                    paper_bgcolor='white',
+                    font=dict(color=LIVELO_AZUL),
+                    height=350
+                )
+                graficos['mapa_categorias'] = fig8
         
         self.analytics['graficos'] = graficos
         return graficos
@@ -671,12 +787,10 @@ class LiveloAnalytics:
                 </div>
             """)
         
-        # 2. Top 5 melhores ofertas (Tier 1)
-        top_ofertas_hoje = dados[(dados['Tem_Oferta_Hoje']) & (dados['Tier'] == '1')]
-        if len(top_ofertas_hoje) == 0:
-            top_ofertas_hoje = dados[dados['Tem_Oferta_Hoje']]
-        
-        top_ofertas_hoje = top_ofertas_hoje.nlargest(5, 'Pontos_por_Moeda_Atual')
+        # 2. Top 5 melhores ofertas (Hierarquia de Tiers)
+        dados_com_oferta = dados[dados['Tem_Oferta_Hoje']]
+        dados_tier_melhor, tier_usado = self._obter_melhor_tier_disponivel(dados_com_oferta)
+        top_ofertas_hoje = dados_tier_melhor.nlargest(5, 'Pontos_por_Moeda_Atual')
         
         if len(top_ofertas_hoje) > 0:
             preview_tops = top_ofertas_hoje.head(3)['Parceiro'].tolist()
@@ -685,7 +799,7 @@ class LiveloAnalytics:
                 <div class="alert-compact alert-info" data-alert-id="top-ofertas">
                     <div class="alert-header" onclick="toggleAlert('top-ofertas')">
                         <div class="alert-title">
-                            <strong>🏆 Top {len(top_ofertas_hoje)} melhores ofertas ativas (Tier 1)</strong>
+                            <strong>🏆 Top {len(top_ofertas_hoje)} melhores ofertas ativas</strong>
                             <i class="bi bi-chevron-down alert-chevron"></i>
                         </div>
                         <button class="alert-close" onclick="closeAlert('top-ofertas', event)">×</button>
@@ -695,7 +809,7 @@ class LiveloAnalytics:
                     </div>
                     <div class="alert-details" style="display: none;">
                         <div class="alert-content">
-                            <h6><i class="bi bi-trophy me-2"></i>Ranking das melhores ofertas hoje (Tier 1):</h6>
+                            <h6><i class="bi bi-trophy me-2"></i>Ranking das melhores ofertas hoje:</h6>
                             <div class="ranking-list">
                                 {''.join([f'<div class="rank-item"><span class="rank-number">{i+1}º</span><span class="rank-partner">{row["Parceiro"]}</span><span class="rank-points">{row["Pontos_por_Moeda_Atual"]:.1f} pts</span></div>' for i, (_, row) in enumerate(top_ofertas_hoje.iterrows())])}
                             </div>
@@ -1040,57 +1154,116 @@ class LiveloAnalytics:
             --shadow-hover: rgba(0,0,0,0.1);
         }}
         
-        /* TEMA ESCURO - MELHORADO */
+        /* TEMA ESCURO - CONTRASTE MELHORADO */
         [data-theme="dark"] {{
             --bg-primary: #1a1d23;
             --bg-secondary: #2d3139;
-            --bg-card: #343a46;
+            --bg-card: #3a3f4b;
             --text-primary: #ffffff;
-            --text-secondary: #b8bcc8;
-            --border-color: #495057;
-            --shadow: rgba(0,0,0,0.3);
-            --shadow-hover: rgba(0,0,0,0.5);
+            --text-secondary: #d1d5db;
+            --border-color: #6b7280;
+            --shadow: rgba(0,0,0,0.4);
+            --shadow-hover: rgba(0,0,0,0.6);
         }}
         
         [data-theme="dark"] body {{
-            background: linear-gradient(135deg, #1a1d23 0%, #2d3139 100%);
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
             color: #ffffff;
         }}
         
         [data-theme="dark"] .table th {{
-            background-color: var(--livelo-azul) !important;
-            color: white !important;
+            background-color: #1e40af !important;
+            color: #ffffff !important;
+            border-color: #374151 !important;
         }}
         
         [data-theme="dark"] .table td {{
-            background-color: var(--bg-card) !important;
-            color: var(--text-primary) !important;
-            border-color: var(--border-color) !important;
+            background-color: #374151 !important;
+            color: #f9fafb !important;
+            border-color: #4b5563 !important;
         }}
         
         [data-theme="dark"] .table tbody tr:hover {{
-            background-color: rgba(255, 10, 140, 0.1) !important;
+            background-color: rgba(255, 10, 140, 0.2) !important;
         }}
         
         [data-theme="dark"] .form-select {{
-            background-color: var(--bg-card) !important;
-            color: var(--text-primary) !important;
-            border-color: var(--border-color) !important;
+            background-color: #374151 !important;
+            color: #f9fafb !important;
+            border-color: #6b7280 !important;
         }}
         
         [data-theme="dark"] .form-select:focus {{
-            background-color: var(--bg-card) !important;
-            color: var(--text-primary) !important;
+            background-color: #374151 !important;
+            color: #f9fafb !important;
             border-color: var(--livelo-rosa) !important;
             box-shadow: 0 0 0 0.2rem rgba(255, 10, 140, 0.25) !important;
         }}
         
         [data-theme="dark"] .form-label {{
-            color: var(--text-primary) !important;
+            color: #f9fafb !important;
+            font-weight: 600 !important;
         }}
         
         [data-theme="dark"] .alert-details {{
-            background: rgba(255,255,255,0.05) !important;
+            background: rgba(55, 65, 81, 0.5) !important;
+            border-color: #6b7280 !important;
+        }}
+        
+        [data-theme="dark"] .alert-compact {{
+            background: #374151 !important;
+            border-color: #6b7280 !important;
+        }}
+        
+        [data-theme="dark"] .alert-header:hover {{
+            background: rgba(255, 10, 140, 0.1) !important;
+        }}
+        
+        [data-theme="dark"] .alert-title {{
+            color: #f9fafb !important;
+        }}
+        
+        [data-theme="dark"] .alert-preview {{
+            color: #d1d5db !important;
+        }}
+        
+        [data-theme="dark"] .alert-content h6 {{
+            color: #f9fafb !important;
+        }}
+        
+        [data-theme="dark"] .card {{
+            background: #374151 !important;
+            border-color: #6b7280 !important;
+        }}
+        
+        [data-theme="dark"] .card-header {{
+            background: #4b5563 !important;
+            border-color: #6b7280 !important;
+            color: #f9fafb !important;
+        }}
+        
+        [data-theme="dark"] .metric-card {{
+            background: linear-gradient(135deg, #374151 0%, #4b5563 100%) !important;
+            color: #f9fafb !important;
+        }}
+        
+        [data-theme="dark"] .metric-value {{
+            color: #f9fafb !important;
+        }}
+        
+        [data-theme="dark"] .metric-label {{
+            color: #d1d5db !important;
+        }}
+        
+        [data-theme="dark"] .search-input {{
+            background-color: #374151 !important;
+            color: #f9fafb !important;
+            border-color: #6b7280 !important;
+        }}
+        
+        [data-theme="dark"] .search-input:focus {{
+            background-color: #374151 !important;
+            color: #f9fafb !important;
         }}
         
         * {{ box-sizing: border-box; }}
@@ -1534,6 +1707,19 @@ class LiveloAnalytics:
             width: 100% !important; 
         }}
         
+        /* Melhorias para gráficos */
+        .card .plotly-graph-div {{
+            border-radius: 8px;
+        }}
+        
+        [data-theme="dark"] .plotly {{
+            background: transparent !important;
+        }}
+        
+        [data-theme="dark"] .plotly .bg {{
+            fill: transparent !important;
+        }}
+        
         .footer {{
             text-align: center;
             margin-top: 40px;
@@ -1818,41 +2004,66 @@ class LiveloAnalytics:
         <div class="tab-content">
             <!-- Dashboard -->
             <div class="tab-pane fade show active" id="dashboard">
+                <!-- LINHA 1: Gráfico Principal Temporal -->
+                <div class="row g-3 mb-3">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header"><h6 class="mb-0">📈 Evolução Temporal - Visão Estratégica</h6></div>
+                            <div class="card-body p-2">{graficos_html.get('evolucao_temporal', '<p>Carregando dados temporais...</p>')}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- LINHA 2: Análise Estratégica (2 médios) -->
+                <div class="row g-3 mb-3">
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header"><h6 class="mb-0">💎 Matriz de Oportunidades</h6></div>
+                            <div class="card-body p-2">{graficos_html.get('matriz_oportunidades', '<p>Matriz não disponível</p>')}</div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header"><h6 class="mb-0">🏆 Distribuição Hierárquica</h6></div>
+                            <div class="card-body p-2">{graficos_html.get('distribuicao_tier', '<p>Distribuição não disponível</p>')}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- LINHA 3: Performance Atual (3 compactos) -->
+                <div class="row g-3 mb-3">
+                    <div class="col-lg-4">
+                        <div class="card">
+                            <div class="card-header"><h6 class="mb-0">🥇 Top 10 Ofertas</h6></div>
+                            <div class="card-body p-2">{graficos_html.get('top_ofertas', '<p>Top ofertas não disponível</p>')}</div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="card">
+                            <div class="card-header"><h6 class="mb-0">⚡ Mudanças Hoje</h6></div>
+                            <div class="card-body p-2">{graficos_html.get('mudancas_hoje', '<p>Sem mudanças detectadas</p>')}</div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="card">
+                            <div class="card-header"><h6 class="mb-0">⏰ Tempo de Casa</h6></div>
+                            <div class="card-body p-2">{graficos_html.get('tempo_casa', '<p>Tempo de casa não disponível</p>')}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- LINHA 4: Insights Avançados (2 médios) -->
                 <div class="row g-3">
                     <div class="col-lg-6">
                         <div class="card">
-                            <div class="card-header"><h6 class="mb-0">Top Ofertas HOJE (Tier 1)</h6></div>
-                            <div class="card-body p-2">{graficos_html.get('top_ofertas', '<p>Gráfico não disponível</p>')}</div>
+                            <div class="card-header"><h6 class="mb-0">📊 Tendência Semanal</h6></div>
+                            <div class="card-body p-2">{graficos_html.get('tendencia_semanal', '<p>Tendência não disponível</p>')}</div>
                         </div>
                     </div>
                     <div class="col-lg-6">
                         <div class="card">
-                            <div class="card-header"><h6 class="mb-0">Mudanças de Ofertas (Hoje vs Ontem)</h6></div>
-                            <div class="card-body p-2">{graficos_html.get('mudancas_ofertas', '<p>Ainda sem dados de comparação</p>')}</div>
-                        </div>
-                    </div>
-                    <div class="col-lg-6">
-                        <div class="card">
-                            <div class="card-header"><h6 class="mb-0">Matriz Estratégica</h6></div>
-                            <div class="card-body p-2">{graficos_html.get('matriz_estrategica', '<p>Gráfico não disponível</p>')}</div>
-                        </div>
-                    </div>
-                    <div class="col-lg-6">
-                        <div class="card">
-                            <div class="card-header"><h6 class="mb-0">Comparação Temporal</h6></div>
-                            <div class="card-body p-2">{graficos_html.get('comparacao_temporal', '<p>Dados de ontem não disponíveis</p>')}</div>
-                        </div>
-                    </div>
-                    <div class="col-lg-6">
-                        <div class="card">
-                            <div class="card-header"><h6 class="mb-0">Classificação Estratégica</h6></div>
-                            <div class="card-body p-2">{graficos_html.get('oportunidades', '<p>Gráfico não disponível</p>')}</div>
-                        </div>
-                    </div>
-                    <div class="col-lg-6">
-                        <div class="card">
-                            <div class="card-header"><h6 class="mb-0">Tempo de Casa</h6></div>
-                            <div class="card-body p-2">{graficos_html.get('status_casa', '<p>Gráfico não disponível</p>')}</div>
+                            <div class="card-header"><h6 class="mb-0">🎨 Mapa de Categorias</h6></div>
+                            <div class="card-body p-2">{graficos_html.get('mapa_categorias', '<p>Mapa não disponível</p>')}</div>
                         </div>
                     </div>
                 </div>
@@ -2233,7 +2444,7 @@ class LiveloAnalytics:
             const logoHtml = logoUrl ? `<img src="${{logoUrl}}" class="logo-parceiro" alt="Logo ${{parceiro}}" onerror="this.style.display='none'">` : '';
             
             document.getElementById('tituloAnaliseIndividual').innerHTML = 
-                `${{logoHtml}}<span>Histórico Detalhado - ${{parceiro}} (${{moeda}}) - ${{historicoCompleto.length}} registros</span>`;
+                `<div class="d-flex align-items-center">${{logoHtml}}<span>Histórico Detalhado - ${{parceiro}} (${{moeda}}) - ${{historicoCompleto.length}} registros</span></div>`;
             
             if (historicoCompleto.length === 0) {{
                 document.getElementById('tabelaIndividual').innerHTML = 
