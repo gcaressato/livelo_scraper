@@ -2232,17 +2232,19 @@ class LiveloAnalytics:
         <script>
         window.firebaseConfig = {
         apiKey: "AIzaSyAibNVfTL0kvG_R3rKYYSnAeQWc5oVBFYk",
-        authDomain: "livel-analytics.firebaseapp.com",
-        projectId: "livel-analytics",
-        storageBucket: "livel-analytics.firebasestorage.app",
+        authDomain: "{{FIREBASE_PROJECT_ID}}.firebaseapp.com",
+        projectId: "{{FIREBASE_PROJECT_ID}}",
+        storageBucket: "{{FIREBASE_PROJECT_ID}}.firebasestorage.app",
         messagingSenderId: "{{FIREBASE_SENDER_ID}}",
-        appId: "1:168707812242:web:59b4c1df4fc553410c6f4b"
+        appId: "1:{{FIREBASE_SENDER_ID}}:web:59b4c1df4fc553410c6f4b"
         };
 
         window.vapidKey = "{{FIREBASE_VAPID_KEY}}";
 
         // Verificar se placeholders foram substituídos
         window.firebaseReady = (
+        window.firebaseConfig.projectId && 
+        !window.firebaseConfig.projectId.includes("{{") &&
         window.firebaseConfig.messagingSenderId && 
         !window.firebaseConfig.messagingSenderId.includes("{{") &&
         window.vapidKey && 
@@ -2252,6 +2254,8 @@ class LiveloAnalytics:
         if (!window.firebaseReady) {
         console.warn("🔒 Firebase não configurado - secrets não foram substituídos");
         console.warn("⚠️ Notificações não estarão disponíveis");
+        } else {
+        console.log("✅ Firebase configurado corretamente");
         }
         </script>
 
