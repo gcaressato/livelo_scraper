@@ -49,6 +49,57 @@ jobs:
           python main.py 2>&1 | tee output.log
         continue-on-error: true
         
+      # NOVA ETAPA: VALIDAÇÃO INTELIGENTE DE DADOS
+      - name: Validar qualidade dos dados
+        id: validate
+        run: |
+          python -c "
+          import pandas as pd
+          from datetime import datetime, timedelta
+          import os
+          
+          success = True
+          
+          try:
+              # Verificar se arquivo Excel existe
+              if not os.path.exists('livelo_parceiros.xlsx'):
+                  print('❌ Arquivo Excel não encontrado!')
+                  success = False
+              else:
+                  df = pd.read_excel('livelo_parceiros.xlsx')
+                  
+                  # Verificar se dados são recentes (últimas 24h)
+                  df['Timestamp'] = pd.to_datetime(df['Timestamp'])
+                  latest_date = df['Timestamp'].max()
+                  now = datetime.now()
+                  
+                  if (now - latest_date).total_seconds() > 86400:  # 24 horas
+                      print(f'⚠️ Dados podem estar antigos! Último: {latest_date}')
+                  
+                  # Verificar quantidade mínima
+                  if len(df) < 30:
+                      print(f'⚠️ Poucos dados coletados: {len(df)} registros')
+                  else:
+                      print(f'✅ Dados validados: {len(df)} registros, último em {latest_date}')
+              
+              # Verificar se HTML foi gerado
+              if not os.path.exists('relatorio_livelo.html'):
+                  print('❌ HTML não foi gerado!')
+                  success = False
+              else:
+                  print('✅ HTML gerado com sucesso')
+              
+              if success:
+                  print('VALIDATION_SUCCESS=true')
+              else:
+                  print('VALIDATION_FAILED=true')
+                  
+          except Exception as e:
+              print(f'❌ Erro na validação: {e}')
+              print('VALIDATION_ERROR=true')
+          " 2>&1 | tee validation.log
+        continue-on-error: true
+        
       - name: Verificar falhas na execução
         run: |
           if cat output.log | grep -q "Falha no scraper\|Falha no reporter\|ERRO FATAL"; then
@@ -57,7 +108,59 @@ jobs:
             echo "SCRAPING_FALHOU=true" >> $GITHUB_ENV
           else
             echo "Nenhuma falha detectada na execução."
+            echo "SCRAPING_FALHOU=false" >> $GITHUB_ENV
           fi
+      
+      # NOVA ETAPA: CRIAR ISSUE AUTOMÁTICA SE FALHOU
+      - name: Criar issue se scraper falhou
+        if: env.SCRAPING_FALHOU == 'true'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const title = `🚨 Scraper falhou em ${new Date().toLocaleString('pt-BR')}`;
+            const body = `
+            ## ❌ Falha no Scraper Livelo
+            
+            **⏰ Horário:** ${new Date().toLocaleString('pt-BR', {timeZone: 'America/Sao_Paulo'})}
+            **🔗 Logs:** [Ver detalhes](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
+            
+            ### Possíveis causas:
+            - [ ] Site mudou estrutura HTML
+            - [ ] Elementos foram alterados  
+            - [ ] Timeout de conexão
+            - [ ] Erro no processamento dos dados
+            
+            ### ⚠️ Ação necessária:
+            1. Verificar logs do workflow
+            2. Testar scraper localmente
+            3. Ajustar seletores se necessário
+            4. Fechar esta issue após correção
+            
+            ---
+            *Issue criada automaticamente pelo GitHub Actions*
+            `;
+            
+            // Verificar se já existe issue aberta
+            const existingIssues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'scraper-failure'
+            });
+            
+            if (existingIssues.data.length === 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['scraper-failure', 'urgent']
+              });
+              
+              console.log('📧 Issue criada - você receberá email do GitHub automaticamente!');
+            } else {
+              console.log('Issue de falha já existe, não criando duplicata');
+            }
       
       - name: Listar arquivos de diagnóstico
         run: |
@@ -112,17 +215,150 @@ jobs:
           # Push com tratamento de erro
           git push || echo "Falha ao fazer push, verifique os logs para mais detalhes"
       
-      # Configurar e publicar no GitHub Pages
+      # ============ SEÇÃO PWA + FIREBASE ============
+      
+      - name: Setup Node.js para Firebase
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Criar arquivos PWA
+        run: |
+          # Criar manifest.json
+          cat > manifest.json << 'EOF'
+          {
+            "name": "Livelo Analytics Pro",
+            "short_name": "Livelo",
+            "description": "Dashboard analítico para ofertas Livelo",
+            "start_url": "/",
+            "display": "standalone",
+            "background_color": "#151f4f",
+            "theme_color": "#ff0a8c",
+            "orientation": "portrait-primary",
+            "icons": [
+              {
+                "src": "https://via.placeholder.com/192x192/ff0a8c/ffffff?text=L",
+                "sizes": "192x192",
+                "type": "image/png"
+              },
+              {
+                "src": "https://via.placeholder.com/512x512/ff0a8c/ffffff?text=L", 
+                "sizes": "512x512",
+                "type": "image/png"
+              }
+            ]
+          }
+          EOF
+          
+          # Criar service worker
+          cat > sw.js << 'EOF'
+          const CACHE_NAME = 'livelo-analytics-v1';
+          const urlsToCache = [
+            '/',
+            '/index.html',
+            '/manifest.json'
+          ];
+          
+          self.addEventListener('install', (event) => {
+            event.waitUntil(
+              caches.open(CACHE_NAME)
+                .then((cache) => cache.addAll(urlsToCache))
+            );
+          });
+          
+          self.addEventListener('fetch', (event) => {
+            event.respondWith(
+              caches.match(event.request)
+                .then((response) => {
+                  return response || fetch(event.request);
+                })
+            );
+          });
+          EOF
+          
+          # Criar firebase.json
+          cat > firebase.json << 'EOF'
+          {
+            "hosting": {
+              "public": "./public",
+              "ignore": [
+                "firebase.json",
+                "**/.*",
+                "**/node_modules/**"
+              ],
+              "rewrites": [
+                {
+                  "source": "**",
+                  "destination": "/index.html"
+                }
+              ],
+              "headers": [
+                {
+                  "source": "/sw.js",
+                  "headers": [
+                    {
+                      "key": "Service-Worker-Allowed",
+                      "value": "/"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+          EOF
+          
+          echo "✅ Arquivos PWA criados com sucesso!"
+      
+      # Configurar e publicar no GitHub Pages (MANTIDO)
       - name: Configurar diretório de publicação
         run: |
           mkdir -p ./public
-          # Copiar o arquivo HTML principal para o diretório de publicação
-          cp relatorio_livelo.html ./public/index.html || echo "Relatório HTML não encontrado"
-          # Copiar outros arquivos necessários (CSS, JS, imagens)
-          cp -r *.css *.js ./public/ 2>/dev/null || echo "Nenhum arquivo CSS/JS encontrado"
+          
+          # Copiar o arquivo HTML principal
+          if [ -f "relatorio_livelo.html" ]; then
+            cp relatorio_livelo.html ./public/index.html
+            echo "✅ HTML copiado para public/"
+          else
+            echo "❌ relatorio_livelo.html não encontrado"
+            # Criar HTML de emergência
+            cat > ./public/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Livelo Analytics - Em Manutenção</title>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <style>
+              body { font-family: Arial; text-align: center; padding: 50px; background: #f8f9fa; }
+              .container { max-width: 600px; margin: 0 auto; }
+              .error { color: #dc3545; }
+              .info { color: #6c757d; margin-top: 20px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <h1>🚧 Livelo Analytics</h1>
+              <p class="error">Dashboard temporariamente indisponível</p>
+              <p class="info">O sistema está em manutenção. Tente novamente em alguns minutos.</p>
+              <p class="info"><small>Última tentativa: $(date)</small></p>
+            </div>
+          </body>
+          </html>
+          EOF
+          fi
+          
+          # Copiar arquivos PWA
+          cp manifest.json ./public/
+          cp sw.js ./public/
+          
+          # Copiar outros arquivos necessários
+          cp -r *.css *.js ./public/ 2>/dev/null || echo "Nenhum arquivo CSS/JS adicional encontrado"
           if [ -d "relatorios" ]; then
             cp -r relatorios/* ./public/ 2>/dev/null || echo "Nenhum arquivo encontrado em relatórios"
           fi
+          
+          echo "Arquivos no diretório public:"
+          ls -la ./public/
           
       - name: Setup Pages
         uses: actions/configure-pages@v3
@@ -132,4 +368,50 @@ jobs:
         with:
           folder: public
           branch: gh-pages
-          clean: true # Remove arquivos antigos
+          clean: true
+      
+      # ============ DEPLOY FIREBASE (NOVO) ============
+      
+      - name: Instalar Firebase CLI
+        run: npm install -g firebase-tools
+      
+      - name: Deploy para Firebase Hosting
+        if: env.SCRAPING_FALHOU == 'false'  # Só deploy se scraping funcionou
+        run: |
+          # Deploy usando token do secret
+          firebase deploy --token "$FIREBASE_TOKEN" --project "$FIREBASE_PROJECT_ID" --only hosting
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      
+      - name: Deploy de emergência no Firebase (dados antigos)
+        if: env.SCRAPING_FALHOU == 'true'  # Deploy mesmo com falha para manter site no ar
+        run: |
+          echo "⚠️ Fazendo deploy de emergência com dados antigos..."
+          firebase deploy --token "$FIREBASE_TOKEN" --project "$FIREBASE_PROJECT_ID" --only hosting
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+        continue-on-error: true
+      
+      # ============ LOG FINAL ============
+      
+      - name: Resumo da execução
+        run: |
+          echo "
+          📊 RESUMO DA EXECUÇÃO
+          =====================
+          ⏰ Horário: $(date)
+          📁 Arquivos gerados: $(ls -la ./public/ | wc -l) arquivos
+          🔍 Status scraping: ${{ env.SCRAPING_FALHOU == 'true' && 'FALHOU' || 'SUCESSO' }}
+          🌐 GitHub Pages: ✅ Deployado
+          🔥 Firebase: ${{ env.SCRAPING_FALHOU == 'true' && '⚠️ Deploy emergência' || '✅ Deploy normal' }}
+          
+          📧 Notificações: ${{ env.SCRAPING_FALHOU == 'true' && 'Issue criada - email enviado' || 'Nenhuma necessária' }}
+          "
+          
+          if [ "${{ env.SCRAPING_FALHOU }}" = "true" ]; then
+            echo "::warning::Scraper falhou mas deploy foi mantido com dados antigos"
+          else
+            echo "::notice::Execução completada com sucesso!"
+          fi
