@@ -547,7 +547,7 @@ class LiveloAnalytics:
         colors = [LIVELO_ROSA, LIVELO_AZUL, LIVELO_ROSA_CLARO, LIVELO_AZUL_CLARO, '#28a745', '#ffc107']
         graficos = {}
         
-        # 1. EVOLUÇÃO TEMPORAL COM DRILL DOWN (Principal)
+        # 1. EVOLUÇÃO TEMPORAL COM DRILL DOWN E RÓTULOS (Principal)
         df_historico_diario = self.df_completo.copy()
         df_historico_diario['Data'] = df_historico_diario['Timestamp'].dt.date
         
@@ -559,36 +559,52 @@ class LiveloAnalytics:
         
         fig1 = go.Figure()
         
-        # Parceiros (coluna azul)
+        # Parceiros (coluna azul) COM RÓTULOS
         fig1.add_trace(go.Bar(
             x=evolucao_diaria['Data'],
             y=evolucao_diaria['Total_Parceiros'],
             name='Parceiros Ativos',
             marker=dict(color=LIVELO_AZUL, opacity=0.8),
-            offsetgroup=1
+            offsetgroup=1,
+            text=evolucao_diaria['Total_Parceiros'],
+            textposition='outside',
+            textfont=dict(size=10, color=LIVELO_AZUL)
         ))
         
-        # Ofertas (coluna rosa)
+        # Ofertas (coluna rosa) COM RÓTULOS
         fig1.add_trace(go.Bar(
             x=evolucao_diaria['Data'],
             y=evolucao_diaria['Total_Ofertas'],
             name='Ofertas Ativas',
             marker=dict(color=LIVELO_ROSA, opacity=0.8),
-            offsetgroup=2
+            offsetgroup=2,
+            text=evolucao_diaria['Total_Ofertas'],
+            textposition='outside',
+            textfont=dict(size=10, color=LIVELO_ROSA)
         ))
         
+        # DRILL DOWN com botões
         fig1.update_layout(
             title='📈 Evolução Temporal - Parceiros vs Ofertas por Dia',
-            xaxis=dict(title='Data'),
+            xaxis=dict(
+                title='Data',
+                rangeselector=dict(
+                    buttons=list([
+                        dict(count=7, label="7d", step="day", stepmode="backward"),
+                        dict(count=14, label="14d", step="day", stepmode="backward"),
+                        dict(count=30, label="1m", step="day", stepmode="backward"),
+                        dict(step="all", label="Tudo")
+                    ])
+                ),
+                rangeslider=dict(visible=True if len(evolucao_diaria) > 30 else False)
+            ),
             yaxis=dict(title='Quantidade'),
             plot_bgcolor='white',
             paper_bgcolor='white',
             font=dict(color=LIVELO_AZUL),
             height=400,
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-            barmode='group',
-            # Scroll horizontal para muitos dias
-            xaxis_rangeslider_visible=True if len(evolucao_diaria) > 30 else False
+            barmode='group'
         )
         graficos['evolucao_temporal'] = fig1
         
@@ -612,29 +628,34 @@ class LiveloAnalytics:
         )
         graficos['matriz_oportunidades'] = fig2
         
-        # 3. DISTRIBUIÇÃO POR CATEGORIAS (Donut)
+        # 3. TOP 10 CATEGORIAS (Bar Horizontal em vez de Donut)
         categoria_counts = dados['Categoria_Dimensao'].value_counts()
-        # Filtrar categorias não mapeadas para o gráfico
         categoria_counts = categoria_counts[categoria_counts.index != 'Não mapeado']
+        top_10_categorias = categoria_counts.head(10)
         
-        fig3 = go.Figure(data=[go.Pie(
-            labels=categoria_counts.index,
-            values=categoria_counts.values,
-            hole=.4,
-            marker=dict(colors=[colors[i % len(colors)] for i in range(len(categoria_counts))])
+        fig3 = go.Figure(data=[go.Bar(
+            y=top_10_categorias.index,
+            x=top_10_categorias.values,
+            orientation='h',
+            marker=dict(color=LIVELO_AZUL, opacity=0.8),
+            text=top_10_categorias.values,
+            textposition='inside',
+            textfont=dict(color='white', size=12)
         )])
         
         fig3.update_layout(
-            title='🏆 Distribuição por Categorias',
+            title='🏆 Top 10 Categorias Mais Populares',
+            xaxis=dict(title='Número de Parceiros'),
+            yaxis=dict(title=''),
             plot_bgcolor='white',
             paper_bgcolor='white',
             font=dict(color=LIVELO_AZUL),
             height=350,
-            annotations=[dict(text=f'{len(dados)}<br>Parceiros', x=0.5, y=0.5, font_size=20, showarrow=False)]
+            yaxis_autorange="reversed"
         )
-        graficos['distribuicao_categorias'] = fig3
+        graficos['top_categorias'] = fig3
         
-        # 4. TOP 10 OFERTAS (Bar Horizontal compacto) - EXATAMENTE 10
+        # 4. TOP 10 OFERTAS (Bar Horizontal MAIOR) - EXATAMENTE 10
         top_10 = self._obter_top_10_hierarquico(dados)
         if len(top_10) > 0:
             fig4 = go.Figure(data=[go.Bar(
@@ -644,17 +665,21 @@ class LiveloAnalytics:
                 marker=dict(color=LIVELO_ROSA),
                 text=top_10['Pontos_por_Moeda_Atual'].round(1),
                 textposition='inside',
+                textfont=dict(color='white', size=12, family="Arial Black"),
                 customdata=top_10['Tier'],
                 hovertemplate='<b>%{y}</b><br>Pontos: %{x}<br>Tier: %{customdata}<extra></extra>'
             )])
             
             fig4.update_layout(
-                title='🥇 Top 10 Ofertas (Hierarquia Tier 1→2→3)',
+                title='🥇 Top 10 Ofertas',
+                xaxis=dict(title='Pontos por Moeda'),
+                yaxis=dict(title=''),
                 plot_bgcolor='white',
                 paper_bgcolor='white',
-                font=dict(color=LIVELO_AZUL),
-                height=300,
-                yaxis=dict(autorange="reversed")
+                font=dict(color=LIVELO_AZUL, size=12),
+                height=400,  # AUMENTADO DE 300 PARA 400
+                yaxis_autorange="reversed",
+                margin=dict(l=150, r=50, t=50, b=50)  # MAIS ESPAÇO PARA NOMES
             )
             graficos['top_ofertas'] = fig4
         
@@ -674,11 +699,14 @@ class LiveloAnalytics:
                 y=valores,
                 marker=dict(color=cores_mudancas),
                 text=valores,
-                textposition='inside'
+                textposition='outside',
+                textfont=dict(size=14, color=LIVELO_AZUL)
             ))
             
             fig5.update_layout(
                 title='⚡ Mudanças de Ofertas Hoje vs Ontem',
+                xaxis=dict(title=''),
+                yaxis=dict(title='Quantidade'),
                 plot_bgcolor='white',
                 paper_bgcolor='white',
                 font=dict(color=LIVELO_AZUL),
@@ -711,7 +739,9 @@ class LiveloAnalytics:
         fig6 = go.Figure(data=[go.Pie(
             labels=status_counts.index,
             values=status_counts.values,
-            marker=dict(colors=colors)
+            marker=dict(colors=colors),
+            textinfo='label+percent',
+            textposition='inside'
         )])
         
         fig6.update_layout(
@@ -747,7 +777,9 @@ class LiveloAnalytics:
                 name='Ofertas por Dia',
                 line=dict(color=LIVELO_ROSA),
                 fillcolor=f'rgba(255, 10, 140, 0.3)',
-                marker=dict(size=6)
+                marker=dict(size=6),
+                text=trend_diaria['Ofertas_Count'],
+                textposition='top center'
             ))
             
             fig7.update_layout(
@@ -761,7 +793,7 @@ class LiveloAnalytics:
             )
             graficos['tendencia_semanal'] = fig7
         
-        # 8. MAPA DE CATEGORIAS (Treemap com Hover detalhado)
+        # 8. MAPA DE CATEGORIAS (Treemap CORRIGIDO - sem texto duplicado)
         if 'Categoria_Dimensao' in dados.columns:
             cat_stats = dados.groupby('Categoria_Dimensao').agg({
                 'Parceiro': ['count', lambda x: list(x)],
@@ -785,9 +817,10 @@ class LiveloAnalytics:
                     labels=cat_stats['Categoria'],
                     values=cat_stats['Quantidade'],
                     parents=[""] * len(cat_stats),
-                    text=cat_stats['Categoria'],
+                    text=[""] * len(cat_stats),  # REMOVIDO TEXTO DUPLICADO
                     hovertext=hover_texts,
                     hovertemplate='%{hovertext}<extra></extra>',
+                    textinfo="label",  # APENAS LABEL, SEM DUPLICAÇÃO
                     marker=dict(
                         colorscale='Viridis',
                         colorbar=dict(title="Média de Pontos"),
@@ -1805,6 +1838,17 @@ class LiveloAnalytics:
             fill: transparent !important;
         }}
         
+        /* MELHORAR LEGIBILIDADE DOS GRÁFICOS EM MOBILE */
+        @media (max-width: 768px) {{
+            .card .plotly-graph-div {{
+                min-height: 300px;
+            }}
+            
+            .plotly .main-svg {{
+                overflow: visible !important;
+            }}
+        }}
+        
         .footer {{
             text-align: center;
             margin-top: 40px;
@@ -2109,8 +2153,8 @@ class LiveloAnalytics:
                     </div>
                     <div class="col-lg-6">
                         <div class="card">
-                            <div class="card-header"><h6 class="mb-0">🏆 Distribuição por Categorias</h6></div>
-                            <div class="card-body p-2">{graficos_html.get('distribuicao_categorias', '<p>Distribuição não disponível</p>')}</div>
+                            <div class="card-header"><h6 class="mb-0">🏆 Top 10 Categorias</h6></div>
+                            <div class="card-body p-2">{graficos_html.get('top_categorias', '<p>Top categorias não disponível</p>')}</div>
                         </div>
                     </div>
                 </div>
