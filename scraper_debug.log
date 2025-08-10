@@ -34,7 +34,6 @@ Limpando e validando dados...
 ✓ Removidas 0 duplicatas completas
 ✓ Resolvidas 3 duplicatas parciais (priorizando oferta 'Sim')
 ✓ Dataset final: 267 registros válidos
-Substituindo dados de 2025-08-09...
 ✓ Dados salvos: livelo_parceiros.xlsx
 ✓ Cópia salva: output/livelo_parceiros.xlsx
 ✓ Navegador encerrado
