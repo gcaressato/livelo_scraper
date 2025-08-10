@@ -2219,7 +2219,42 @@ class LiveloAnalytics:
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-        
+
+        <!-- PWA Manifest -->
+        <link rel="manifest" href="manifest.json">
+        <meta name="theme-color" content="#ff0a8c">
+
+        <!-- Firebase SDK -->
+        <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js"></script>
+
+        <!-- Firebase Config - APENAS SECRETS -->
+        <script>
+        window.firebaseConfig = {
+        apiKey: "AIzaSyAibNVfTL0kvG_R3rKYYSnAeQWc5oVBFYk",
+        authDomain: "livel-analytics.firebaseapp.com",
+        projectId: "livel-analytics",
+        storageBucket: "livel-analytics.firebasestorage.app",
+        messagingSenderId: "{{FIREBASE_SENDER_ID}}",
+        appId: "1:168707812242:web:59b4c1df4fc553410c6f4b"
+        };
+
+        window.vapidKey = "{{FIREBASE_VAPID_KEY}}";
+
+        // Verificar se placeholders foram substituídos
+        window.firebaseReady = (
+        window.firebaseConfig.messagingSenderId && 
+        !window.firebaseConfig.messagingSenderId.includes("{{") &&
+        window.vapidKey && 
+        !window.vapidKey.includes("{{")
+        );
+
+        if (!window.firebaseReady) {
+        console.warn("🔒 Firebase não configurado - secrets não foram substituídos");
+        console.warn("⚠️ Notificações não estarão disponíveis");
+        }
+        </script>
+
         <style>
             :root {{
                 --livelo-rosa: {LIVELO_ROSA};
@@ -4602,6 +4637,195 @@ class LiveloAnalytics:
         </script>
         
         {self._gerar_javascript_filtros_temporal()}
+
+        // Sistema de Notificações PWA
+        let messaging = null;
+        let isNotificationsEnabled = false;
+
+        function initializeFirebase() {
+        try {
+            if (typeof firebase === "undefined") {
+            console.error("Firebase SDK não carregado");
+            return false;
+            }
+            
+            if (!window.firebaseReady) {
+            console.warn("Firebase não pode ser inicializado - secrets não configurados");
+            return false;
+            }
+            
+            firebase.initializeApp(window.firebaseConfig);
+            messaging = firebase.messaging();
+            console.log("✅ Firebase inicializado com secrets");
+            return true;
+        } catch (error) {
+            console.error("❌ Erro ao inicializar Firebase:", error);
+            return false;
+        }
+        }
+
+        function registerServiceWorker() {
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("/firebase-messaging-sw.js")
+            .then(function(registration) {
+                console.log("✅ Service Worker registrado");
+                if (messaging) {
+                messaging.useServiceWorker(registration);
+                }
+            })
+            .catch(function(error) {
+                console.error("❌ Erro no Service Worker:", error);
+            });
+        }
+        }
+
+        async function requestNotificationPermission() {
+        try {
+            if (!window.firebaseReady) {
+            alert("🔒 Notificações não disponíveis - configuração pendente");
+            return null;
+            }
+
+            if (!messaging && !initializeFirebase()) {
+            alert("❌ Erro: Firebase não inicializado");
+            return null;
+            }
+
+            if (!("Notification" in window)) {
+            alert("❌ Este navegador não suporta notificações");
+            return null;
+            }
+
+            const permission = await Notification.requestPermission();
+            
+            if (permission === "granted") {
+            console.log("✅ Permissão de notificação concedida");
+            
+            messaging.usePublicVapidKey(window.vapidKey);
+            const token = await messaging.getToken();
+            
+            console.log("📱 Token FCM obtido:", token.substring(0, 20) + "...");
+            localStorage.setItem("fcm-token", token);
+            isNotificationsEnabled = true;
+            
+            updateNotificationButtons();
+            showTestNotification();
+            
+            return token;
+            } else {
+            console.log("❌ Permissão de notificação negada");
+            return null;
+            }
+        } catch (error) {
+            console.error("❌ Erro ao solicitar permissão:", error);
+            alert("❌ Erro: " + error.message);
+            return null;
+        }
+        }
+
+        function showTestNotification() {
+        try {
+            new Notification("🎯 Livelo Analytics", {
+            body: "✅ Notificações ativadas com sucesso!",
+            icon: "https://via.placeholder.com/192x192/ff0a8c/ffffff?text=L"
+            });
+        } catch (error) {
+            console.error("❌ Erro na notificação de teste:", error);
+        }
+        }
+
+        function updateNotificationButtons() {
+        const buttons = document.querySelectorAll(".notify-btn");
+        buttons.forEach(function(btn) {
+            if (!window.firebaseReady) {
+            btn.innerHTML = '<i class="bi bi-bell-slash me-1"></i>Indisponível';
+            btn.className = "btn btn-secondary btn-sm notify-btn";
+            btn.disabled = true;
+            btn.title = "Notificações não configuradas";
+            } else if (isNotificationsEnabled) {
+            btn.innerHTML = '<i class="bi bi-bell-fill me-1"></i>Notificações ON';
+            btn.className = "btn btn-success btn-sm notify-btn";
+            btn.disabled = false;
+            btn.onclick = testarNotificacao;
+            } else {
+            btn.innerHTML = '<i class="bi bi-bell me-1"></i>Ativar Notificações';
+            btn.className = "btn btn-outline-warning btn-sm notify-btn";
+            btn.disabled = false;
+            btn.onclick = requestNotificationPermission;
+            }
+        });
+        }
+
+        function setupForegroundMessaging() {
+        if (messaging) {
+            messaging.onMessage(function(payload) {
+            console.log("📨 Mensagem recebida:", payload);
+            
+            if (Notification.permission === "granted") {
+                new Notification(payload.notification.title, {
+                body: payload.notification.body,
+                icon: "https://via.placeholder.com/192x192/ff0a8c/ffffff?text=L"
+                });
+            }
+            });
+        }
+        }
+
+        function checkNotificationStatus() {
+        if (window.firebaseReady && Notification.permission === "granted") {
+            const token = localStorage.getItem("fcm-token");
+            if (token) {
+            isNotificationsEnabled = true;
+            }
+        }
+        updateNotificationButtons();
+        }
+
+        function testarNotificacao() {
+        if (isNotificationsEnabled) {
+            new Notification("🎯 Teste - Livelo Analytics", {
+            body: "🚀 Sistema de notificações funcionando!",
+            icon: "https://via.placeholder.com/192x192/ff0a8c/ffffff?text=L"
+            });
+        } else {
+            alert("❌ Ative as notificações primeiro!");
+        }
+        }
+
+        function addNotificationButton() {
+        const header = document.querySelector("#carteira .card-header");
+        if (header && !document.querySelector(".notify-btn")) {
+            const btn = document.createElement("button");
+            btn.className = "btn btn-outline-warning btn-sm notify-btn ms-2";
+            btn.innerHTML = '<i class="bi bi-bell me-1"></i>Ativar Notificações';
+            btn.onclick = requestNotificationPermission;
+            header.appendChild(btn);
+            updateNotificationButtons();
+        }
+        }
+
+        // Inicialização
+        document.addEventListener("DOMContentLoaded", function() {
+        console.log("🚀 Iniciando sistema de notificações...");
+        
+        if (window.firebaseReady) {
+            console.log("🔒 Secrets configurados corretamente");
+            if (initializeFirebase()) {
+            registerServiceWorker();
+            setupForegroundMessaging();
+            }
+        } else {
+            console.warn("🔒 Aguardando configuração dos secrets");
+        }
+        
+        checkNotificationStatus();
+        setTimeout(addNotificationButton, 1000);
+        });
+
+        // Expor para debug
+        window.testarNotificacao = testarNotificacao;
+        window.requestNotificationPermission = requestNotificationPermission;
+        
     </body>
     </html>
             """
