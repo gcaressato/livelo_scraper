@@ -477,21 +477,40 @@ jobs:
         continue-on-error: true
       
       - name: Deploy para Firebase Hosting
-        if: env.SCRAPING_FALHOU == 'false' && secrets.FIREBASE_TOKEN != ''
+        if: env.SCRAPING_FALHOU == 'false'
         run: |
-          # Deploy usando token do secret
-          firebase deploy --token "$FIREBASE_TOKEN" --project "livel-analytics" --only hosting
-        env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          # Verificar se temos as credenciais do Firebase
+          if [ -n "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" ]; then
+            echo "🔑 Credenciais Firebase encontradas, fazendo deploy..."
+            # Criar arquivo de credenciais
+            echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > firebase-key.json
+            export GOOGLE_APPLICATION_CREDENTIALS="firebase-key.json"
+            
+            # Fazer deploy
+            firebase deploy --project "${{ secrets.FIREBASE_PROJECT_ID }}" --only hosting
+            
+            # Limpar credenciais
+            rm -f firebase-key.json
+          else
+            echo "⚠️ Credenciais Firebase não configuradas, pulando deploy"
+          fi
         continue-on-error: true
       
       - name: Deploy de emergência no Firebase (dados antigos)
-        if: env.SCRAPING_FALHOU == 'true' && secrets.FIREBASE_TOKEN != ''
+        if: env.SCRAPING_FALHOU == 'true'
         run: |
-          echo "⚠️ Fazendo deploy de emergência com dados antigos..."
-          firebase deploy --token "$FIREBASE_TOKEN" --project "livel-analytics" --only hosting
-        env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          # Deploy de emergência mesmo com falha para manter site no ar
+          if [ -n "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" ]; then
+            echo "⚠️ Fazendo deploy de emergência com dados antigos..."
+            echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > firebase-key.json
+            export GOOGLE_APPLICATION_CREDENTIALS="firebase-key.json"
+            
+            firebase deploy --project "${{ secrets.FIREBASE_PROJECT_ID }}" --only hosting
+            
+            rm -f firebase-key.json
+          else
+            echo "⚠️ Credenciais Firebase não configuradas para deploy de emergência"
+          fi
         continue-on-error: true
       
       # ============ LOG FINAL ============
