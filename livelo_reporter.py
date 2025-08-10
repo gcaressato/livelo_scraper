@@ -547,7 +547,7 @@ class LiveloAnalytics:
         colors = [LIVELO_ROSA, LIVELO_AZUL, LIVELO_ROSA_CLARO, LIVELO_AZUL_CLARO, '#28a745', '#ffc107']
         graficos = {}
         
-        # 1. EVOLUÇÃO TEMPORAL COM DRILL DOWN E RÓTULOS (Principal)
+        # 1. EVOLUÇÃO TEMPORAL COM DRILL DOWN E RÓTULOS MELHORADOS (Principal)
         df_historico_diario = self.df_completo.copy()
         df_historico_diario['Data'] = df_historico_diario['Timestamp'].dt.date
         
@@ -556,6 +556,11 @@ class LiveloAnalytics:
             'Oferta': lambda x: (x == 'Sim').sum()
         }).reset_index()
         evolucao_diaria.columns = ['Data', 'Total_Parceiros', 'Total_Ofertas']
+        
+        # Preparar dados para filtros de mês/ano
+        evolucao_diaria['Ano'] = pd.to_datetime(evolucao_diaria['Data']).dt.year
+        evolucao_diaria['Mes'] = pd.to_datetime(evolucao_diaria['Data']).dt.month
+        anos_disponiveis = sorted(evolucao_diaria['Ano'].unique())
         
         fig1 = go.Figure()
         
@@ -583,7 +588,7 @@ class LiveloAnalytics:
             textfont=dict(size=10, color=LIVELO_ROSA)
         ))
         
-        # DRILL DOWN com botões
+        # DRILL DOWN com botões melhorados
         fig1.update_layout(
             title='📈 Evolução Temporal - Parceiros vs Ofertas por Dia',
             xaxis=dict(
@@ -592,13 +597,22 @@ class LiveloAnalytics:
                     buttons=list([
                         dict(count=7, label="7d", step="day", stepmode="backward"),
                         dict(count=14, label="14d", step="day", stepmode="backward"),
-                        dict(count=30, label="1m", step="day", stepmode="backward"),
+                        dict(count=30, label="30d", step="day", stepmode="backward"),
                         dict(step="all", label="Tudo")
-                    ])
+                    ]),
+                    bgcolor="rgba(255,255,255,0.8)",
+                    bordercolor="#ccc",
+                    borderwidth=1
                 ),
-                rangeslider=dict(visible=True if len(evolucao_diaria) > 30 else False)
+                rangeslider=dict(
+                    visible=True,
+                    bgcolor="rgba(255,255,255,0.8)"
+                )
             ),
-            yaxis=dict(title='Quantidade'),
+            yaxis=dict(
+                title='Quantidade',
+                range=[0, max(evolucao_diaria[['Total_Parceiros', 'Total_Ofertas']].max()) * 1.15]  # ESPAÇO PARA RÓTULOS
+            ),
             plot_bgcolor='white',
             paper_bgcolor='white',
             font=dict(color=LIVELO_AZUL),
@@ -734,23 +748,25 @@ class LiveloAnalytics:
             )
             graficos['mudancas_hoje'] = fig5
         
-        # 6. TEMPO DE CASA (Pie compacto)
+        # 6. TEMPO DE CASA (Pie MAIOR)
         status_counts = dados['Status_Casa'].value_counts()
         fig6 = go.Figure(data=[go.Pie(
             labels=status_counts.index,
             values=status_counts.values,
             marker=dict(colors=colors),
             textinfo='label+percent',
-            textposition='inside'
+            textposition='inside',
+            textfont=dict(size=14)  # FONTE MAIOR
         )])
         
         fig6.update_layout(
             title='⏰ Maturidade da Base de Parceiros',
             plot_bgcolor='white',
             paper_bgcolor='white',
-            font=dict(color=LIVELO_AZUL),
-            height=300,
-            showlegend=True
+            font=dict(color=LIVELO_AZUL, size=14),
+            height=400,  # AUMENTADO DE 300 PARA 400
+            showlegend=True,
+            margin=dict(l=20, r=20, t=50, b=20)  # MAIS ESPAÇO PARA PIZZA
         )
         graficos['tempo_casa'] = fig6
         
@@ -1041,13 +1057,14 @@ class LiveloAnalytics:
         return '<div class="alerts-container mb-3">' + ''.join(alertas) + '</div>'
     
     def _gerar_tabela_analise_completa(self, dados):
-        """Gera tabela completa com novas colunas das dimensões"""
+        """Gera tabela completa com NOVA ESTRUTURA VISUAL MELHORADA"""
         colunas = [
             ('Parceiro', 'Parceiro', 'texto'),
             ('Categoria_Dimensao', 'Categoria', 'texto'),
             ('Tier', 'Tier', 'texto'),
-            ('Status_Casa', 'Status', 'texto'),
-            ('Categoria_Estrategica', 'Tipo', 'texto'),
+            ('Tem_Oferta_Hoje', 'Oferta?', 'texto'),  # NOVA COLUNA
+            ('Status_Casa', 'Experiência', 'texto'),  # RENOMEADO
+            ('Categoria_Estrategica', 'Frequência', 'texto'),  # RENOMEADO
             ('Gasto_Formatado', 'Gasto', 'texto'),
             ('Pontos_Atual', 'Pontos Atual', 'numero'),
             ('Variacao_Pontos', 'Variação %', 'numero'),
@@ -1079,43 +1096,109 @@ class LiveloAnalytics:
                     else:
                         html += f'<td>{valor}</td>'
                 elif col == 'Categoria_Dimensao':
+                    # CORES MAIS SUAVES E INTERESSANTES
                     cores_categoria_dim = {
-                        'Não definido': '#6c757d',
-                        'Não mapeado': '#dc3545',
-                        'default': '#17a2b8'
+                        'Alimentação e Bebidas': '#E8F5E8',  # Verde muito claro
+                        'Moda e Vestuário': '#FFF0F5',       # Rosa muito claro
+                        'Viagens e Turismo': '#E6F3FF',      # Azul muito claro
+                        'Casa e Decoração': '#FFF8E1',       # Amarelo muito claro
+                        'Saúde e Bem-estar': '#F0F8F0',      # Verde menta claro
+                        'Pet': '#FFE6F0',                    # Rosa bebê
+                        'Serviços Financeiros': '#E8F4FD',   # Azul claro
+                        'Beleza e Cosméticos': '#FDF2F8',    # Rosa pó
+                        'Tecnologia': '#F0F0F8',            # Azul acinzentado claro
+                        'Esportes e Fitness': '#E8F8F5',     # Verde água claro
+                        'Não definido': '#F5F5F5',          # Cinza claro
+                        'Não mapeado': '#FFE6E6'             # Vermelho muito claro
                     }
-                    cor = cores_categoria_dim.get(valor, cores_categoria_dim['default'])
-                    html += f'<td><span class="badge" style="background-color: {cor}; color: white;">{valor}</span></td>'
+                    cores_texto = {
+                        'Alimentação e Bebidas': '#2D5016',
+                        'Moda e Vestuário': '#8B2252',
+                        'Viagens e Turismo': '#1B4F72',
+                        'Casa e Decoração': '#7D6608',
+                        'Saúde e Bem-estar': '#1E4620',
+                        'Pet': '#8B4A6B',
+                        'Serviços Financeiros': '#174A84',
+                        'Beleza e Cosméticos': '#8B2A6B',
+                        'Tecnologia': '#2E2E5A',
+                        'Esportes e Fitness': '#1B5E20',
+                        'Não definido': '#424242',
+                        'Não mapeado': '#C62828'
+                    }
+                    cor_fundo = cores_categoria_dim.get(valor, '#F5F5F5')
+                    cor_texto = cores_texto.get(valor, '#424242')
+                    html += f'<td><span class="badge-soft" style="background-color: {cor_fundo}; color: {cor_texto}; padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 500;">{valor}</span></td>'
                 elif col == 'Tier':
+                    # CORES MAIS SIMPLES E DISCRETAS
                     cores_tier = {
-                        '1': '#28a745',
-                        '2': '#ffc107', 
-                        '3': '#fd7e14',
-                        'Não definido': '#6c757d',
-                        'Não mapeado': '#dc3545'
+                        '1': '#E8F5E8',    # Verde muito claro
+                        '2': '#FFF3E0',    # Laranja muito claro
+                        '3': '#FFE6CC',    # Laranja pêssego claro
+                        'Não definido': '#F5F5F5',
+                        'Não mapeado': '#FFE6E6'
                     }
-                    cor = cores_tier.get(str(valor), '#6c757d')
-                    texto_cor = 'white' if str(valor) in ['1', 'Não mapeado'] else '#212529'
-                    html += f'<td><span class="badge" style="background-color: {cor}; color: {texto_cor};">{valor}</span></td>'
-                elif col == 'Status_Casa':
+                    cores_texto_tier = {
+                        '1': '#2E7D32',
+                        '2': '#F57C00',
+                        '3': '#FF8F00',
+                        'Não definido': '#757575',
+                        'Não mapeado': '#D32F2F'
+                    }
+                    cor_fundo = cores_tier.get(str(valor), '#F5F5F5')
+                    cor_texto = cores_texto_tier.get(str(valor), '#757575')
+                    html += f'<td><span class="badge-soft" style="background-color: {cor_fundo}; color: {cor_texto}; padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 500;">{valor}</span></td>'
+                elif col == 'Tem_Oferta_Hoje':
+                    # NOVA COLUNA OFERTA - VERDE/VERMELHO CLARO
+                    if valor:
+                        html += f'<td><span class="badge-soft" style="background-color: #E8F5E8; color: #2E7D32; padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 500;">Sim</span></td>'
+                    else:
+                        html += f'<td><span class="badge-soft" style="background-color: #FFE6E6; color: #D32F2F; padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 500;">Não</span></td>'
+                elif col == 'Status_Casa':  # EXPERIÊNCIA
                     cor = row['Cor_Status']
-                    html += f'<td><span class="badge badge-status" style="background-color: {cor}; color: white;">{valor}</span></td>'
-                elif col == 'Categoria_Estrategica':
-                    cores_categoria = {
-                        'Compre agora!': '#28a745',
-                        'Oportunidade rara': '#ffc107', 
-                        'Sempre em oferta': '#17a2b8',
-                        'Normal': '#6c757d'
+                    # Tornar cores menos saturadas
+                    cores_experiencia_suaves = {
+                        '#28a745': '#E8F5E8',  # Verde claro
+                        '#ff9999': '#FFF0F0',  # Rosa claro  
+                        '#ff6666': '#FFE8E8',  # Rosa médio claro
+                        '#ff3333': '#FFE0E0',  # Vermelho claro
+                        '#cc0000': '#FFD8D8',  # Vermelho médio claro
+                        '#990000': '#FFD0D0'   # Vermelho escuro claro
                     }
-                    cor = cores_categoria.get(valor, '#6c757d')
-                    html += f'<td><span class="badge" style="background-color: {cor}; color: white;">{valor}</span></td>'
+                    cores_texto_exp = {
+                        '#28a745': '#2E7D32',
+                        '#ff9999': '#8B2252', 
+                        '#ff6666': '#C62828',
+                        '#ff3333': '#B71C1C',
+                        '#cc0000': '#B71C1C',
+                        '#990000': '#B71C1C'
+                    }
+                    cor_fundo = cores_experiencia_suaves.get(cor, '#F5F5F5')
+                    cor_texto = cores_texto_exp.get(cor, '#424242')
+                    html += f'<td><span class="badge-soft" style="background-color: {cor_fundo}; color: {cor_texto}; padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 500;">{valor}</span></td>'
+                elif col == 'Categoria_Estrategica':  # FREQUÊNCIA
+                    # CORES MAIS CLARAS E COMPREENSÍVEIS
+                    cores_frequencia = {
+                        'Compre agora!': '#E8F5E8',      # Verde claro
+                        'Oportunidade rara': '#FFF8E1',   # Amarelo claro
+                        'Sempre em oferta': '#E6F3FF',    # Azul claro
+                        'Normal': '#F5F5F5'              # Cinza claro
+                    }
+                    cores_texto_freq = {
+                        'Compre agora!': '#2E7D32',
+                        'Oportunidade rara': '#F57C00', 
+                        'Sempre em oferta': '#1976D2',
+                        'Normal': '#757575'
+                    }
+                    cor_fundo = cores_frequencia.get(valor, '#F5F5F5')
+                    cor_texto = cores_texto_freq.get(valor, '#757575')
+                    html += f'<td><span class="badge-soft" style="background-color: {cor_fundo}; color: {cor_texto}; padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 500;">{valor}</span></td>'
                 elif col == 'Variacao_Pontos':
                     if valor > 0:
-                        html += f'<td style="color: #28a745;">+{valor:.1f}%</td>'
+                        html += f'<td style="color: #2E7D32; font-weight: 500;">+{valor:.1f}%</td>'
                     elif valor < 0:
-                        html += f'<td style="color: #dc3545;">{valor:.1f}%</td>'
+                        html += f'<td style="color: #D32F2F; font-weight: 500;">{valor:.1f}%</td>'
                     else:
-                        html += f'<td>0%</td>'
+                        html += f'<td style="color: #757575;">0%</td>'
                 elif col == 'Frequencia_Ofertas':
                     html += f'<td>{valor:.1f}%</td>'
                 elif col in ['Pontos_Atual', 'Pontos_Anterior', 'Total_Ofertas_Historicas', 'Dias_Desde_Mudanca', 'Dias_Desde_Ultima_Oferta']:
@@ -1147,41 +1230,49 @@ class LiveloAnalytics:
         return html
     
     def _gerar_filtros_avancados(self, dados):
-        """Gera filtros avançados para Categoria, Tier, Moeda e Tipo"""
+        """Gera filtros avançados ATUALIZADOS: Categoria, Tier, Oferta, Experiência, Frequência"""
         # Obter valores únicos e converter para string para evitar erros de ordenação
         categorias = sorted([str(x) for x in dados['Categoria_Dimensao'].unique() if pd.notnull(x)])
         tiers = sorted([str(x) for x in dados['Tier'].unique() if pd.notnull(x)])
-        moedas = sorted([str(x) for x in dados['Moeda'].unique() if pd.notnull(x)])
-        tipos = sorted([str(x) for x in dados['Categoria_Estrategica'].unique() if pd.notnull(x)])
+        ofertas = ['Sim', 'Não']  # Valores binários para oferta
+        experiencias = sorted([str(x) for x in dados['Status_Casa'].unique() if pd.notnull(x)])
+        frequencias = sorted([str(x) for x in dados['Categoria_Estrategica'].unique() if pd.notnull(x)])
         
         html = f"""
         <div class="row g-2 mb-3" id="filtrosAvancados">
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-2 col-md-4 col-6">
                 <label class="form-label fw-bold" style="font-size: 0.85rem;">Categoria:</label>
                 <select class="form-select form-select-sm" id="filtroCategoriaComplex" onchange="aplicarFiltros()">
-                    <option value="">Todas as categorias</option>
+                    <option value="">Todas</option>
                     {''.join([f'<option value="{cat}">{cat}</option>' for cat in categorias])}
                 </select>
             </div>
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-2 col-md-4 col-6">
                 <label class="form-label fw-bold" style="font-size: 0.85rem;">Tier:</label>
                 <select class="form-select form-select-sm" id="filtroTier" onchange="aplicarFiltros()">
-                    <option value="">Todos os tiers</option>
+                    <option value="">Todos</option>
                     {''.join([f'<option value="{tier}">{tier}</option>' for tier in tiers])}
                 </select>
             </div>
-            <div class="col-lg-3 col-md-6">
-                <label class="form-label fw-bold" style="font-size: 0.85rem;">Moeda:</label>
-                <select class="form-select form-select-sm" id="filtroMoeda" onchange="aplicarFiltros()">
-                    <option value="">Todas as moedas</option>
-                    {''.join([f'<option value="{moeda}">{moeda}</option>' for moeda in moedas])}
+            <div class="col-lg-2 col-md-4 col-6">
+                <label class="form-label fw-bold" style="font-size: 0.85rem;">Oferta?:</label>
+                <select class="form-select form-select-sm" id="filtroOferta" onchange="aplicarFiltros()">
+                    <option value="">Todas</option>
+                    {''.join([f'<option value="{oferta}">{oferta}</option>' for oferta in ofertas])}
                 </select>
             </div>
-            <div class="col-lg-3 col-md-6">
-                <label class="form-label fw-bold" style="font-size: 0.85rem;">Tipo:</label>
-                <select class="form-select form-select-sm" id="filtroTipo" onchange="aplicarFiltros()">
-                    <option value="">Todos os tipos</option>
-                    {''.join([f'<option value="{tipo}">{tipo}</option>' for tipo in tipos])}
+            <div class="col-lg-3 col-md-4 col-6">
+                <label class="form-label fw-bold" style="font-size: 0.85rem;">Experiência:</label>
+                <select class="form-select form-select-sm" id="filtroExperiencia" onchange="aplicarFiltros()">
+                    <option value="">Todas</option>
+                    {''.join([f'<option value="{exp}">{exp}</option>' for exp in experiencias])}
+                </select>
+            </div>
+            <div class="col-lg-3 col-md-4 col-6">
+                <label class="form-label fw-bold" style="font-size: 0.85rem;">Frequência:</label>
+                <select class="form-select form-select-sm" id="filtroFrequencia" onchange="aplicarFiltros()">
+                    <option value="">Todas</option>
+                    {''.join([f'<option value="{freq}">{freq}</option>' for freq in frequencias])}
                 </select>
             </div>
         </div>
@@ -2371,12 +2462,13 @@ class LiveloAnalytics:
             return new Date(year, month, day, hour, minute, second);
         }}
         
-        // FILTROS AVANÇADOS
+        // FILTROS AVANÇADOS ATUALIZADOS
         function aplicarFiltros() {{
             const filtroCategoria = document.getElementById('filtroCategoriaComplex').value;
             const filtroTier = document.getElementById('filtroTier').value;
-            const filtroMoeda = document.getElementById('filtroMoeda').value;
-            const filtroTipo = document.getElementById('filtroTipo').value;
+            const filtroOferta = document.getElementById('filtroOferta').value;
+            const filtroExperiencia = document.getElementById('filtroExperiencia').value;
+            const filtroFrequencia = document.getElementById('filtroFrequencia').value;
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             
             const rows = document.querySelectorAll('#tabelaAnalise tbody tr');
@@ -2385,20 +2477,18 @@ class LiveloAnalytics:
                 const parceiro = row.cells[0].textContent.toLowerCase();
                 const categoria = row.cells[1].textContent.trim();
                 const tier = row.cells[2].textContent.trim();
-                const tipo = row.cells[4].textContent.trim();
-                
-                // Buscar moeda nos dados originais
-                const parceiroNome = row.cells[0].textContent.trim();
-                const dadoParceiro = todosOsDados.find(item => item.Parceiro === parceiroNome);
-                const moeda = dadoParceiro ? dadoParceiro.Moeda : '';
+                const oferta = row.cells[3].textContent.trim();
+                const experiencia = row.cells[4].textContent.trim();
+                const frequencia = row.cells[5].textContent.trim();
                 
                 const matchParceiro = !searchTerm || parceiro.includes(searchTerm);
                 const matchCategoria = !filtroCategoria || categoria === filtroCategoria;
                 const matchTier = !filtroTier || tier === filtroTier;
-                const matchMoeda = !filtroMoeda || moeda === filtroMoeda;
-                const matchTipo = !filtroTipo || tipo === filtroTipo;
+                const matchOferta = !filtroOferta || oferta === filtroOferta;
+                const matchExperiencia = !filtroExperiencia || experiencia === filtroExperiencia;
+                const matchFrequencia = !filtroFrequencia || frequencia === filtroFrequencia;
                 
-                row.style.display = (matchParceiro && matchCategoria && matchTier && matchMoeda && matchTipo) ? '' : 'none';
+                row.style.display = (matchParceiro && matchCategoria && matchTier && matchOferta && matchExperiencia && matchFrequencia) ? '' : 'none';
             }});
         }}
         
