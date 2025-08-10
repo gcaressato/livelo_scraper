@@ -6,12 +6,12 @@ importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-comp
 
 // Configuração Firebase (será substituída pelo GitHub Actions)
 firebase.initializeApp({
-  apiKey: "API_KEY_PLACEHOLDER",
-  authDomain: "PROJECT_ID.firebaseapp.com",
-  projectId: "PROJECT_ID",
-  storageBucket: "PROJECT_ID.appspot.com",
-  messagingSenderId: "SENDER_ID",
-  appId: "APP_ID"
+  apiKey: "AIzaSyAibNVfTL0kvG_R3rKYYSnAeQWc5oVBFYk",
+  authDomain: "livel-analytics.firebaseapp.com",
+  projectId: "livel-analytics",
+  storageBucket: "livel-analytics.appspot.com",
+  messagingSenderId: "168707812242",
+  appId: "1:168707812242:web:59b4c1df4fc553410c6f4b"
 });
 
 const messaging = firebase.messaging();
