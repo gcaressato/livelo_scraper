@@ -2226,8 +2226,8 @@ class LiveloAnalytics:
 
         <!-- Firebase SDK v9 - NOTIFICAÇÕES -->
         <script type="module">
-            import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
-            import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging.js';
+            import {{ initializeApp }} from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
+            import {{ getMessaging, getToken, onMessage }} from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging.js';
             
             // Configuração Firebase (será preenchida dinamicamente)
             const firebaseConfig = {{
