@@ -2,38 +2,39 @@
 Iniciando navegador...
 ✓ Navegador iniciado
 Acessando site da Livelo...
-✓ Site carregado - 279 elementos encontrados
+✓ Site carregado - 268 elementos encontrados
 Carregando página completa...
 ✓ Página carregada completamente
 Extraindo dados dos parceiros...
-Processando 279 elementos...
-○ 1/279: Buser
-○ 2/279: Hoteis.com
-○ 3/279: Beto Carrero World
-○ 4/279: Booking.com
-○ 5/279: Buser
-○ 6/279: Hoteis.com
-○ 7/279: Beto Carrero World
-○ 8/279: Booking.com
-✓ 9/279: Buser
-✓ 10/279: Hoteis.com
-✓ 11/279: Beto Carrero World
-○ 12/279: Booking.com
-✓ 13/279: ABC da Construcao
-✓ 14/279: ADCOS
-✓ 15/279: AMOBELEZA
-✓ 50/279: Buzios Beach Resort
-✓ 100/279: Extra
-✓ 150/279: Liga Vitória Seguro Auto
-✓ 200/279: Pado
-✓ 250/279: TIM
-✓ 279/279: Época cosmésticos
-✓ Extração bruta concluída: 279 elementos processados
+Processando 280 elementos...
+○ 1/280: Buser
+○ 2/280: Hoteis.com
+○ 3/280: Beto Carrero World
+○ 4/280: Booking.com
+○ 5/280: Buser
+○ 6/280: Hoteis.com
+○ 7/280: Beto Carrero World
+○ 8/280: Booking.com
+✓ 9/280: Buser
+○ 10/280: Hoteis.com
+○ 11/280: Beto Carrero World
+○ 12/280: Booking.com
+✓ 13/280: ABC da Construcao
+✓ 14/280: ADCOS
+✓ 15/280: AMOBELEZA
+✓ 50/280: Buzios Beach Resort
+✓ 100/280: Extra
+✓ 150/280: Liga Vitória Consórcio
+✓ 200/280: Oxford
+✓ 250/280: Supernosso
+✓ 280/280: Época cosmésticos
+✓ Extração bruta concluída: 280 elementos processados
 Limpando e validando dados...
-✓ Filtrados 9 registros com N/A
+✓ Filtrados 11 registros com N/A
 ✓ Removidas 0 duplicatas completas
-✓ Resolvidas 3 duplicatas parciais (priorizando oferta 'Sim')
-✓ Dataset final: 267 registros válidos
+✓ Resolvidas 1 duplicatas parciais (priorizando oferta 'Sim')
+✓ Dataset final: 268 registros válidos
+Substituindo dados de 2025-08-11...
 ✓ Dados salvos: livelo_parceiros.xlsx
 ✓ Cópia salva: output/livelo_parceiros.xlsx
 ✓ Navegador encerrado
