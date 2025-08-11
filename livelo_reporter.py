@@ -2184,7 +2184,7 @@ class LiveloAnalytics:
         return html
     
     def gerar_html_completo(self):
-        """Gera HTML completo com todas as funcionalidades atualizadas"""
+        """Gera HTML completo com todas as funcionalidades atualizadas + NOTIFICAÇÕES FIREBASE"""
         dados = self.analytics['dados_completos']
         metricas = self.analytics['metricas']
         graficos = self.analytics['graficos']
@@ -2224,9 +2224,37 @@ class LiveloAnalytics:
         <link rel="manifest" href="manifest.json">
         <meta name="theme-color" content="#ff0a8c">
 
-        <!-- Firebase SDK -->
-        <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-        <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js"></script>
+        <!-- Firebase SDK v9 - NOTIFICAÇÕES -->
+        <script type="module">
+            import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
+            import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging.js';
+            
+            // Configuração Firebase (será preenchida dinamicamente)
+            const firebaseConfig = {{
+                apiKey: "API_KEY_PLACEHOLDER",
+                authDomain: "PROJECT_ID.firebaseapp.com",
+                projectId: "PROJECT_ID",
+                storageBucket: "PROJECT_ID.appspot.com",
+                messagingSenderId: "SENDER_ID",
+                appId: "APP_ID"
+            }};
+            
+            // Tentar obter config do servidor (para produção)
+            try {{
+                const configResponse = await fetch('/firebase-config.json');
+                if (configResponse.ok) {{
+                    const serverConfig = await configResponse.json();
+                    Object.assign(firebaseConfig, serverConfig);
+                }}
+            }} catch (e) {{
+                console.log('Config local será usada');
+            }}
+            
+            const app = initializeApp(firebaseConfig);
+            const messaging = getMessaging(app);
+            
+            window.firebaseMessaging = messaging;
+        </script>
         
         <style>
             :root {{
@@ -2259,6 +2287,110 @@ class LiveloAnalytics:
                 --shadow: rgba(0,0,0,0.4);
                 --shadow-hover: rgba(0,0,0,0.6);
             }}
+            
+            /* ESTILOS PARA NOTIFICAÇÕES */
+            .notification-toggle {{
+                position: fixed;
+                top: 80px;
+                right: 20px;
+                z-index: 999;
+                background: var(--bg-card);
+                border: 2px solid var(--border-color);
+                border-radius: 25px;
+                width: 50px;
+                height: 50px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 10px var(--shadow);
+            }}
+            
+            .notification-toggle:hover {{
+                transform: scale(1.1);
+                box-shadow: 0 4px 15px var(--shadow-hover);
+                border-color: var(--livelo-rosa);
+            }}
+            
+            .notification-toggle.active {{
+                background: var(--livelo-rosa);
+                border-color: var(--livelo-rosa);
+            }}
+            
+            .notification-toggle.active i {{
+                color: white !important;
+            }}
+            
+            .notification-status {{
+                position: fixed;
+                top: 140px;
+                right: 20px;
+                z-index: 998;
+                background: var(--bg-card);
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                padding: 8px 12px;
+                font-size: 0.8rem;
+                color: var(--text-secondary);
+                box-shadow: 0 2px 8px var(--shadow);
+                transform: translateX(150%);
+                transition: all 0.3s ease;
+            }}
+            
+            .notification-status.show {{
+                transform: translateX(0);
+            }}
+            
+            .notification-banner {{
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                background: linear-gradient(135deg, var(--livelo-rosa) 0%, var(--livelo-azul) 100%);
+                color: white;
+                padding: 10px;
+                text-align: center;
+                z-index: 1001;
+                transform: translateY(-100%);
+                transition: all 0.3s ease;
+                font-size: 0.9rem;
+            }}
+            
+            .notification-banner.show {{
+                transform: translateY(0);
+            }}
+            
+            .notification-banner button {{
+                background: rgba(255,255,255,0.2);
+                border: 1px solid rgba(255,255,255,0.3);
+                color: white;
+                padding: 4px 12px;
+                border-radius: 15px;
+                margin-left: 10px;
+                font-size: 0.8rem;
+            }}
+            
+            .notification-banner button:hover {{
+                background: rgba(255,255,255,0.3);
+            }}
+            
+            [data-theme="dark"] .notification-toggle {{
+                background: var(--bg-card);
+                border-color: var(--livelo-rosa);
+            }}
+            
+            [data-theme="dark"] .notification-toggle:hover {{
+                background: var(--livelo-rosa);
+            }}
+            
+            [data-theme="dark"] .notification-toggle:hover i {{
+                color: white;
+            }}
+            
+            /* Resto dos estilos CSS permanecem iguais... */
+            
+            /* [TODOS OS OUTROS ESTILOS CSS EXISTENTES PERMANECEM IGUAIS] */
             
             [data-theme="dark"] body {{
                 background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
@@ -3284,6 +3416,18 @@ class LiveloAnalytics:
                     font-size: 1rem;
                 }}
                 
+                .notification-toggle {{
+                    top: 60px;
+                    right: 10px;
+                    width: 40px;
+                    height: 40px;
+                }}
+                
+                .notification-status {{
+                    top: 110px;
+                    right: 10px;
+                }}
+                
                 .container-fluid {{ 
                     padding: 5px 8px; 
                 }}
@@ -3431,6 +3575,23 @@ class LiveloAnalytics:
         <!-- Theme Toggle -->
         <div class="theme-toggle" onclick="toggleTheme()" title="Alternar tema claro/escuro">
             <i class="bi bi-sun-fill" id="theme-icon"></i>
+        </div>
+        
+        <!-- Notification Toggle -->
+        <div class="notification-toggle" onclick="toggleNotifications()" title="Gerenciar notificações">
+            <i class="bi bi-bell" id="notification-icon"></i>
+        </div>
+        
+        <!-- Notification Status -->
+        <div class="notification-status" id="notificationStatus">
+            Carregando...
+        </div>
+        
+        <!-- Notification Banner -->
+        <div class="notification-banner" id="notificationBanner">
+            <span id="bannerText">🔔 Ative as notificações para receber alertas das suas ofertas favoritas!</span>
+            <button onclick="enableNotifications()">Ativar</button>
+            <button onclick="dismissBanner()">Agora não</button>
         </div>
         
         <div class="container-fluid">
@@ -3718,6 +3879,229 @@ class LiveloAnalytics:
             const dadosRawCompletos = {dados_raw_json};
             let parceiroSelecionado = null;
             
+            // ========== SISTEMA DE NOTIFICAÇÕES FIREBASE ==========
+            let isNotificationsEnabled = false;
+            let notificationToken = null;
+            
+            // Verificar se notificações estão suportadas
+            function isNotificationSupported() {{
+                return 'Notification' in window && 'serviceWorker' in navigator;
+            }}
+            
+            // Configurar Firebase Messaging (chamado após inicialização)
+            async function initializeNotifications() {{
+                if (!isNotificationSupported()) {{
+                    updateNotificationStatus('Não suportado');
+                    return;
+                }}
+                
+                updateNotificationStatus('Carregando...');
+                
+                try {{
+                    // Verificar se Firebase está disponível
+                    if (!window.firebaseMessaging) {{
+                        console.warn('Firebase não inicializado');
+                        updateNotificationStatus('Firebase indisponível');
+                        return;
+                    }}
+                    
+                    // Registrar service worker
+                    const registration = await navigator.serviceWorker.register('/sw.js');
+                    console.log('Service Worker registrado:', registration);
+                    
+                    // Verificar permissão atual
+                    const permission = Notification.permission;
+                    
+                    if (permission === 'granted') {{
+                        await setupMessaging();
+                    }} else if (permission === 'default') {{
+                        updateNotificationStatus('Clique no sino para ativar');
+                        showNotificationBanner();
+                    }} else {{
+                        updateNotificationStatus('Bloqueadas pelo navegador');
+                    }}
+                    
+                }} catch (error) {{
+                    console.error('Erro ao inicializar notificações:', error);
+                    updateNotificationStatus('Erro na inicialização');
+                }}
+            }}
+            
+            // Configurar Firebase Messaging
+            async function setupMessaging() {{
+                try {{
+                    const { getToken, onMessage } = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging.js');
+                    
+                    // Obter token FCM
+                    const currentToken = await getToken(window.firebaseMessaging, {{
+                        vapidKey: 'YOUR_VAPID_KEY_HERE' // Será substituído automaticamente
+                    }});
+                    
+                    if (currentToken) {{
+                        notificationToken = currentToken;
+                        console.log('Token FCM obtido:', currentToken);
+                        
+                        // Salvar token no localStorage para envio posterior
+                        localStorage.setItem('fcm-token', currentToken);
+                        localStorage.setItem('fcm-token-timestamp', Date.now().toString());
+                        
+                        isNotificationsEnabled = true;
+                        updateNotificationStatus('Ativas');
+                        updateNotificationIcon();
+                        dismissBanner();
+                        
+                        // Configurar listener para mensagens em foreground
+                        onMessage(window.firebaseMessaging, (payload) => {{
+                            console.log('Mensagem recebida em foreground:', payload);
+                            showInAppNotification(payload);
+                        }});
+                        
+                    }} else {{
+                        console.log('Nenhum token disponível');
+                        updateNotificationStatus('Falha ao obter token');
+                    }}
+                    
+                }} catch (error) {{
+                    console.error('Erro ao configurar messaging:', error);
+                    updateNotificationStatus('Erro na configuração');
+                }}
+            }}
+            
+            // Solicitar permissão para notificações
+            async function enableNotifications() {{
+                try {{
+                    const permission = await Notification.requestPermission();
+                    
+                    if (permission === 'granted') {{
+                        await setupMessaging();
+                    }} else {{
+                        updateNotificationStatus('Permissão negada');
+                        console.log('Permissão de notificação negada');
+                    }}
+                    
+                }} catch (error) {{
+                    console.error('Erro ao solicitar permissão:', error);
+                    updateNotificationStatus('Erro na permissão');
+                }}
+            }}
+            
+            // Toggle de notificações
+            async function toggleNotifications() {{
+                if (!isNotificationSupported()) {{
+                    alert('Notificações não são suportadas neste navegador');
+                    return;
+                }}
+                
+                const permission = Notification.permission;
+                
+                if (permission === 'default') {{
+                    await enableNotifications();
+                }} else if (permission === 'denied') {{
+                    alert('Notificações foram bloqueadas. Habilite nas configurações do navegador.');
+                }} else if (permission === 'granted') {{
+                    // Alternar entre ativo/inativo
+                    isNotificationsEnabled = !isNotificationsEnabled;
+                    localStorage.setItem('notifications-enabled', isNotificationsEnabled.toString());
+                    updateNotificationStatus(isNotificationsEnabled ? 'Ativas' : 'Pausadas');
+                    updateNotificationIcon();
+                }}
+            }}
+            
+            // Atualizar ícone de notificação
+            function updateNotificationIcon() {{
+                const icon = document.getElementById('notification-icon');
+                const toggle = document.querySelector('.notification-toggle');
+                
+                if (isNotificationsEnabled) {{
+                    icon.className = 'bi bi-bell-fill';
+                    toggle.classList.add('active');
+                }} else {{
+                    icon.className = 'bi bi-bell';
+                    toggle.classList.remove('active');
+                }}
+            }}
+            
+            // Atualizar status de notificação
+            function updateNotificationStatus(status) {{
+                const statusElement = document.getElementById('notificationStatus');
+                statusElement.textContent = status;
+                
+                // Mostrar temporariamente
+                statusElement.classList.add('show');
+                setTimeout(() => {{
+                    statusElement.classList.remove('show');
+                }}, 3000);
+            }}
+            
+            // Mostrar banner de notificação
+            function showNotificationBanner() {{
+                const banner = document.getElementById('notificationBanner');
+                banner.classList.add('show');
+            }}
+            
+            // Dispensar banner
+            function dismissBanner() {{
+                const banner = document.getElementById('notificationBanner');
+                banner.classList.remove('show');
+                localStorage.setItem('notification-banner-dismissed', 'true');
+            }}
+            
+            // Mostrar notificação in-app (quando app está em foreground)
+            function showInAppNotification(payload) {{
+                const notification = document.createElement('div');
+                notification.className = 'alert alert-info position-fixed';
+                notification.style.cssText = `
+                    top: 20px;
+                    right: 20px;
+                    z-index: 1050;
+                    max-width: 300px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                `;
+                
+                notification.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>${{payload.notification?.title || 'Livelo Analytics'}}</strong>
+                            <div class="small mt-1">${{payload.notification?.body || 'Nova atualização disponível'}}</div>
+                        </div>
+                        <button type="button" class="btn-close btn-close-white" onclick="this.parentElement.parentElement.remove()"></button>
+                    </div>
+                `;
+                
+                document.body.appendChild(notification);
+                
+                // Remover automaticamente após 5 segundos
+                setTimeout(() => {{
+                    if (notification.parentElement) {{
+                        notification.remove();
+                    }}
+                }}, 5000);
+            }}
+            
+            // Verificar favoritos com ofertas (chamado periodicamente)
+            function checkFavoritesWithOffers() {{
+                const favoritos = JSON.parse(localStorage.getItem('livelo-favoritos') || '[]');
+                const favoritosComOferta = [];
+                
+                favoritos.forEach(chaveUnica => {{
+                    const [parceiro, moeda] = chaveUnica.split('|');
+                    const dados = todosOsDados.find(item => item.Parceiro === parceiro && item.Moeda === moeda);
+                    
+                    if (dados && dados.Tem_Oferta_Hoje) {{
+                        favoritosComOferta.push({{
+                            parceiro: parceiro,
+                            moeda: moeda,
+                            pontos: dados.Pontos_por_Moeda_Atual
+                        }});
+                    }}
+                }});
+                
+                // Salvar no localStorage para verificação pelo servidor
+                localStorage.setItem('favoritos-com-oferta', JSON.stringify(favoritosComOferta));
+                
+                return favoritosComOferta;
+            }}
+            
             // ========== SISTEMA DE FAVORITOS - MINHA CARTEIRA ==========
             let favoritos = JSON.parse(localStorage.getItem('livelo-favoritos') || '[]');
             
@@ -3739,6 +4123,9 @@ class LiveloAnalytics:
                 localStorage.setItem('livelo-favoritos', JSON.stringify(favoritos));
                 atualizarIconesFavoritos();
                 atualizarCarteira();
+                
+                // Verificar se algum favorito tem oferta
+                checkFavoritesWithOffers();
             }}
             
             function atualizarIconesFavoritos() {{
@@ -3819,6 +4206,7 @@ class LiveloAnalytics:
                 localStorage.setItem('livelo-favoritos', JSON.stringify(favoritos));
                 atualizarIconesFavoritos();
                 atualizarCarteira();
+                checkFavoritesWithOffers();
             }}
             
             function limparCarteira() {{
@@ -3827,6 +4215,7 @@ class LiveloAnalytics:
                     localStorage.setItem('livelo-favoritos', JSON.stringify(favoritos));
                     atualizarIconesFavoritos();
                     atualizarCarteira();
+                    checkFavoritesWithOffers();
                 }}
             }}
             
@@ -4568,11 +4957,22 @@ class LiveloAnalytics:
             document.addEventListener('DOMContentLoaded', function() {{
                 initTheme();
                 
+                // Inicializar notificações Firebase
+                setTimeout(initializeNotifications, 1000);
+                
+                // Verificar se banner foi dispensado
+                if (!localStorage.getItem('notification-banner-dismissed')) {{
+                    setTimeout(showNotificationBanner, 2000);
+                }}
+                
                 // Inicializar filtros temporais
                 setTimeout(inicializarFiltrosTemporal, 1000);
                 
                 // Inicializar sistema de favoritos
                 atualizarCarteira();
+                
+                // Verificar favoritos com ofertas periodicamente
+                setInterval(checkFavoritesWithOffers, 30000); // A cada 30 segundos
                 
                 // DEBUG: Verificar mudanças detectadas
                 console.log('Mudanças detectadas:', {{
