@@ -4,39 +4,39 @@ Saída de livelo_scraper.py:
 Iniciando navegador...
 ✓ Navegador iniciado
 Acessando site da Livelo...
-✓ Site carregado - 279 elementos encontrados
+✓ Site carregado - 280 elementos encontrados
 Carregando página completa...
 ✓ Página carregada completamente
 Extraindo dados dos parceiros...
-Processando 279 elementos...
-○ 1/279: Hoteis.com
-○ 2/279: Buser
-○ 3/279: Azul Viagens
-○ 4/279: Booking.com
-○ 5/279: Localiza
-○ 6/279: Hoteis.com
-○ 7/279: Buser
-○ 8/279: Azul Viagens
-○ 9/279: Booking.com
-○ 10/279: Localiza
-○ 11/279: Hoteis.com
-✓ 12/279: Buser
-○ 13/279: Azul Viagens
-○ 14/279: Booking.com
-○ 15/279: Localiza
-✓ 50/279: Bulbe Energia
-✓ 100/279: Estoque
-✓ 150/279: Liga Vitória - Seguro de Viagem
-✓ 200/279: Oster
-✓ 250/279: Supernosso
-✓ 279/279: Época cosmésticos
-✓ Extração bruta concluída: 279 elementos processados
+Processando 280 elementos...
+○ 1/280: Hoteis.com
+○ 2/280: Buser
+○ 3/280: Azul Viagens
+○ 4/280: Booking.com
+○ 5/280: Localiza
+○ 6/280: Hoteis.com
+○ 7/280: Buser
+○ 8/280: Azul Viagens
+○ 9/280: Booking.com
+○ 10/280: Localiza
+○ 11/280: Hoteis.com
+✓ 12/280: Buser
+○ 13/280: Azul Viagens
+○ 14/280: Booking.com
+○ 15/280: Localiza
+✓ 50/280: Budget
+✓ 100/280: Embracon
+✓ 150/280: Lacoste
+✓ 200/280: Osklen
+✓ 250/280: Summerville
+✓ 280/280: Época cosmésticos
+✓ Extração bruta concluída: 280 elementos processados
 Limpando e validando dados...
 ✓ Filtrados 14 registros com N/A
 ✓ Removidas 0 duplicatas completas
 ✓ Resolvidas 1 duplicatas parciais (priorizando oferta 'Sim')
-✓ Dataset final: 264 registros válidos
-Substituindo dados de 2025-08-13...
+✓ Dataset final: 265 registros válidos
+Substituindo dados de 2025-08-14...
 ✓ Dados salvos: livelo_parceiros.xlsx
 ✓ Cópia salva: output/livelo_parceiros.xlsx
 ✓ Navegador encerrado
@@ -47,25 +47,25 @@ Saída de livelo_reporter.py:
 🚀 Iniciando Livelo Analytics Pro...
 📊 Carregando dados...
 ✓ 256 dimensões carregadas
-✓ 5455 registros carregados
-📋 Dados iniciais: 5455 registros
-✓ 5455 registros válidos processados
-📅 Datas disponíveis: 21 dias de coleta
-✓ HOJE (2025-08-13): 264 registros no site
-✓ ONTEM (2025-08-12): 266 registros para comparação
+✓ 5720 registros carregados
+📋 Dados iniciais: 5720 registros
+✓ 5720 registros válidos processados
+📅 Datas disponíveis: 22 dias de coleta
+✓ HOJE (2025-08-14): 265 registros no site
+✓ ONTEM (2025-08-13): 264 registros para comparação
 🔍 Detectando mudanças entre ontem e hoje...
-🎯 24 combinações ganharam oferta hoje
-📉 4 combinações perderam oferta hoje
-🆕 2 novas combinações detectadas
-👻 4 combinações sumiram do site
-⚡ 29 grandes mudanças de pontos
+🎯 0 combinações ganharam oferta hoje
+📉 0 combinações perderam oferta hoje
+🆕 1 novas combinações detectadas
+👻 0 combinações sumiram do site
+⚡ 0 grandes mudanças de pontos
 🔍 Analisando histórico completo...
-📋 Processando 264 combinações parceiro+moeda ativas hoje...
-✓ Análise concluída para 264 combinações parceiro+moeda ativas hoje
+📋 Processando 265 combinações parceiro+moeda ativas hoje...
+✓ Análise concluída para 265 combinações parceiro+moeda ativas hoje
 📄 Gerando relatório HTML...
 ✅ Relatório salvo: relatorios/livelo_analytics.html
 ✅ GitHub Pages: relatorio_livelo.html
-📊 264 parceiros HOJE | 56 com oferta | 24 ganharam oferta
+📊 265 parceiros HOJE | 57 com oferta | 0 ganharam oferta
 🎉 Livelo Analytics Pro concluído!
 
 Todos os scripts foram executados com sucesso.
