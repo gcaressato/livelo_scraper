@@ -183,7 +183,8 @@ jobs:
             "name": "Livelo Analytics Pro",
             "short_name": "Livelo",
             "description": "Dashboard analítico para ofertas Livelo com notificações push",
-            "start_url": "/",
+            "start_url": "./",
+            "scope": "./",
             "display": "standalone",
             "background_color": "#151f4f",
             "theme_color": "#ff0a8c",
@@ -206,7 +207,7 @@ jobs:
           }
           EOF
           
-          echo "✅ Manifest PWA criado"
+          echo "✅ Manifest PWA criado."
             
       - name: Substituir placeholders Firebase nos arquivos
         if: success()
@@ -481,6 +482,26 @@ jobs:
           folder: public
           branch: gh-pages
           clean: true
+
+      - name: Verificar URLs após deploy
+        run: |
+          echo "🔍 Verificando URLs de acesso..."
+          
+          # Aguardar um pouco para o deploy finalizar
+          sleep 10
+          
+          # Testar acesso aos arquivos
+          echo "Testando acesso ao site principal..."
+          curl -I "https://gcaressato.github.io/livelo_scraper/" || echo "Site principal inacessível"
+          
+          echo "Testando acesso ao Service Worker..."
+          curl -I "https://gcaressato.github.io/livelo_scraper/sw.js" || echo "SW inacessível"
+          
+          echo "Testando acesso ao Manifest..."
+          curl -I "https://gcaressato.github.io/livelo_scraper/manifest.json" || echo "Manifest inacessível"
+          
+          echo "✅ Verificação de URLs concluída"
+        continue-on-error: true
         
       # ============ LOG FINAL COM NOTIFICAÇÕES ============
       
