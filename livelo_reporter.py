@@ -3951,19 +3951,29 @@ class LiveloAnalytics:
                 console.log('=== DEBUG FIREBASE ===');
                 console.log('Protocol:', location.protocol);
                 console.log('Host:', location.host);
+                console.log('Pathname:', location.pathname);
+                console.log('Full URL:', location.href);
+                
+                // Detectar caminho base
+                const basePath = location.hostname.includes('github.io') && location.pathname.includes('/livelo_scraper/') 
+                    ? '/livelo_scraper/' 
+                    : '/';
+                console.log('Base path detectado:', basePath);
+                console.log('SW URL seria:', basePath + 'sw.js');
+                
                 console.log('User Agent:', navigator.userAgent);
                 console.log('Notification support:', 'Notification' in window);
                 console.log('ServiceWorker support:', 'serviceWorker' in navigator);
                 console.log('Firebase carregado:', typeof firebase !== 'undefined');
                 console.log('Firebase messaging:', !!window.firebaseMessaging);
                 
-                // Verificar configuração
-                if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {{
-                    const config = firebase.apps[0].options;
-                    console.log('Firebase config:', {{
-                        apiKey: config.apiKey?.substring(0, 10) + '...',
-                        projectId: config.projectId,
-                        messagingSenderId: config.messagingSenderId
+                // Verificar se SW atual está registrado
+                if ('serviceWorker' in navigator) {{
+                    navigator.serviceWorker.getRegistrations().then(registrations => {{
+                        console.log('SWs registrados:', registrations.length);
+                        registrations.forEach((reg, i) => {{
+                            console.log(`SW ${{i + 1}}:`, reg.scope, reg.active?.scriptURL);
+                        }});
                     }});
                 }}
                 
@@ -4020,8 +4030,13 @@ class LiveloAnalytics:
                     console.log('[Notifications] Firebase OK, registrando SW...');
                     
                     // Registrar novo Service Worker
-                    const registration = await navigator.serviceWorker.register('/sw.js?v=' + Date.now(), {{
-                        scope: '/',
+                    // Detectar se estamos no GitHub Pages ou domínio próprio
+                    const basePath = location.hostname.includes('github.io') && location.pathname.includes('/livelo_scraper/') 
+                        ? '/livelo_scraper/' 
+                        : '/';
+
+                    const registration = await navigator.serviceWorker.register(basePath + 'sw.js?v=' + Date.now(), {{
+                        scope: basePath,
                         updateViaCache: 'none'
                     }});
                     
@@ -5170,6 +5185,24 @@ class LiveloAnalytics:
             async function debugNotifications() {{
                 console.log('=== DEBUG COMPLETO ===');
                 debugFirebaseConfig();
+                
+                // Testar acesso ao Service Worker
+                const basePath = location.hostname.includes('github.io') && location.pathname.includes('/livelo_scraper/') 
+                    ? '/livelo_scraper/' 
+                    : '/';
+                const swUrl = basePath + 'sw.js';
+                
+                try {{
+                    console.log('[Debug] Testando acesso ao SW:', swUrl);
+                    const response = await fetch(swUrl);
+                    console.log('[Debug] Status SW:', response.status, response.statusText);
+                    if (response.ok) {{
+                        const text = await response.text();
+                        console.log('[Debug] SW carregado, tamanho:', text.length);
+                    }}
+                }} catch (error) {{
+                    console.error('[Debug] Erro ao acessar SW:', error);
+                }}
                 
                 // Limpar cache
                 await clearServiceWorkerCache();
