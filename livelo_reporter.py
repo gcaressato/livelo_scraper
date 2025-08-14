@@ -2224,12 +2224,11 @@ class LiveloAnalytics:
         <link rel="manifest" href="manifest.json">
         <meta name="theme-color" content="#ff0a8c">
 
-        <!-- Firebase SDK v9 - NOTIFICAÇÕES -->
-        <script type="module">
-            import {{ initializeApp }} from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
-            import {{ getMessaging, getToken, onMessage }} from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging.js';
-            
-            // Configuração Firebase (será preenchida dinamicamente)
+        <!-- Firebase SDK v -->
+        <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
+        <script>
+            // Configuração Firebase
             const firebaseConfig = {{
                 apiKey: "API_KEY_PLACEHOLDER",
                 authDomain: "PROJECT_ID.firebaseapp.com",
@@ -2239,21 +2238,37 @@ class LiveloAnalytics:
                 appId: "APP_ID"
             }};
             
-            // Tentar obter config do servidor (para produção)
-            try {{
-                const configResponse = await fetch('/firebase-config.json');
-                if (configResponse.ok) {{
-                    const serverConfig = await configResponse.json();
-                    Object.assign(firebaseConfig, serverConfig);
+            let app, messaging;
+            
+            // Função para inicializar Firebase de forma segura
+            function initFirebase() {{
+                try {{
+                    if (typeof firebase === 'undefined') {{
+                        console.error('Firebase não carregado');
+                        return false;
+                    }}
+                    
+                    app = firebase.initializeApp(firebaseConfig);
+                    messaging = firebase.messaging();
+                    window.firebaseMessaging = messaging;
+                    
+                    console.log('Firebase inicializado com sucesso');
+                    return true;
+                }} catch (error) {{
+                    console.error('Erro ao inicializar Firebase:', error);
+                    return false;
                 }}
-            }} catch (e) {{
-                console.log('Config local será usada');
             }}
             
-            const app = initializeApp(firebaseConfig);
-            const messaging = getMessaging(app);
+            // Inicializar automaticamente quando scripts carregarem
+            window.initFirebase = initFirebase;
             
-            window.firebaseMessaging = messaging;
+            // Tentar inicializar imediatamente
+            if (document.readyState === 'loading') {{
+                document.addEventListener('DOMContentLoaded', initFirebase);
+            }} else {{
+                initFirebase();
+            }}
         </script>
         
         <style>
@@ -3872,6 +3887,7 @@ class LiveloAnalytics:
             </div>
         </div>
         
+        // ======= INÍCIO JAVASCRIPT =======
         <script>
             // Dados para análise
             const todosOsDados = {dados_json};
@@ -3882,6 +3898,18 @@ class LiveloAnalytics:
             // ========== SISTEMA DE NOTIFICAÇÕES FIREBASE ==========
             let isNotificationsEnabled = false;
             let notificationToken = null;
+
+            // Função de debug para verificar configuração
+            function debugFirebaseConfig() {{
+                console.log('=== DEBUG FIREBASE ===');
+                console.log('Protocol:', location.protocol);
+                console.log('Host:', location.host);
+                console.log('Notification support:', 'Notification' in window);
+                console.log('ServiceWorker support:', 'serviceWorker' in navigator);
+                console.log('Firebase carregado:', typeof firebase !== 'undefined');
+                console.log('Firebase messaging:', !!window.firebaseMessaging);
+                console.log('=== FIM DEBUG ===');
+            }}
             
             // Verificar se notificações estão suportadas
             function isNotificationSupported() {{
@@ -3890,27 +3918,49 @@ class LiveloAnalytics:
             
             // Configurar Firebase Messaging (chamado após inicialização)
             async function initializeNotifications() {{
+                console.log('Iniciando configuração de notificações...');
+                
                 if (!isNotificationSupported()) {{
-                    updateNotificationStatus('Não suportado');
+                    updateNotificationStatus('Não suportado neste navegador');
                     return;
                 }}
                 
-                updateNotificationStatus('Carregando...');
+                // Verificar se estamos em HTTPS
+                if (location.protocol !== 'https:' && location.hostname !== 'localhost') {{
+                    updateNotificationStatus('Requer HTTPS');
+                    return;
+                }}
+                
+                updateNotificationStatus('Inicializando...');
                 
                 try {{
-                    // Verificar se Firebase está disponível
+                    // Aguardar Firebase carregar se necessário
+                    let attempts = 0;
+                    while (!window.firebaseMessaging && attempts < 50) {{
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        attempts++;
+                    }}
+                    
                     if (!window.firebaseMessaging) {{
-                        console.warn('Firebase não inicializado');
-                        updateNotificationStatus('Firebase indisponível');
-                        return;
+                        const firebaseOk = window.initFirebase ? window.initFirebase() : false;
+                        if (!firebaseOk) {{
+                            updateNotificationStatus('Erro no Firebase');
+                            return;
+                        }}
                     }}
                     
                     // Registrar service worker
-                    const registration = await navigator.serviceWorker.register('/sw.js');
+                    const registration = await navigator.serviceWorker.register('/sw.js', {{
+                        scope: '/'
+                    }});
                     console.log('Service Worker registrado:', registration);
+                    
+                    // Aguardar ativação
+                    await navigator.serviceWorker.ready;
                     
                     // Verificar permissão atual
                     const permission = Notification.permission;
+                    console.log('Permissão atual:', permission);
                     
                     if (permission === 'granted') {{
                         await setupMessaging();
@@ -3922,26 +3972,24 @@ class LiveloAnalytics:
                     }}
                     
                 }} catch (error) {{
-                    console.error('Erro ao inicializar notificações:', error);
-                    updateNotificationStatus('Erro na inicialização');
+                    console.error('Erro detalhado na inicialização:', error);
+                    updateNotificationStatus(`Erro: ${{error.message}}`);
                 }}
             }}
             
             // Configurar Firebase Messaging
             async function setupMessaging() {{
                 try {{
-                    const {{ getToken, onMessage }} = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging.js');
-                    
-                    // Obter token FCM
-                    const currentToken = await getToken(window.firebaseMessaging, {{
-                        vapidKey: 'YOUR_VAPID_KEY_HERE' // Será substituído automaticamente
+                    // Usar a versão compat que já está carregada
+                    const currentToken = await window.firebaseMessaging.getToken({{
+                        vapidKey: 'YOUR_VAPID_KEY_HERE'
                     }});
                     
                     if (currentToken) {{
                         notificationToken = currentToken;
                         console.log('Token FCM obtido:', currentToken);
                         
-                        // Salvar token no localStorage para envio posterior
+                        // Salvar token no localStorage
                         localStorage.setItem('fcm-token', currentToken);
                         localStorage.setItem('fcm-token-timestamp', Date.now().toString());
                         
@@ -3951,7 +3999,7 @@ class LiveloAnalytics:
                         dismissBanner();
                         
                         // Configurar listener para mensagens em foreground
-                        onMessage(window.firebaseMessaging, (payload) => {{
+                        window.firebaseMessaging.onMessage((payload) => {{
                             console.log('Mensagem recebida em foreground:', payload);
                             showInAppNotification(payload);
                         }});
@@ -4956,9 +5004,10 @@ class LiveloAnalytics:
             // INICIALIZAÇÃO
             document.addEventListener('DOMContentLoaded', function() {{
                 initTheme();
+                debugFirebaseConfig();
                 
                 // Inicializar notificações Firebase
-                setTimeout(initializeNotifications, 1000);
+                setTimeout(initializeNotifications, 2000);
                 
                 // Verificar se banner foi dispensado
                 if (!localStorage.getItem('notification-banner-dismissed')) {{
