@@ -107,9 +107,11 @@ jobs:
         if: success()
         run: |
           cat > sw.js << 'EOF'
-          // Service Worker para Firebase Messaging - Versão Corrigida
+          // Service Worker para Firebase Messaging v8
           importScripts('https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js');
           importScripts('https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js');
+          
+          console.log('[SW] Carregando Service Worker...');
           
           const firebaseConfig = {
             apiKey: "API_KEY_PLACEHOLDER",
@@ -120,37 +122,43 @@ jobs:
             appId: "APP_ID"
           };
           
-          firebase.initializeApp(firebaseConfig);
-          const messaging = firebase.messaging();
-          
-          messaging.onBackgroundMessage(function(payload) {
-            console.log('[SW] Mensagem recebida em background:', payload);
+          try {
+            firebase.initializeApp(firebaseConfig);
+            const messaging = firebase.messaging();
+            console.log('[SW] Firebase inicializado');
             
-            const notificationTitle = payload.notification?.title || 'Livelo Analytics';
-            const notificationOptions = {
-              body: payload.notification?.body || 'Nova oferta disponível!',
-              icon: 'https://via.placeholder.com/192x192/ff0a8c/ffffff?text=L',
-              badge: 'https://via.placeholder.com/96x96/ff0a8c/ffffff?text=L',
-              tag: 'livelo-offer',
-              requireInteraction: true,
-              data: payload.data || {},
-              actions: [
-                {
-                  action: 'view',
-                  title: '👀 Ver Oferta'
-                },
-                {
-                  action: 'dismiss',
-                  title: '✖️ Dispensar'
-                }
-              ]
-            };
+            messaging.onBackgroundMessage(function(payload) {
+              console.log('[SW] Mensagem em background:', payload);
+              
+              const notificationTitle = payload.notification?.title || 'Livelo Analytics';
+              const notificationOptions = {
+                body: payload.notification?.body || 'Nova oferta disponível!',
+                icon: 'https://via.placeholder.com/192x192/ff0a8c/ffffff?text=L',
+                badge: 'https://via.placeholder.com/96x96/ff0a8c/ffffff?text=L',
+                tag: 'livelo-offer',
+                requireInteraction: true,
+                data: payload.data || {},
+                actions: [
+                  {
+                    action: 'view',
+                    title: '👀 Ver Oferta'
+                  },
+                  {
+                    action: 'dismiss',
+                    title: '✖️ Dispensar'
+                  }
+                ]
+              };
+              
+              return self.registration.showNotification(notificationTitle, notificationOptions);
+            });
             
-            return self.registration.showNotification(notificationTitle, notificationOptions);
-          });
+          } catch (error) {
+            console.error('[SW] Erro:', error);
+          }
           
           self.addEventListener('notificationclick', function(event) {
-            console.log('[SW] Clique na notificação:', event);
+            console.log('[SW] Clique na notificação');
             event.notification.close();
             
             if (event.action === 'view') {
@@ -160,11 +168,12 @@ jobs:
             }
           });
           
-          // Debug
-          console.log('[SW] Service Worker carregado');
+          self.addEventListener('activate', function(event) {
+            console.log('[SW] Service Worker ativado');
+          });
           EOF
           
-          echo "✅ Service Worker criado"
+          echo "✅ Service Worker v8 criado"
       
       - name: Criar manifest.json PWA atualizado
         if: success()
@@ -198,7 +207,7 @@ jobs:
           EOF
           
           echo "✅ Manifest PWA criado"
-      
+            
       - name: Substituir placeholders Firebase nos arquivos
         if: success()
         run: |
@@ -219,6 +228,15 @@ jobs:
           done
           
           echo "✅ Configuração Firebase aplicada"
+          
+          # Verificar se substituições funcionaram
+          echo "🔍 Verificando substituições..."
+          if grep -q "API_KEY_PLACEHOLDER\|YOUR_VAPID_KEY_HERE\|PROJECT_ID\|SENDER_ID\|APP_ID" relatorio_livelo.html sw.js 2>/dev/null; then
+            echo "⚠️ Alguns placeholders não foram substituídos"
+            grep -n "PLACEHOLDER\|YOUR_VAPID\|PROJECT_ID\|SENDER_ID\|APP_ID" relatorio_livelo.html sw.js || true
+          else
+            echo "✅ Todos os placeholders substituídos"
+          fi
       
       - name: Enviar notificações push para usuários
         if: success()
