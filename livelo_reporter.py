@@ -3620,6 +3620,11 @@ class LiveloAnalytics:
         <div class="notification-toggle" onclick="toggleNotifications()" title="Gerenciar notificações">
             <i class="bi bi-bell" id="notification-icon"></i>
         </div>
+
+        <!-- Debug Button (remover em produção) -->
+        <div class="debug-toggle" onclick="debugNotifications()" title="Debug notificações" style="position: fixed; top: 140px; right: 20px; z-index: 999; background: #dc3545; color: white; border-radius: 25px; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 12px;">
+            🐛
+        </div>
         
         <!-- Notification Status -->
         <div class="notification-status" id="notificationStatus">
@@ -3923,15 +3928,45 @@ class LiveloAnalytics:
             let isNotificationsEnabled = false;
             let notificationToken = null;
 
+            // Função para limpar cache do Service Worker
+            async function clearServiceWorkerCache() {{
+                try {{
+                    if ('caches' in window) {{
+                        const cacheNames = await caches.keys();
+                        await Promise.all(
+                            cacheNames.map(cacheName => {{
+                                console.log('[Cache] Removendo:', cacheName);
+                                return caches.delete(cacheName);
+                            }})
+                        );
+                    }}
+                    console.log('[Cache] Cache limpo');
+                }} catch (error) {{
+                    console.error('[Cache] Erro ao limpar:', error);
+                }}
+            }}
+
             // Função de debug para verificar configuração
             function debugFirebaseConfig() {{
                 console.log('=== DEBUG FIREBASE ===');
                 console.log('Protocol:', location.protocol);
                 console.log('Host:', location.host);
+                console.log('User Agent:', navigator.userAgent);
                 console.log('Notification support:', 'Notification' in window);
                 console.log('ServiceWorker support:', 'serviceWorker' in navigator);
                 console.log('Firebase carregado:', typeof firebase !== 'undefined');
                 console.log('Firebase messaging:', !!window.firebaseMessaging);
+                
+                // Verificar configuração
+                if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {{
+                    const config = firebase.apps[0].options;
+                    console.log('Firebase config:', {{
+                        apiKey: config.apiKey?.substring(0, 10) + '...',
+                        projectId: config.projectId,
+                        messagingSenderId: config.messagingSenderId
+                    }});
+                }}
+                
                 console.log('=== FIM DEBUG ===');
             }}
             
@@ -3950,7 +3985,6 @@ class LiveloAnalytics:
                     return;
                 }}
                 
-                // Verificar HTTPS
                 if (location.protocol !== 'https:' && location.hostname !== 'localhost') {{
                     console.log('[Notifications] Requer HTTPS');
                     updateNotificationStatus('Requer HTTPS');
@@ -3960,37 +3994,45 @@ class LiveloAnalytics:
                 updateNotificationStatus('Inicializando...');
                 
                 try {{
-                    // Aguardar Firebase carregar
+                    // FORÇAR atualização do Service Worker
+                    if ('serviceWorker' in navigator) {{
+                        const registrations = await navigator.serviceWorker.getRegistrations();
+                        for (let registration of registrations) {{
+                            console.log('[SW] Removendo registro antigo');
+                            await registration.unregister();
+                        }}
+                    }}
+                    
+                    // Aguardar Firebase
                     let attempts = 0;
-                    while ((!window.firebaseMessaging || typeof firebase === 'undefined') && attempts < 100) {{
-                        console.log(`[Notifications] Aguardando Firebase... tentativa ${{attempts + 1}}`);
-                        await new Promise(resolve => setTimeout(resolve, 100));
+                    while ((!window.firebaseMessaging || typeof firebase === 'undefined') && attempts < 50) {{
+                        console.log(`[Notifications] Aguardando Firebase... ${{attempts + 1}}/50`);
+                        await new Promise(resolve => setTimeout(resolve, 200));
                         attempts++;
                     }}
                     
                     if (!window.firebaseMessaging) {{
-                        console.error('[Notifications] Firebase não disponível após aguardar');
-                        updateNotificationStatus('Firebase não disponível');
+                        console.error('[Notifications] Firebase timeout após 10s');
+                        updateNotificationStatus('Firebase timeout');
                         return;
                     }}
                     
-                    console.log('[Notifications] Firebase disponível, registrando SW...');
+                    console.log('[Notifications] Firebase OK, registrando SW...');
                     
-                    // Registrar service worker
-                    const registration = await navigator.serviceWorker.register('/sw.js', {{
+                    // Registrar novo Service Worker
+                    const registration = await navigator.serviceWorker.register('/sw.js?v=' + Date.now(), {{
                         scope: '/',
                         updateViaCache: 'none'
                     }});
                     
-                    console.log('[Notifications] Service Worker registrado:', registration);
+                    console.log('[Notifications] SW registrado:', registration);
                     
                     // Aguardar ativação
                     await navigator.serviceWorker.ready;
-                    console.log('[Notifications] Service Worker ativo');
+                    console.log('[Notifications] SW ativo');
                     
-                    // Verificar permissão
                     const permission = Notification.permission;
-                    console.log('[Notifications] Permissão atual:', permission);
+                    console.log('[Notifications] Permissão:', permission);
                     
                     if (permission === 'granted') {{
                         await setupMessaging();
@@ -4002,7 +4044,7 @@ class LiveloAnalytics:
                     }}
                     
                 }} catch (error) {{
-                    console.error('[Notifications] Erro na inicialização:', error);
+                    console.error('[Notifications] Erro:', error);
                     updateNotificationStatus(`Erro: ${{error.message}}`);
                 }}
             }}
@@ -5123,6 +5165,21 @@ class LiveloAnalytics:
                     }}
                 }}, 1000);
             }});
+
+            // Função de debug completo
+            async function debugNotifications() {{
+                console.log('=== DEBUG COMPLETO ===');
+                debugFirebaseConfig();
+                
+                // Limpar cache
+                await clearServiceWorkerCache();
+                
+                // Tentar reconfigurar
+                console.log('[Debug] Reconfigurando...');
+                await initializeNotifications();
+                
+                console.log('=== FIM DEBUG ===');
+            }}
 
             // Event delegation para botões de favorito
             document.addEventListener('click', function(e) {{
