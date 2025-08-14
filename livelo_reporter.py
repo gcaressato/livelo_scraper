@@ -3954,12 +3954,10 @@ class LiveloAnalytics:
                 console.log('Pathname:', location.pathname);
                 console.log('Full URL:', location.href);
                 
-                // Detectar caminho base
-                const basePath = location.hostname.includes('github.io') && location.pathname.includes('/livelo_scraper/') 
-                    ? '/livelo_scraper/' 
-                    : '/';
-                console.log('Base path detectado:', basePath);
-                console.log('SW URL seria:', basePath + 'sw.js');
+            // Usar caminho relativo
+            const swPath = './sw.js';
+            console.log('SW path:', swPath);
+            console.log('SW URL completa:', new URL(swPath, location.href).href);
                 
                 console.log('User Agent:', navigator.userAgent);
                 console.log('Notification support:', 'Notification' in window);
@@ -4030,13 +4028,12 @@ class LiveloAnalytics:
                     console.log('[Notifications] Firebase OK, registrando SW...');
                     
                     // Registrar novo Service Worker
-                    // Detectar se estamos no GitHub Pages ou domínio próprio
-                    const basePath = location.hostname.includes('github.io') && location.pathname.includes('/livelo_scraper/') 
-                        ? '/livelo_scraper/' 
-                        : '/';
+                    // Usar caminho relativo sempre
+                    const swPath = './sw.js?v=' + Date.now();
+                    console.log('[Notifications] Registrando SW em:', swPath);
 
-                    const registration = await navigator.serviceWorker.register(basePath + 'sw.js?v=' + Date.now(), {{
-                        scope: basePath,
+                    const registration = await navigator.serviceWorker.register(swPath, {{
+                        scope: './',
                         updateViaCache: 'none'
                     }});
                     
@@ -5186,11 +5183,9 @@ class LiveloAnalytics:
                 console.log('=== DEBUG COMPLETO ===');
                 debugFirebaseConfig();
                 
-                // Testar acesso ao Service Worker
-                const basePath = location.hostname.includes('github.io') && location.pathname.includes('/livelo_scraper/') 
-                    ? '/livelo_scraper/' 
-                    : '/';
-                const swUrl = basePath + 'sw.js';
+            // Testar acesso ao Service Worker com caminho relativo
+            const swUrl = './sw.js';
+            console.log('[Debug] URL completa do SW:', new URL(swUrl, location.href).href);
                 
                 try {{
                     console.log('[Debug] Testando acesso ao SW:', swUrl);
@@ -5212,6 +5207,31 @@ class LiveloAnalytics:
                 await initializeNotifications();
                 
                 console.log('=== FIM DEBUG ===');
+            }}
+
+            async function testDirectAccess() {{
+                console.log('=== TESTE ACESSO DIRETO ===');
+                
+                const files = ['sw.js', 'manifest.json'];
+                
+                for (const file of files) {{
+                    try {{
+                        const url = new URL(file, location.href).href;
+                        console.log(`[Teste] Testando: ${{url}}`);
+                        
+                        const response = await fetch(url);
+                        console.log(`[Teste] ${{file}}: ${{response.status}} ${{response.statusText}}`);
+                        
+                        if (response.ok) {{
+                            const text = await response.text();
+                            console.log(`[Teste] ${{file}} carregado: ${{text.length}} bytes`);
+                        }}
+                    }} catch (error) {{
+                        console.error(`[Teste] Erro em ${{file}}:`, error);
+                    }}
+                }}
+                
+                console.log('=== FIM TESTE ===');
             }}
 
             // Event delegation para botões de favorito
