@@ -2,38 +2,38 @@
 Iniciando navegador...
 ✓ Navegador iniciado
 Acessando site da Livelo...
-✓ Site carregado - 278 elementos encontrados
+✓ Site carregado - 270 elementos encontrados
 Carregando página completa...
 ✓ Página carregada completamente
 Extraindo dados dos parceiros...
-Processando 278 elementos...
-○ 1/278: Hoteis.com
-○ 2/278: Buser
-○ 3/278: Azul Viagens
-○ 4/278: Booking.com
-○ 5/278: Localiza
-○ 6/278: Hoteis.com
-○ 7/278: Buser
-○ 8/278: Azul Viagens
-○ 9/278: Booking.com
-○ 10/278: Localiza
-○ 11/278: Hoteis.com
-✓ 12/278: Buser
-○ 13/278: Azul Viagens
-○ 14/278: Booking.com
-○ 15/278: Localiza
-✓ 50/278: Bulbe Energia
-✓ 100/278: Estoque
-✓ 150/278: Liga Vitória - Seguro de Viagem
-✓ 200/278: Oster
-✓ 250/278: Supernosso
-✓ 278/278: Época cosmésticos
-✓ Extração bruta concluída: 278 elementos processados
+Processando 270 elementos...
+○ 1/270: Hoteis.com
+○ 2/270: Buser
+○ 3/270: Azul Viagens
+○ 4/270: Booking.com
+○ 5/270: Localiza
+○ 6/270: Hoteis.com
+○ 7/270: Buser
+○ 8/270: Azul Viagens
+○ 9/270: Booking.com
+○ 10/270: Localiza
+○ 11/270: Hoteis.com
+✓ 12/270: Buser
+○ 13/270: Azul Viagens
+○ 14/270: Booking.com
+○ 15/270: Localiza
+✓ 50/270: Bulbe Energia
+✓ 100/270: Euro
+✓ 150/270: Liga Vitória Seguro Residencial
+✓ 200/270: Petlove Saúde
+✓ 250/270: TripChip
+✓ 270/270: Época cosmésticos
+✓ Extração bruta concluída: 270 elementos processados
 Limpando e validando dados...
 ✓ Filtrados 14 registros com N/A
 ✓ Removidas 0 duplicatas completas
 ✓ Resolvidas 1 duplicatas parciais (priorizando oferta 'Sim')
-✓ Dataset final: 263 registros válidos
+✓ Dataset final: 255 registros válidos
 ✓ Dados salvos: livelo_parceiros.xlsx
 ✓ Cópia salva: output/livelo_parceiros.xlsx
 ✓ Navegador encerrado
