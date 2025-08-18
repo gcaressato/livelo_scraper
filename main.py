@@ -2,6 +2,7 @@
 """
 Main.py - Orquestrador do Sistema Livelo Analytics
 Gerencia todo o pipeline: Scraping → Análise → Deploy → Notificações
+Versão corrigida com melhor relatórios no console
 """
 
 import os
@@ -152,9 +153,17 @@ class LiveloOrchestrator:
         
         try:
             # Verificar se as variáveis de ambiente estão configuradas
-            if not os.getenv('FIREBASE_PROJECT_ID') or not os.getenv('FIREBASE_SERVER_KEY'):
-                logger.warning("⚠️ Variáveis Firebase não configuradas - pulando notificações")
-                self.sucesso_etapas['notificacoes'] = True  # Não é erro crítico
+            firebase_project = os.getenv('FIREBASE_PROJECT_ID')
+            firebase_server_key = os.getenv('FIREBASE_SERVER_KEY')
+            
+            if not firebase_project or not firebase_server_key:
+                logger.warning("⚠️ Variáveis Firebase não configuradas")
+                logger.info("💡 Configure as variáveis de ambiente:")
+                logger.info("   - FIREBASE_PROJECT_ID")
+                logger.info("   - FIREBASE_SERVER_KEY")
+                logger.warning("🔔 Notificações serão simuladas (não enviadas)")
+                # Não é erro crítico - sistema pode funcionar sem notificações
+                self.sucesso_etapas['notificacoes'] = True
                 return True
             
             # Executar sistema de notificações
@@ -182,63 +191,69 @@ class LiveloOrchestrator:
             return True
     
     def gerar_relatorio_execucao(self):
-        """Gera relatório final da execução"""
+        """Gera relatório final da execução no console"""
         logger.info("📋 Gerando relatório de execução...")
         
         total_etapas = len(self.sucesso_etapas)
         etapas_sucesso = sum(self.sucesso_etapas.values())
         
-        relatorio = f"""
-=== RELATÓRIO DE EXECUÇÃO LIVELO ANALYTICS ===
-Timestamp: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}
-Sucesso: {etapas_sucesso}/{total_etapas} etapas
-
-DETALHES:
-✅ Scraping: {'✅ OK' if self.sucesso_etapas['scraping'] else '❌ FALHA'}
-✅ Análise: {'✅ OK' if self.sucesso_etapas['analise'] else '❌ FALHA'}
-✅ Deploy GitHub: {'✅ OK' if self.sucesso_etapas['deploy_github'] else '❌ FALHA'}
-✅ Notificações: {'✅ OK' if self.sucesso_etapas['notificacoes'] else '❌ FALHA'}
-
-ARQUIVOS GERADOS:
-"""
+        print("\n" + "="*60)
+        print("📊 RELATÓRIO DE EXECUÇÃO LIVELO ANALYTICS")
+        print("="*60)
+        print(f"⏰ Timestamp: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
+        print(f"✅ Sucesso: {etapas_sucesso}/{total_etapas} etapas")
+        print("")
+        print("🔍 DETALHES DAS ETAPAS:")
+        print(f"   🕷️ Scraping: {'✅ SUCESSO' if self.sucesso_etapas['scraping'] else '❌ FALHA'}")
+        print(f"   📊 Análise: {'✅ SUCESSO' if self.sucesso_etapas['analise'] else '❌ FALHA'}")
+        print(f"   🚀 Deploy GitHub: {'✅ SUCESSO' if self.sucesso_etapas['deploy_github'] else '❌ FALHA'}")
+        print(f"   🔔 Notificações: {'✅ SUCESSO' if self.sucesso_etapas['notificacoes'] else '❌ FALHA'}")
+        print("")
+        print("📁 ARQUIVOS GERADOS:")
         
         # Verificar arquivos gerados
         arquivos_verificar = [
             'relatorio_livelo.html',
             'livelo_parceiros.xlsx',
-            'dimensoes.json'
+            'notification_sender.py',
+            'main_livelo.log'
         ]
         
         for arquivo in arquivos_verificar:
             if os.path.exists(arquivo):
                 size = os.path.getsize(arquivo)
-                relatorio += f"📄 {arquivo}: {size:,} bytes\n"
+                print(f"   📄 {arquivo}: {size:,} bytes")
             else:
-                relatorio += f"❌ {arquivo}: NÃO ENCONTRADO\n"
+                print(f"   ❌ {arquivo}: NÃO ENCONTRADO")
+        
+        # Verificar logs adicionais
+        logs_gerados = [f for f in os.listdir('.') if f.endswith('.log')]
+        if logs_gerados:
+            print(f"   📝 Logs adicionais: {', '.join(logs_gerados)}")
         
         # Status final
-        if etapas_sucesso >= 2:  # Pelo menos scraping + análise
-            relatorio += "\n🎉 EXECUÇÃO BEM-SUCEDIDA!"
+        print("")
+        if etapas_sucesso >= 2:  # Pelo menos scraping + análise OU análise + deploy
+            print("🎉 EXECUÇÃO BEM-SUCEDIDA!")
+            print("🌐 Site disponível em: https://gcaressato.github.io/livelo_scraper/")
             status_final = True
         else:
-            relatorio += "\n❌ EXECUÇÃO COM FALHAS CRÍTICAS!"
+            print("❌ EXECUÇÃO COM FALHAS CRÍTICAS!")
+            print("🔧 Verifique os logs acima para identificar problemas")
             status_final = False
         
-        logger.info(relatorio)
-        
-        # Salvar relatório em arquivo
-        try:
-            with open(f'relatorio_execucao_{self.timestamp}.txt', 'w', encoding='utf-8') as f:
-                f.write(relatorio)
-        except Exception as e:
-            logger.error(f"Erro ao salvar relatório: {e}")
+        print("="*60)
         
         return status_final
     
     def executar_pipeline_completo(self, pular_scraping=False, apenas_analise=False):
         """Executa todo o pipeline"""
-        logger.info("🚀 INICIANDO PIPELINE LIVELO ANALYTICS")
-        logger.info(f"Timestamp: {self.timestamp}")
+        print("\n🚀 INICIANDO PIPELINE LIVELO ANALYTICS")
+        print("="*50)
+        print(f"⏰ Timestamp: {self.timestamp}")
+        print(f"📁 Diretório: {os.getcwd()}")
+        print(f"🐍 Python: {sys.version.split()[0]}")
+        print("="*50)
         
         try:
             # 1. SCRAPING (opcional)
