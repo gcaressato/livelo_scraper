@@ -1,16 +1,16 @@
-// Service Worker para Firebase Messaging v9 (CORRIGIDO)
+// Service Worker para Firebase Messaging v9 (Template Limpo)
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
 
 console.log('[SW] Service Worker carregando...');
 
 const firebaseConfig = {
-    apiKey: "AIzaSyAibNVfTL0kvG_R3rKYYSnAeQWc5oVBFYk",
-    authDomain: "livel-analytics_PLACEHOLDER.firebaseapp.com",
-    projectId: "livel-analytics_PLACEHOLDER",
-    storageBucket: "livel-analytics_PLACEHOLDER.appspot.com",
-    messagingSenderId: "168707812242_PLACEHOLDER",
-    appId: "1:168707812242:web:59b4c1df4fc553410c6f4b_PLACEHOLDER"
+    apiKey: "FIREBASE_API_KEY_PLACEHOLDER",
+    authDomain: "FIREBASE_PROJECT_ID_PLACEHOLDER.firebaseapp.com",
+    projectId: "FIREBASE_PROJECT_ID_PLACEHOLDER",
+    storageBucket: "FIREBASE_PROJECT_ID_PLACEHOLDER.appspot.com",
+    messagingSenderId: "FIREBASE_SENDER_ID_PLACEHOLDER",
+    appId: "FIREBASE_APP_ID_PLACEHOLDER"
 };
 
 let messaging;
@@ -21,7 +21,7 @@ try {
     }
     
     messaging = firebase.messaging();
-    console.log('[SW] Firebase Messaging inicializado');
+    console.log('[SW] Firebase Messaging inicializado para projeto:', firebaseConfig.projectId);
     
     messaging.onBackgroundMessage(function(payload) {
         console.log('[SW] Mensagem em background recebida:', payload);
