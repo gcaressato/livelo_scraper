@@ -2,38 +2,38 @@
 Iniciando navegador...
 ✓ Navegador iniciado
 Acessando site da Livelo...
-✓ Site carregado - 266 elementos encontrados
+✓ Site carregado - 265 elementos encontrados
 Carregando página completa...
 ✓ Página carregada completamente
 Extraindo dados dos parceiros...
-Processando 266 elementos...
-○ 1/266: Buser
-○ 2/266: Azul Viagens
-○ 3/266: Booking.com
-○ 4/266: Localiza
-○ 5/266: Buser
-○ 6/266: Azul Viagens
-○ 7/266: Booking.com
-○ 8/266: Localiza
-✓ 9/266: Buser
-○ 10/266: Azul Viagens
-○ 11/266: Booking.com
-○ 12/266: Localiza
-✓ 13/266: ABC da Construcao
-✓ 14/266: ADCOS
-✓ 15/266: AMOBELEZA
-✓ 50/266: CARE Natural Beauty
-✓ 100/266: Farmacias App
-✓ 150/266: Localiza
-✓ 200/266: Pontofrio
-✓ 250/266: Under Armour
-✓ 266/266: Época cosmésticos
-✓ Extração bruta concluída: 266 elementos processados
+Processando 265 elementos...
+○ 1/265: Buser
+○ 2/265: Azul Viagens
+○ 3/265: Booking.com
+○ 4/265: Localiza
+○ 5/265: Buser
+○ 6/265: Azul Viagens
+○ 7/265: Booking.com
+○ 8/265: Localiza
+✓ 9/265: Buser
+○ 10/265: Azul Viagens
+○ 11/265: Booking.com
+○ 12/265: Localiza
+✓ 13/265: ABC da Construcao
+✓ 14/265: ADCOS
+✓ 15/265: AMOBELEZA
+✓ 50/265: CARE Natural Beauty
+✓ 100/265: Farmacias App
+✓ 150/265: Localiza
+✓ 200/265: Portal das Malas
+✓ 250/265: Unidas
+✓ 265/265: Época cosmésticos
+✓ Extração bruta concluída: 265 elementos processados
 Limpando e validando dados...
 ✓ Filtrados 11 registros com N/A
 ✓ Removidas 0 duplicatas completas
 ✓ Resolvidas 1 duplicatas parciais (priorizando oferta 'Sim')
-✓ Dataset final: 254 registros válidos
+✓ Dataset final: 253 registros válidos
 Substituindo dados de 2025-08-18...
 ✓ Dados salvos: livelo_parceiros.xlsx
 ✓ Cópia salva: output/livelo_parceiros.xlsx

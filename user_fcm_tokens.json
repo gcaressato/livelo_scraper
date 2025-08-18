@@ -1,0 +1,35 @@
+{
+  "exemplo_user_1": {
+    "fcm_token": "EXEMPLO_TOKEN_FCM_AQUI_-_SUBSTITUA_PELO_TOKEN_REAL",
+    "favoritos": [
+      "Netshoes|R$",
+      "Magazine Luiza|R$",
+      "Amazon|R$"
+    ],
+    "ativo": false,
+    "ultimo_acesso": "2025-08-18T20:49:32.779900",
+    "configuracoes": {
+      "notificar_novas_ofertas": true,
+      "notificar_ofertas_perdidas": false,
+      "apenas_favoritos": true,
+      "horario_silencioso_inicio": "23:00",
+      "horario_silencioso_fim": "07:00"
+    },
+    "observacoes": "ESTE É UM EXEMPLO - Configure tokens reais de usuários"
+  },
+  "exemplo_user_2": {
+    "fcm_token": "OUTRO_EXEMPLO_TOKEN_FCM_AQUI",
+    "favoritos": [
+      "Carrefour|R$",
+      "Extra|R$"
+    ],
+    "ativo": false,
+    "ultimo_acesso": "2025-08-11T20:49:32.779907",
+    "configuracoes": {
+      "notificar_novas_ofertas": true,
+      "notificar_ofertas_perdidas": true,
+      "apenas_favoritos": false
+    },
+    "observacoes": "EXEMPLO - Token de teste"
+  }
+}
