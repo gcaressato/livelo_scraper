@@ -159,7 +159,7 @@ class LiveloOrchestrator:
             
             # Executar sistema de notificações
             resultado = subprocess.run([
-                sys.executable, 'livelo_notification_sender.py'
+                sys.executable, 'notification_sender.py'
             ], capture_output=True, text=True, timeout=300)  # 5 min timeout
             
             if resultado.returncode == 0:
