@@ -6,11 +6,11 @@ console.log('[SW] Service Worker carregando...');
 
 const firebaseConfig = {
     apiKey: "AIzaSyAibNVfTL0kvG_R3rKYYSnAeQWc5oVBFYk",
-    authDomain: "livel-analytics.firebaseapp.com",
-    projectId: "livel-analytics",
-    storageBucket: "livel-analytics.appspot.com",
-    messagingSenderId: "168707812242",
-    appId: "1:168707812242:web:59b4c1df4fc553410c6f4b"
+    authDomain: "livel-analytics_PLACEHOLDER.firebaseapp.com",
+    projectId: "livel-analytics_PLACEHOLDER",
+    storageBucket: "livel-analytics_PLACEHOLDER.appspot.com",
+    messagingSenderId: "168707812242_PLACEHOLDER",
+    appId: "1:168707812242:web:59b4c1df4fc553410c6f4b_PLACEHOLDER"
 };
 
 let messaging;
