@@ -1,29 +1,17 @@
-2025-08-18 13:45:16,991 - INFO - 🚀 INICIANDO PIPELINE LIVELO ANALYTICS
-2025-08-18 13:45:16,991 - INFO - Timestamp: 20250818_134516
-2025-08-18 13:45:16,992 - INFO - 🕷️ Iniciando scraping...
-2025-08-18 13:46:19,795 - INFO - ✅ Scraping concluído com sucesso
-2025-08-18 13:46:19,795 - INFO - 📊 Iniciando análise...
-2025-08-18 13:46:23,167 - INFO - ✅ Análise concluída com sucesso
-2025-08-18 13:46:23,167 - INFO - 📄 relatorio_livelo.html: 6,480,123 bytes
-2025-08-18 13:46:23,167 - INFO - 🚀 Verificando deploy GitHub Pages...
-2025-08-18 13:46:23,167 - INFO - 🔄 Deploy será feito pelo GitHub Actions workflow
-2025-08-18 13:46:23,167 - INFO - 🔔 Iniciando notificações...
-2025-08-18 13:46:23,167 - WARNING - ⚠️ Variáveis Firebase não configuradas - pulando notificações
-2025-08-18 13:46:23,167 - INFO - 📋 Gerando relatório de execução...
-2025-08-18 13:46:23,167 - INFO - 
-=== RELATÓRIO DE EXECUÇÃO LIVELO ANALYTICS ===
-Timestamp: 18/08/2025 13:46:23
-Sucesso: 4/4 etapas
+2025-08-18 17:42:51,460 - INFO - 🚀 INICIANDO PIPELINE LIVELO ANALYTICS
+2025-08-18 17:42:51,460 - INFO - Timestamp: 20250818_174251
+2025-08-18 17:42:51,461 - INFO - 🕷️ Iniciando scraping...
+2025-08-18 17:43:52,678 - INFO - ✅ Scraping concluído com sucesso
+2025-08-18 17:43:52,678 - INFO - 📊 Iniciando análise...
+2025-08-18 17:43:56,021 - ERROR - ❌ Falha na análise: Traceback (most recent call last):
+  File "/home/runner/work/livelo_scraper/livelo_scraper/livelo_reporter.py", line 2512, in <module>
+    main()
+  File "/home/runner/work/livelo_scraper/livelo_scraper/livelo_reporter.py", line 2503, in main
+    sucesso = analytics.executar_analise_completa()
+  File "/home/runner/work/livelo_scraper/livelo_scraper/livelo_reporter.py", line 2470, in executar_analise_completa
+    html = self.gerar_html_completo()
+  File "/home/runner/work/livelo_scraper/livelo_scraper/livelo_reporter.py", line 1684, in gerar_html_completo
+    {self._gerar_dashboard_completo(graficos_html)}
+AttributeError: 'LiveloAnalytics' object has no attribute '_gerar_dashboard_completo'
 
-DETALHES:
-✅ Scraping: ✅ OK
-✅ Análise: ✅ OK
-✅ Deploy GitHub: ✅ OK
-✅ Notificações: ✅ OK
-
-ARQUIVOS GERADOS:
-📄 relatorio_livelo.html: 6,480,123 bytes
-📄 livelo_parceiros.xlsx: 207,398 bytes
-📄 dimensoes.json: 111,180 bytes
-
-🎉 EXECUÇÃO BEM-SUCEDIDA!
+2025-08-18 17:43:56,021 - ERROR - ❌ Falha crítica na análise

@@ -1,7 +1,7 @@
 {
-  "timestamp": "2025-08-18T13:46:25.384312",
-  "novas_ofertas": 21,
-  "ofertas_finalizadas": 21,
+  "timestamp": "2025-08-18T17:43:58.295906",
+  "novas_ofertas": 22,
+  "ofertas_finalizadas": 19,
   "notificacoes_enviadas": 0,
   "notificacoes_tentativas": 0,
   "taxa_sucesso": "0%",
@@ -65,6 +65,11 @@
       "parceiro": "LE LIS",
       "moeda": "R$",
       "pontos_por_moeda": 11.0
+    },
+    {
+      "parceiro": "Localiza",
+      "moeda": "U$",
+      "pontos_por_moeda": 10.0
     },
     {
       "parceiro": "Morana",
