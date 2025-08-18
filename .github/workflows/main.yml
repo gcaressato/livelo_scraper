@@ -49,6 +49,22 @@ jobs:
         run: |
           python main.py 2>&1 | tee output.log
         continue-on-error: true
+
+      # DEBUG - Para verificar se os secrets estão chegando
+      - name: Debug configurações Firebase
+        run: |
+          echo "🔍 Verificando secrets (sem expor valores)..."
+          echo "API Key length: ${#FIREBASE_API_KEY}"
+          echo "Project ID length: ${#FIREBASE_PROJECT_ID}" 
+          echo "Sender ID length: ${#FIREBASE_SENDER_ID}"
+          echo "App ID length: ${#FIREBASE_APP_ID}"
+          echo "VAPID Key length: ${#FIREBASE_VAPID_KEY}"
+        env:
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_SENDER_ID: ${{ secrets.FIREBASE_SENDER_ID }}
+          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+          FIREBASE_VAPID_KEY: ${{ secrets.FIREBASE_VAPID_KEY }}
         
       # NOVA ETAPA: VALIDAÇÃO INTELIGENTE DE DADOS
       - name: Validar qualidade dos dados
@@ -101,7 +117,7 @@ jobs:
           " 2>&1 | tee validation.log
         continue-on-error: true
         
-      # ============ SISTEMA DE NOTIFICAÇÕES FIREBASE - CORRIGIDO ============
+      # ============ SISTEMA DE NOTIFICAÇÕES FIREBASE ============
       
       - name: Criar Service Worker v9 corrigido
         if: success()
@@ -115,11 +131,11 @@ jobs:
       
           const firebaseConfig = {
               apiKey: "API_KEY_PLACEHOLDER",
-              authDomain: "PROJECT_ID.firebaseapp.com",
-              projectId: "PROJECT_ID",
-              storageBucket: "PROJECT_ID.appspot.com",
-              messagingSenderId: "SENDER_ID",
-              appId: "APP_ID"
+              authDomain: "PROJECT_ID_PLACEHOLDER.firebaseapp.com",
+              projectId: "PROJECT_ID_PLACEHOLDER",
+              storageBucket: "PROJECT_ID_PLACEHOLDER.appspot.com",
+              messagingSenderId: "SENDER_ID_PLACEHOLDER",
+              appId: "APP_ID_PLACEHOLDER"
           };
       
           let messaging;
@@ -240,7 +256,7 @@ jobs:
                 "purpose": "maskable any"
               }
             ],
-            "gcm_sender_id": "103953800507"
+            "gcm_sender_id": "SENDER_ID_PLACEHOLDER"
           }
           EOF
           
