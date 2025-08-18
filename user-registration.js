@@ -3,9 +3,9 @@
 
 class LiveloNotificationRegistry {
     constructor() {
-        this.apiEndpoint = 'https://api.github.com/repos/SEU_USERNAME/SEU_REPO/issues';
+        this.apiEndpoint = 'https://api.github.com/repos/gcaressato/livelo_scraper/issues';
         this.userStorageKey = 'livelo-user-registration';
-        this.backupEndpoint = 'https://formspree.io/f/YOUR_FORM_ID'; // Backup usando Formspree
+        this.backupEndpoint = 'https://formspree.io/f/YOUR_FORM_ID'; // Configure com seu Formspree ID
     }
 
     // Registrar usuário para notificações
@@ -210,9 +210,8 @@ window.registerForNotifications = async function(email = null) {
         }
 
         // Obter token FCM
-        const { getToken } = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging.js');
-        const token = await getToken(window.firebaseMessaging, {
-            vapidKey: 'YOUR_VAPID_KEY_HERE' // Será substituído
+        const token = await window.firebaseMessaging.getToken({
+            vapidKey: 'BFj3Q_8s8Z_9wQ4kKy4Q8x9QC_6bY7j5P_8mA9k7B3f_EXAMPLE_KEY' // Substitua pela sua VAPID key real
         });
 
         if (!token) {
