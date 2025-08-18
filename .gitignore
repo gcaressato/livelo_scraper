@@ -1,0 +1,108 @@
+# Livelo Analytics - Git Ignore File
+
+# Dados sensíveis - NUNCA commitar
+user_fcm_tokens.json
+firebase-config.json
+notification_stats.json
+
+# Logs
+*.log
+relatorio_execucao_*.txt
+
+# Dados temporários
+debug_*.html
+debug_*.png
+*.tmp
+
+# Selenium drivers
+chromedriver*
+geckodriver*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Node modules (se houver)
+node_modules/
+
+# Backup files
+*.bak
+*.backup
+
+# Excel temporary files
+~$*.xlsx
+~$*.xls
+
+# Selenium screenshots
+screenshot_*.png
+
+# Cache directories
+.cache/
+.pytest_cache/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# Large data files (descomente se necessário)
+# *.xlsx
+# *.csv
+
+# Arquivos específicos do projeto que podem conter dados sensíveis
+# Descomente conforme necessário:
+# livelo_parceiros.xlsx  # Se contiver dados sensíveis
+# dimensoes.json         # Se contiver informações proprietárias
