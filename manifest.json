@@ -8,12 +8,50 @@
   "background_color": "#151f4f",
   "theme_color": "#ff0a8c",
   "orientation": "portrait-primary",
+  "categories": ["productivity", "finance"],
+  "lang": "pt-BR",
   "icons": [
+    {
+      "src": "https://via.placeholder.com/72x72/ff0a8c/ffffff?text=L",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://via.placeholder.com/96x96/ff0a8c/ffffff?text=L",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://via.placeholder.com/128x128/ff0a8c/ffffff?text=L",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://via.placeholder.com/144x144/ff0a8c/ffffff?text=L",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://via.placeholder.com/152x152/ff0a8c/ffffff?text=L",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "https://via.placeholder.com/192x192/ff0a8c/ffffff?text=L",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable any"
+    },
+    {
+      "src": "https://via.placeholder.com/384x384/ff0a8c/ffffff?text=L",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "https://via.placeholder.com/512x512/ff0a8c/ffffff?text=L", 
@@ -22,5 +60,33 @@
       "purpose": "maskable any"
     }
   ],
-  "gcm_sender_id": "168707812242_PLACEHOLDER"
+  "screenshots": [
+    {
+      "src": "https://via.placeholder.com/540x720/667eea/ffffff?text=Dashboard",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "https://via.placeholder.com/1024x593/667eea/ffffff?text=Analytics",
+      "sizes": "1024x593", 
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Ver Ofertas",
+      "short_name": "Ofertas",
+      "description": "Visualizar ofertas ativas",
+      "url": "./#ofertas",
+      "icons": [
+        {
+          "src": "https://via.placeholder.com/96x96/ff0a8c/ffffff?text=🎯",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "gcm_sender_id": "FIREBASE_SENDER_ID_PLACEHOLDER"
 }
