@@ -1,71 +1,29 @@
-Executando livelo_scraper.py...
-Saída de livelo_scraper.py:
-=== LIVELO SCRAPER ===
-Iniciando navegador...
-✓ Navegador iniciado
-Acessando site da Livelo...
-✓ Site carregado - 254 elementos encontrados
-Carregando página completa...
-✓ Página carregada completamente
-Extraindo dados dos parceiros...
-Processando 269 elementos...
-○ 1/269: Hoteis.com
-○ 2/269: Buser
-○ 3/269: Azul Viagens
-○ 4/269: Booking.com
-○ 5/269: Localiza
-○ 6/269: Hoteis.com
-○ 7/269: Buser
-○ 8/269: Azul Viagens
-○ 9/269: Booking.com
-○ 10/269: Localiza
-○ 11/269: Hoteis.com
-✓ 12/269: Buser
-○ 13/269: Azul Viagens
-○ 14/269: Booking.com
-○ 15/269: Localiza
-✓ 50/269: Bulbe Energia
-✓ 100/269: Euro
-✓ 150/269: Liga Vitória Seguro de Vida
-✓ 200/269: Petz
-✓ 250/269: Trocafy
-✓ 269/269: Época cosmésticos
-✓ Extração bruta concluída: 269 elementos processados
-Limpando e validando dados...
-✓ Filtrados 14 registros com N/A
-✓ Removidas 0 duplicatas completas
-✓ Resolvidas 1 duplicatas parciais (priorizando oferta 'Sim')
-✓ Dataset final: 254 registros válidos
-Substituindo dados de 2025-08-18...
-✓ Dados salvos: livelo_parceiros.xlsx
-✓ Cópia salva: output/livelo_parceiros.xlsx
-✓ Navegador encerrado
-✓ Processo concluído com sucesso!
+2025-08-18 13:45:16,991 - INFO - 🚀 INICIANDO PIPELINE LIVELO ANALYTICS
+2025-08-18 13:45:16,991 - INFO - Timestamp: 20250818_134516
+2025-08-18 13:45:16,992 - INFO - 🕷️ Iniciando scraping...
+2025-08-18 13:46:19,795 - INFO - ✅ Scraping concluído com sucesso
+2025-08-18 13:46:19,795 - INFO - 📊 Iniciando análise...
+2025-08-18 13:46:23,167 - INFO - ✅ Análise concluída com sucesso
+2025-08-18 13:46:23,167 - INFO - 📄 relatorio_livelo.html: 6,480,123 bytes
+2025-08-18 13:46:23,167 - INFO - 🚀 Verificando deploy GitHub Pages...
+2025-08-18 13:46:23,167 - INFO - 🔄 Deploy será feito pelo GitHub Actions workflow
+2025-08-18 13:46:23,167 - INFO - 🔔 Iniciando notificações...
+2025-08-18 13:46:23,167 - WARNING - ⚠️ Variáveis Firebase não configuradas - pulando notificações
+2025-08-18 13:46:23,167 - INFO - 📋 Gerando relatório de execução...
+2025-08-18 13:46:23,167 - INFO - 
+=== RELATÓRIO DE EXECUÇÃO LIVELO ANALYTICS ===
+Timestamp: 18/08/2025 13:46:23
+Sucesso: 4/4 etapas
 
-Executando livelo_reporter.py...
-Saída de livelo_reporter.py:
-🚀 Iniciando Livelo Analytics Pro...
-📊 Carregando dados...
-✓ 256 dimensões carregadas
-✓ 6746 registros carregados
-📋 Dados iniciais: 6746 registros
-✓ 6746 registros válidos processados
-📅 Datas disponíveis: 26 dias de coleta
-✓ HOJE (2025-08-18): 254 registros no site
-✓ ONTEM (2025-08-17): 255 registros para comparação
-🔍 Detectando mudanças entre ontem e hoje...
-🎯 21 combinações ganharam oferta hoje
-📉 21 combinações perderam oferta hoje
-🆕 0 novas combinações detectadas
-👻 1 combinações sumiram do site
-⚡ 48 grandes mudanças de pontos
-🔍 Analisando histórico completo...
-📋 Processando 254 combinações parceiro+moeda ativas hoje...
-✓ Análise concluída para 254 combinações parceiro+moeda ativas hoje
-📄 Gerando relatório HTML...
-✅ Relatório salvo: relatorios/livelo_analytics.html
-✅ GitHub Pages: relatorio_livelo.html
-📊 254 parceiros HOJE | 51 com oferta | 21 ganharam oferta
-🎉 Livelo Analytics Pro concluído!
+DETALHES:
+✅ Scraping: ✅ OK
+✅ Análise: ✅ OK
+✅ Deploy GitHub: ✅ OK
+✅ Notificações: ✅ OK
 
-Todos os scripts foram executados com sucesso.
+ARQUIVOS GERADOS:
+📄 relatorio_livelo.html: 6,480,123 bytes
+📄 livelo_parceiros.xlsx: 207,398 bytes
+📄 dimensoes.json: 111,180 bytes
+
+🎉 EXECUÇÃO BEM-SUCEDIDA!

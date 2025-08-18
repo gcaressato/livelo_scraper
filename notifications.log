@@ -1,9 +1,13 @@
-2025-08-18 12:59:21,690 - INFO - ✅ Firebase configurado para projeto: livel-analytics
-2025-08-18 12:59:21,691 - INFO - 🚀 Iniciando sistema de notificações Livelo Analytics
-2025-08-18 12:59:22,340 - INFO - 📊 Dados de hoje (2025-08-18): 254 registros
-2025-08-18 12:59:22,342 - INFO - 📊 Dados de ontem (2025-08-17): 255 registros
-2025-08-18 12:59:22,373 - INFO - 🎯 Detectadas 21 novas ofertas
-2025-08-18 12:59:22,373 - INFO - 📉 Detectadas 21 ofertas finalizadas
-2025-08-18 12:59:22,374 - INFO - 📄 Arquivo exemplo criado: user_fcm_tokens.json
-2025-08-18 12:59:22,374 - WARNING - ⚠️ Nenhum usuário registrado para notificações
-2025-08-18 12:59:22,374 - INFO - ✅ Processo de notificações concluído
+2025-08-18 13:46:24,706 - INFO - ✅ Firebase configurado para projeto: ***tics
+2025-08-18 13:46:24,706 - INFO - 🚀 Iniciando sistema de notificações Livelo Analytics
+2025-08-18 13:46:25,347 - INFO - 📅 Encontradas 26 datas na base de dados
+2025-08-18 13:46:25,350 - INFO - 📊 Dados de hoje (2025-08-18): 254 registros
+2025-08-18 13:46:25,352 - INFO - 📊 Dados de ontem (2025-08-17): 255 registros
+2025-08-18 13:46:25,352 - INFO - 🔔 Processando notificações...
+2025-08-18 13:46:25,383 - INFO - 🎯 Detectadas 21 novas ofertas
+2025-08-18 13:46:25,383 - INFO - 📉 Detectadas 21 ofertas finalizadas
+2025-08-18 13:46:25,384 - INFO - 📄 Arquivo exemplo criado: user_fcm_tokens.json
+2025-08-18 13:46:25,384 - INFO - 💡 Edite o arquivo com tokens reais dos usuários
+2025-08-18 13:46:25,384 - WARNING - ⚠️ Nenhum usuário ativo registrado para notificações
+2025-08-18 13:46:25,384 - INFO - 📊 Estatísticas salvas em notification_stats.json
+2025-08-18 13:46:25,384 - INFO - ✅ Processo de notificações concluído
