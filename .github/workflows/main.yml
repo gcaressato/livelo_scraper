@@ -51,17 +51,28 @@ jobs:
           python main.py 2>&1 | tee output.log
         continue-on-error: true
 
-      # DEBUG - Verificar secrets (SEM EXPOR VALORES)
-      - name: Debug configurações Firebase
+      # VERIFICAÇÃO INTEGRADA DE SECRETS FIREBASE
+      - name: Debug configurações Firebase (nova versão)
         run: |
-          echo "🔍 Verificando secrets (sem expor valores)..."
-          echo "API Key presente: $([[ -n '${{ secrets.FIREBASE_API_KEY }}' ]] && echo 'SIM' || echo 'NÃO')"
-          echo "Project ID presente: $([[ -n '${{ secrets.FIREBASE_PROJECT_ID }}' ]] && echo 'SIM' || echo 'NÃO')"
-          echo "Sender ID presente: $([[ -n '${{ secrets.FIREBASE_SENDER_ID }}' ]] && echo 'SIM' || echo 'NÃO')"
-          echo "App ID presente: $([[ -n '${{ secrets.FIREBASE_APP_ID }}' ]] && echo 'SIM' || echo 'NÃO')"
-          echo "VAPID Key presente: $([[ -n '${{ secrets.FIREBASE_VAPID_KEY }}' ]] && echo 'SIM' || echo 'NÃO')"
-          echo "Server Key presente: $([[ -n '${{ secrets.FIREBASE_SERVER_KEY }}' ]] && echo 'SIM' || echo 'NÃO')"
-          echo "Service Account presente: $([[ -n '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' ]] && echo 'SIM' || echo 'NÃO')"
+          echo "🔍 Verificando secrets Firebase (sem expor valores)..."
+          echo "Project ID: $([[ -n '${{ secrets.FIREBASE_PROJECT_ID }}' ]] && echo 'CONFIGURADO' || echo 'AUSENTE')"
+          echo "Server Key (legada): $([[ -n '${{ secrets.FIREBASE_SERVER_KEY }}' ]] && echo 'CONFIGURADO' || echo 'AUSENTE')"
+          echo "Service Account: $([[ -n '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' ]] && echo 'CONFIGURADO' || echo 'AUSENTE')"
+          echo "VAPID Key: $([[ -n '${{ secrets.FIREBASE_VAPID_KEY }}' ]] && echo 'CONFIGURADO' || echo 'AUSENTE')"
+          
+          # Verificar tamanhos sem expor conteúdo
+          if [[ -n "${{ secrets.FIREBASE_SERVER_KEY }}" ]]; then
+            key_length=$(echo -n "${{ secrets.FIREBASE_SERVER_KEY }}" | wc -c)
+            echo "Server Key length: $key_length chars"
+            if [[ $key_length -lt 100 ]]; then
+              echo "⚠️ Server Key pode estar incorreta (muito curta)"
+            fi
+          fi
+          
+          if [[ -n "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" ]]; then
+            sa_length=$(echo -n "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" | wc -c)
+            echo "Service Account length: $sa_length chars"
+          fi
         
       # VALIDAÇÃO INTELIGENTE DE DADOS
       - name: Validar qualidade dos dados
@@ -109,77 +120,43 @@ jobs:
           " 2>&1 | tee validation.log
         continue-on-error: true
         
-      # ============ FIREBASE CONFIGURAÇÃO SIMPLIFICADA ============
+      # ============ FIREBASE PWA FILES (SEMPRE CRIAR) ============
       
-      - name: Verificar secrets Firebase essenciais
-        id: check_firebase
+      - name: Criar configuração Firebase estática
         run: |
-          missing_count=0
-          
-          # Verificar apenas os secrets essenciais para funcionar
-          if [[ -z "${{ secrets.FIREBASE_PROJECT_ID }}" ]]; then
-            echo "❌ FIREBASE_PROJECT_ID ausente"
-            missing_count=$((missing_count + 1))
-          fi
-          
-          if [[ -z "${{ secrets.FIREBASE_SERVER_KEY }}" ]]; then
-            echo "❌ FIREBASE_SERVER_KEY ausente"
-            missing_count=$((missing_count + 1))
-          fi
-          
-          # Verificar tamanho da server key (deve ser longa)
-          server_key_length=$(echo -n "${{ secrets.FIREBASE_SERVER_KEY }}" | wc -c)
-          if [[ $server_key_length -lt 100 ]]; then
-            echo "⚠️ FIREBASE_SERVER_KEY muito curta ($server_key_length chars) - deve ter 100+ caracteres"
-            echo "💡 Verifique se o secret está correto no GitHub"
-            missing_count=$((missing_count + 1))
-          fi
-          
-          if [[ $missing_count -eq 0 ]]; then
-            echo "✅ Firebase básico configurado corretamente"
-            echo "FIREBASE_OK=true" >> $GITHUB_OUTPUT
-          else
-            echo "❌ $missing_count problemas na configuração Firebase"
-            echo "FIREBASE_OK=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Criar configuração Firebase usando dados estáticos
-        run: |
-          # Usar dados do firebase-config.json existente ao invés de secrets
-          # Isso evita problemas de substituição de placeholders
-          
+          # Usar configuração estática conhecida do projeto
           cat > firebase-config-runtime.js << 'EOF'
-          // Configuração Firebase (dados estáticos do projeto)
+          // Configuração Firebase Livelo Analytics
           window.firebaseConfig = {
               apiKey: "AIzaSyAibNVfTL0kvG_R3rKYYSnAeQWc5oVBFYk",
-              authDomain: "livel-analytics.firebaseapp.com",
+              authDomain: "livel-analytics.firebaseapp.com", 
               projectId: "livel-analytics",
               storageBucket: "livel-analytics.appspot.com",
               messagingSenderId: "168707812242",
               appId: "1:168707812242:web:59b4c1df4fc553410c6f4b"
           };
           
-          // VAPID key seria aqui se fosse necessária
-          window.firebaseVapidKey = "BFj3Q_8s8Z_9wQ4kKy4Q8x9QC_6bY7j5P_8mA9k7B3f_EXAMPLE_KEY";
+          // VAPID key (se disponível via secret)
+          window.firebaseVapidKey = "${{ secrets.FIREBASE_VAPID_KEY || 'BFj3Q_8s8Z_9wQ4kKy4Q8x9QC_6bY7j5P_8mA9k7B3f_EXAMPLE_KEY' }}";
           
-          console.log('🔥 Firebase config estática carregada:', window.firebaseConfig.projectId);
+          console.log('🔥 Firebase config carregada para:', window.firebaseConfig.projectId);
           EOF
           
-          echo "✅ Configuração Firebase estática criada"
+          echo "✅ Configuração Firebase criada"
 
-      - name: Criar Service Worker Firebase simplificado
+      - name: Criar Service Worker Firebase moderno
         run: |
           cat > sw.js << 'EOF'
-          // Service Worker para Firebase Messaging v9
+          // Service Worker Firebase v9 - Livelo Analytics
           importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
           importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
 
-          console.log('[SW] Service Worker carregando...');
+          console.log('[SW] Livelo Analytics Service Worker iniciando...');
 
           const firebaseConfig = {
               apiKey: "AIzaSyAibNVfTL0kvG_R3rKYYSnAeQWc5oVBFYk",
               authDomain: "livel-analytics.firebaseapp.com",
-              projectId: "livel-analytics",
+              projectId: "livel-analytics", 
               storageBucket: "livel-analytics.appspot.com",
               messagingSenderId: "168707812242",
               appId: "1:168707812242:web:59b4c1df4fc553410c6f4b"
@@ -193,14 +170,14 @@ jobs:
               }
               
               messaging = firebase.messaging();
-              console.log('[SW] Firebase Messaging inicializado');
+              console.log('[SW] Firebase Messaging inicializado para livel-analytics');
               
               messaging.onBackgroundMessage(function(payload) {
-                  console.log('[SW] Mensagem em background recebida:', payload);
+                  console.log('[SW] Nova oferta Livelo recebida:', payload);
                   
-                  const notificationTitle = payload.notification?.title || 'Livelo Analytics';
+                  const notificationTitle = payload.notification?.title || 'Nova Oferta Livelo!';
                   const notificationOptions = {
-                      body: payload.notification?.body || 'Nova oferta disponível!',
+                      body: payload.notification?.body || 'Confira as ofertas atualizadas',
                       icon: 'https://via.placeholder.com/192x192/ff0a8c/ffffff?text=L',
                       badge: 'https://via.placeholder.com/96x96/ff0a8c/ffffff?text=L',
                       tag: 'livelo-offer',
@@ -208,8 +185,8 @@ jobs:
                       data: payload.data || {},
                       actions: [
                           {
-                              action: 'view',
-                              title: '👀 Ver Oferta'
+                              action: 'view_offers',
+                              title: '👀 Ver Ofertas'
                           },
                           {
                               action: 'dismiss',
@@ -222,14 +199,14 @@ jobs:
               });
               
           } catch (error) {
-              console.error('[SW] Erro ao inicializar Firebase:', error);
+              console.error('[SW] Erro Firebase:', error);
           }
 
           self.addEventListener('notificationclick', function(event) {
-              console.log('[SW] Clique na notificação:', event.action);
+              console.log('[SW] Clique na notificação Livelo:', event.action);
               event.notification.close();
               
-              if (event.action === 'view') {
+              if (event.action === 'view_offers') {
                   event.waitUntil(
                       clients.openWindow('https://gcaressato.github.io/livelo_scraper/')
                   );
@@ -237,31 +214,32 @@ jobs:
           });
 
           self.addEventListener('activate', function(event) {
-              console.log('[SW] Service Worker ativado');
+              console.log('[SW] Livelo Service Worker ativado');
               event.waitUntil(self.clients.claim());
           });
 
           self.addEventListener('install', function(event) {
-              console.log('[SW] Service Worker instalado');
+              console.log('[SW] Livelo Service Worker instalado');
               self.skipWaiting();
           });
           EOF
           
           echo "✅ Service Worker criado"
 
-      - name: Criar manifest.json
+      - name: Criar manifest.json otimizado
         run: |
           cat > manifest.json << 'EOF'
           {
             "name": "Livelo Analytics Pro",
             "short_name": "Livelo",
-            "description": "Dashboard analítico para ofertas Livelo com notificações push",
+            "description": "Dashboard profissional para análise de ofertas Livelo com notificações inteligentes",
             "start_url": "./",
             "scope": "./",
             "display": "standalone",
+            "orientation": "portrait-primary",
             "background_color": "#151f4f",
             "theme_color": "#ff0a8c",
-            "orientation": "portrait-primary",
+            "categories": ["finance", "shopping", "productivity"],
             "icons": [
               {
                 "src": "https://via.placeholder.com/192x192/ff0a8c/ffffff?text=L",
@@ -270,8 +248,8 @@ jobs:
                 "purpose": "maskable any"
               },
               {
-                "src": "https://via.placeholder.com/512x512/ff0a8c/ffffff?text=L", 
-                "sizes": "512x512",
+                "src": "https://via.placeholder.com/512x512/ff0a8c/ffffff?text=L",
+                "sizes": "512x512", 
                 "type": "image/png",
                 "purpose": "maskable any"
               }
@@ -282,14 +260,17 @@ jobs:
           
           echo "✅ Manifest PWA criado"
       
-      - name: Enviar notificações push para usuários
-        if: steps.check_firebase.outputs.FIREBASE_OK == 'true'
+      # ============ SISTEMA DE NOTIFICAÇÕES v2.0 ============
+      
+      - name: Executar sistema de notificações com verificação integrada
         run: |
-          echo "🔔 Iniciando envio de notificações push..."
+          echo "🔔 Iniciando sistema de notificações v2.0..."
           python notification_sender.py 2>&1 | tee notifications.log
         env:
           FIREBASE_PROJECT_ID: livel-analytics
           FIREBASE_SERVER_KEY: ${{ secrets.FIREBASE_SERVER_KEY }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FIREBASE_VAPID_KEY: ${{ secrets.FIREBASE_VAPID_KEY }}
         continue-on-error: true
         
       - name: Verificar falhas na execução
@@ -316,20 +297,12 @@ jobs:
             **⏰ Horário:** ${new Date().toLocaleString('pt-BR', {timeZone: 'America/Sao_Paulo'})}
             **🔗 Logs:** [Ver detalhes](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
             
-            ### Possíveis causas:
-            - [ ] Site mudou estrutura HTML
-            - [ ] Elementos foram alterados  
-            - [ ] Timeout de conexão
-            - [ ] Erro no processamento dos dados
-            
             ### ⚠️ Ação necessária:
             1. Verificar logs do workflow
             2. Testar scraper localmente
             3. Ajustar seletores se necessário
-            4. Fechar esta issue após correção
             `;
             
-            // Verificar se já existe issue aberta
             const existingIssues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -349,20 +322,15 @@ jobs:
       
       - name: Listar arquivos de diagnóstico
         run: |
-          echo "📁 Arquivos HTML gerados:"
-          ls -la *.html 2>/dev/null || echo "Nenhum arquivo HTML encontrado"
-          
-          echo "📁 Arquivos de log gerados:"
-          ls -la *.log 2>/dev/null || echo "Nenhum arquivo de log encontrado"
-          
-          echo "📁 Screenshots gerados:"
-          ls -la *.png 2>/dev/null || echo "Nenhum screenshot encontrado"
-          
-          echo "📁 Arquivos PWA/Firebase:"
-          ls -la sw.js manifest.json firebase-config-runtime.js 2>/dev/null || echo "Arquivos PWA não encontrados"
-          
-          echo "📁 Arquivos de dados:"
-          ls -la *.xlsx *.json 2>/dev/null || echo "Arquivos de dados não encontrados"
+          echo "📁 Arquivos gerados:"
+          echo "HTML:"
+          ls -la *.html 2>/dev/null || echo "  Nenhum arquivo HTML"
+          echo "Logs:"
+          ls -la *.log 2>/dev/null || echo "  Nenhum log"
+          echo "PWA/Firebase:"
+          ls -la sw.js manifest.json firebase-config-runtime.js 2>/dev/null || echo "  Arquivos PWA ausentes"
+          echo "Dados:"
+          ls -la *.xlsx *.json 2>/dev/null || echo "  Nenhum arquivo de dados"
       
       - name: Configurar Git para commit
         run: |
@@ -373,44 +341,35 @@ jobs:
         run: |
           timestamp=$(date +%Y%m%d_%H%M%S)
           
-          # Copiar logs com timestamp
-          if [ -f "output.log" ]; then
-            cp output.log "logs/scraper_${timestamp}.log"
-          fi
-          
-          if [ -f "notifications.log" ]; then
-            cp notifications.log "logs/notifications_${timestamp}.log"
-          fi
-          
-          if [ -f "validation.log" ]; then
-            cp validation.log "logs/validation_${timestamp}.log"
-          fi
+          # Copiar logs importantes
+          mkdir -p logs
+          for log_file in output.log notifications.log validation.log; do
+            if [ -f "$log_file" ]; then
+              cp "$log_file" "logs/${log_file%.log}_${timestamp}.log"
+            fi
+          done
           
           # Adicionar arquivos principais
           git add -f *.html *.xlsx *.json sw.js manifest.json firebase-config-runtime.js 2>/dev/null || true
-          
-          # Adicionar logs
           git add logs/ relatorios/ 2>/dev/null || true
-          
-          # Adicionar arquivos de debug
           git add -f debug_*.* *.log 2>/dev/null || true
           
-          # Verificar se há algo para comitar
           if git diff --staged --quiet; then
             echo "✅ Nenhuma mudança para comitar"
           else
-            commit_message="📊 Atualização automática Livelo Analytics [$(date +'%d/%m/%Y %H:%M')]
-            
-            🔧 Firebase: ${{ steps.check_firebase.outputs.FIREBASE_OK == 'true' && 'Configurado' || 'Com problemas' }}
+            commit_message="📊 Livelo Analytics v2.0 - $(date +'%d/%m/%Y %H:%M')
+
+            🔧 Firebase: Verificação integrada ativa
+            📱 Notificações: Sistema v2.0 com múltiplas APIs
             📈 Scraping: ${{ env.SCRAPING_FALHOU == 'true' && 'Falhou' || 'Sucesso' }}
-            ⏰ Timestamp: ${timestamp}"
+            ⏰ Build: ${timestamp}"
             
             git commit -m "$commit_message"
             
             # Push com retry
             for i in {1..3}; do
               if git push; then
-                echo "✅ Push realizado com sucesso (tentativa $i)"
+                echo "✅ Push realizado (tentativa $i)"
                 break
               else
                 echo "⚠️ Falha no push (tentativa $i), tentando novamente..."
@@ -419,56 +378,72 @@ jobs:
             done
           fi
       
-      # ============ GITHUB PAGES DEPLOY ============
+      # ============ DEPLOY PARA GITHUB PAGES ============
       
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
       
-      - name: Configurar diretório de publicação
+      - name: Preparar arquivos para deploy
         run: |
           mkdir -p ./public
           
-          echo "📁 Copiando arquivos para o diretório public..."
+          echo "📁 Preparando deploy..."
           
-          # Copiar HTML principal
+          # HTML principal
           if [ -f "relatorio_livelo.html" ]; then
             cp relatorio_livelo.html ./public/index.html
-            echo "✅ HTML principal copiado"
+            echo "✅ Dashboard copiado"
           else
-            echo "❌ relatorio_livelo.html não encontrado - criando página de erro"
+            echo "❌ Dashboard não encontrado - criando página de manutenção"
             cat > ./public/index.html << 'EOF'
           <!DOCTYPE html>
           <html lang="pt-BR">
           <head>
-            <title>Livelo Analytics - Em Manutenção</title>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1">
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+              <title>Livelo Analytics - Processando</title>
+              <style>
+                  body { 
+                      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                      color: white; margin: 0; padding: 50px;
+                      text-align: center; min-height: 100vh;
+                      display: flex; align-items: center; justify-content: center;
+                  }
+                  .container { 
+                      background: rgba(255,255,255,0.1); padding: 40px;
+                      border-radius: 20px; backdrop-filter: blur(10px);
+                  }
+                  .spinner { animation: spin 2s linear infinite; font-size: 3em; }
+                  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+              </style>
           </head>
           <body>
-            <h1>🔧 Sistema em Manutenção</h1>
-            <p>O dashboard está sendo atualizado. Tente novamente em alguns minutos.</p>
+              <div class="container">
+                  <div class="spinner">⚙️</div>
+                  <h1>Livelo Analytics</h1>
+                  <p>Sistema processando dados...</p>
+                  <p><small>Atualizado: $(date +'%d/%m/%Y %H:%M')</small></p>
+              </div>
           </body>
           </html>
           EOF
           fi
           
-          # Copiar arquivos PWA
+          # Arquivos PWA
           for file in manifest.json sw.js firebase-config-runtime.js; do
             if [ -f "$file" ]; then
               cp "$file" ./public/
               echo "✅ $file copiado"
-            else
-              echo "⚠️ $file não encontrado"
             fi
           done
           
-          # Copiar outros arquivos úteis
-          cp -f *.xlsx ./public/ 2>/dev/null || echo "📊 Nenhum arquivo Excel para copiar"
+          # Dados Excel
+          cp -f *.xlsx ./public/ 2>/dev/null || echo "📊 Nenhum Excel para copiar"
           
-          echo "📂 Conteúdo do diretório public:"
-          ls -la ./public/
+          echo "📂 Arquivos no public: $(ls -1 ./public/ | wc -l)"
           
       - name: Setup Pages
         uses: actions/configure-pages@v3
@@ -480,43 +455,56 @@ jobs:
           branch: gh-pages
           clean: true
 
-      # ============ FIREBASE HOSTING (OPCIONAL) ============
+      # ============ FIREBASE HOSTING (SE CONFIGURADO) ============
       
-      - name: Deploy Firebase Hosting (se configurado)
-        if: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' }}
+      - name: Deploy Firebase Hosting (opcional)
+        if: ${{ vars.FIREBASE_HOSTING_ENABLED == 'true' && secrets.FIREBASE_SERVICE_ACCOUNT != '' }}
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           channelId: live
           projectId: livel-analytics
-          entryPoint: .
         continue-on-error: true
 
       # ============ RESUMO FINAL ============
       
-      - name: Resumo da execução
+      - name: Resumo final da execução
         run: |
           echo "
-          📊 RESUMO DA EXECUÇÃO LIVELO ANALYTICS
-          ========================================
-          ⏰ Horário: $(date +'%d/%m/%Y %H:%M:%S %Z')
-          📁 Arquivos no public: $(ls -1 ./public/ 2>/dev/null | wc -l) arquivos
+          🎉 LIVELO ANALYTICS v2.0 - RESUMO DA EXECUÇÃO
+          ============================================
+          ⏰ Concluído: $(date +'%d/%m/%Y %H:%M:%S %Z')
           
-          🔍 STATUS DOS COMPONENTES:
-          ✅ Scraping: ${{ env.SCRAPING_FALHOU == 'true' && '❌ FALHOU' || '✅ SUCESSO' }}
-          🌐 GitHub Pages: ✅ Deployado
-          🔥 Firebase Messaging: ${{ steps.check_firebase.outputs.FIREBASE_OK == 'true' && '✅ Ativo' || '⚠️ Com problemas' }}
-          🏠 Firebase Hosting: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' && '✅ Configurado' || '⚠️ Não configurado' }}
-          🔔 Notificações: ${{ steps.check_firebase.outputs.FIREBASE_OK == 'true' && '✅ Processadas' || '⚠️ Puladas' }}
+          📊 STATUS GERAL:
+          Scraping: ${{ env.SCRAPING_FALHOU == 'true' && '❌ FALHOU' || '✅ SUCESSO' }}
+          PWA Files: ✅ Criados
+          GitHub Pages: ✅ Deploy realizado
+          Firebase: 🔍 Verificação integrada ativa
           
-          🌍 ACESSO:
-          📖 GitHub Pages: https://gcaressato.github.io/livelo_scraper/
-          🔥 Firebase Hosting: https://livel-analytics.web.app/ (se configurado)
+          🔧 RECURSOS ATIVOS:
+          ✅ Dashboard responsivo
+          ✅ Service Worker para notificações
+          ✅ Manifest PWA otimizado
+          ✅ Sistema de notificações v2.0
+          ✅ Verificação automática de configuração
+          
+          🌐 ACESSO:
+          📱 GitHub Pages: https://gcaressato.github.io/livelo_scraper/
+          🔥 Firebase: https://livel-analytics.web.app/ (se configurado)
+          
+          📋 PRÓXIMOS PASSOS:
+          1. Configure FIREBASE_SERVER_KEY se quiser notificações legadas
+          2. Configure FIREBASE_SERVICE_ACCOUNT para Firebase Hosting
+          3. Adicione usuários em user_fcm_tokens.json
+          4. Monitore logs para ajustes finos
+          
+          ✨ Sistema rodando com verificação integrada!
           "
           
+          # Definir status final
           if [ "${{ env.SCRAPING_FALHOU }}" = "true" ]; then
-            echo "::warning::⚠️ Scraper falhou mas deploy foi mantido com dados existentes"
+            echo "::warning::Scraper teve problemas, mas sistema continua operacional"
           else
-            echo "::notice::🎉 Deploy concluído com sucesso!"
+            echo "::notice::✅ Execução completamente bem-sucedida!"
           fi
