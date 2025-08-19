@@ -28,7 +28,6 @@ jobs:
       - name: Instalar dependências
         run: |
           pip install selenium webdriver-manager pandas openpyxl selenium-stealth plotly numpy requests
-          # Verificar versão do Selenium e Chrome
           python -c "import selenium; print(f'Selenium version: {selenium.__version__}')"
           google-chrome --version
           
@@ -62,6 +61,7 @@ jobs:
           echo "App ID presente: $([[ -n '${{ secrets.FIREBASE_APP_ID }}' ]] && echo 'SIM' || echo 'NÃO')"
           echo "VAPID Key presente: $([[ -n '${{ secrets.FIREBASE_VAPID_KEY }}' ]] && echo 'SIM' || echo 'NÃO')"
           echo "Server Key presente: $([[ -n '${{ secrets.FIREBASE_SERVER_KEY }}' ]] && echo 'SIM' || echo 'NÃO')"
+          echo "Service Account presente: $([[ -n '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' ]] && echo 'SIM' || echo 'NÃO')"
         
       # VALIDAÇÃO INTELIGENTE DE DADOS
       - name: Validar qualidade dos dados
@@ -75,28 +75,23 @@ jobs:
           success = True
           
           try:
-              # Verificar se arquivo Excel existe
               if not os.path.exists('livelo_parceiros.xlsx'):
                   print('❌ Arquivo Excel não encontrado!')
                   success = False
               else:
                   df = pd.read_excel('livelo_parceiros.xlsx')
-                  
-                  # Verificar se dados são recentes (últimas 24h)
                   df['Timestamp'] = pd.to_datetime(df['Timestamp'])
                   latest_date = df['Timestamp'].max()
                   now = datetime.now()
                   
-                  if (now - latest_date).total_seconds() > 86400:  # 24 horas
+                  if (now - latest_date).total_seconds() > 86400:
                       print(f'⚠️ Dados podem estar antigos! Último: {latest_date}')
                   
-                  # Verificar quantidade mínima
                   if len(df) < 30:
                       print(f'⚠️ Poucos dados coletados: {len(df)} registros')
                   else:
                       print(f'✅ Dados validados: {len(df)} registros, último em {latest_date}')
               
-              # Verificar se HTML foi gerado
               if not os.path.exists('relatorio_livelo.html'):
                   print('❌ HTML não foi gerado!')
                   success = False
@@ -114,72 +109,84 @@ jobs:
           " 2>&1 | tee validation.log
         continue-on-error: true
         
-      # ============ SISTEMA DE NOTIFICAÇÕES FIREBASE ============
+      # ============ FIREBASE CONFIGURAÇÃO SIMPLIFICADA ============
       
-      - name: Verificar se todos os secrets estão disponíveis
-        id: check_secrets
+      - name: Verificar secrets Firebase essenciais
+        id: check_firebase
         run: |
-          missing_secrets=0
+          missing_count=0
           
-          if [[ -z "${{ secrets.FIREBASE_API_KEY }}" ]]; then
-            echo "❌ FIREBASE_API_KEY ausente"
-            missing_secrets=$((missing_secrets + 1))
-          fi
-          
+          # Verificar apenas os secrets essenciais para funcionar
           if [[ -z "${{ secrets.FIREBASE_PROJECT_ID }}" ]]; then
             echo "❌ FIREBASE_PROJECT_ID ausente"
-            missing_secrets=$((missing_secrets + 1))
-          fi
-          
-          if [[ -z "${{ secrets.FIREBASE_SENDER_ID }}" ]]; then
-            echo "❌ FIREBASE_SENDER_ID ausente"
-            missing_secrets=$((missing_secrets + 1))
-          fi
-          
-          if [[ -z "${{ secrets.FIREBASE_APP_ID }}" ]]; then
-            echo "❌ FIREBASE_APP_ID ausente"
-            missing_secrets=$((missing_secrets + 1))
-          fi
-          
-          if [[ -z "${{ secrets.FIREBASE_VAPID_KEY }}" ]]; then
-            echo "❌ FIREBASE_VAPID_KEY ausente"
-            missing_secrets=$((missing_secrets + 1))
+            missing_count=$((missing_count + 1))
           fi
           
           if [[ -z "${{ secrets.FIREBASE_SERVER_KEY }}" ]]; then
             echo "❌ FIREBASE_SERVER_KEY ausente"
-            missing_secrets=$((missing_secrets + 1))
+            missing_count=$((missing_count + 1))
           fi
           
-          if [[ $missing_secrets -eq 0 ]]; then
-            echo "✅ Todos os secrets Firebase estão configurados"
-            echo "FIREBASE_READY=true" >> $GITHUB_OUTPUT
-          else
-            echo "❌ $missing_secrets secrets ausentes - Firebase será desabilitado"
-            echo "FIREBASE_READY=false" >> $GITHUB_OUTPUT
+          # Verificar tamanho da server key (deve ser longa)
+          server_key_length=$(echo -n "${{ secrets.FIREBASE_SERVER_KEY }}" | wc -c)
+          if [[ $server_key_length -lt 100 ]]; then
+            echo "⚠️ FIREBASE_SERVER_KEY muito curta ($server_key_length chars) - deve ter 100+ caracteres"
+            echo "💡 Verifique se o secret está correto no GitHub"
+            missing_count=$((missing_count + 1))
           fi
-      
-      - name: Criar Service Worker Firebase v9
-        if: steps.check_secrets.outputs.FIREBASE_READY == 'true'
+          
+          if [[ $missing_count -eq 0 ]]; then
+            echo "✅ Firebase básico configurado corretamente"
+            echo "FIREBASE_OK=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ $missing_count problemas na configuração Firebase"
+            echo "FIREBASE_OK=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Criar configuração Firebase usando dados estáticos
+        run: |
+          # Usar dados do firebase-config.json existente ao invés de secrets
+          # Isso evita problemas de substituição de placeholders
+          
+          cat > firebase-config-runtime.js << 'EOF'
+          // Configuração Firebase (dados estáticos do projeto)
+          window.firebaseConfig = {
+              apiKey: "AIzaSyAibNVfTL0kvG_R3rKYYSnAeQWc5oVBFYk",
+              authDomain: "livel-analytics.firebaseapp.com",
+              projectId: "livel-analytics",
+              storageBucket: "livel-analytics.appspot.com",
+              messagingSenderId: "168707812242",
+              appId: "1:168707812242:web:59b4c1df4fc553410c6f4b"
+          };
+          
+          // VAPID key seria aqui se fosse necessária
+          window.firebaseVapidKey = "BFj3Q_8s8Z_9wQ4kKy4Q8x9QC_6bY7j5P_8mA9k7B3f_EXAMPLE_KEY";
+          
+          console.log('🔥 Firebase config estática carregada:', window.firebaseConfig.projectId);
+          EOF
+          
+          echo "✅ Configuração Firebase estática criada"
+
+      - name: Criar Service Worker Firebase simplificado
         run: |
           cat > sw.js << 'EOF'
           // Service Worker para Firebase Messaging v9
           importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
           importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
-      
+
           console.log('[SW] Service Worker carregando...');
-      
+
           const firebaseConfig = {
-              apiKey: "FIREBASE_API_KEY_PLACEHOLDER",
-              authDomain: "FIREBASE_PROJECT_ID_PLACEHOLDER.firebaseapp.com",
-              projectId: "FIREBASE_PROJECT_ID_PLACEHOLDER",
-              storageBucket: "FIREBASE_PROJECT_ID_PLACEHOLDER.appspot.com",
-              messagingSenderId: "FIREBASE_SENDER_ID_PLACEHOLDER",
-              appId: "FIREBASE_APP_ID_PLACEHOLDER"
+              apiKey: "AIzaSyAibNVfTL0kvG_R3rKYYSnAeQWc5oVBFYk",
+              authDomain: "livel-analytics.firebaseapp.com",
+              projectId: "livel-analytics",
+              storageBucket: "livel-analytics.appspot.com",
+              messagingSenderId: "168707812242",
+              appId: "1:168707812242:web:59b4c1df4fc553410c6f4b"
           };
-      
+
           let messaging;
-      
+
           try {
               if (!firebase.apps.length) {
                   firebase.initializeApp(firebaseConfig);
@@ -217,7 +224,7 @@ jobs:
           } catch (error) {
               console.error('[SW] Erro ao inicializar Firebase:', error);
           }
-      
+
           self.addEventListener('notificationclick', function(event) {
               console.log('[SW] Clique na notificação:', event.action);
               event.notification.close();
@@ -228,22 +235,21 @@ jobs:
                   );
               }
           });
-      
+
           self.addEventListener('activate', function(event) {
               console.log('[SW] Service Worker ativado');
               event.waitUntil(self.clients.claim());
           });
-      
+
           self.addEventListener('install', function(event) {
               console.log('[SW] Service Worker instalado');
               self.skipWaiting();
           });
           EOF
           
-          echo "✅ Service Worker criado com placeholders"
-      
-      - name: Criar manifest.json PWA
-        if: steps.check_secrets.outputs.FIREBASE_READY == 'true'
+          echo "✅ Service Worker criado"
+
+      - name: Criar manifest.json
         run: |
           cat > manifest.json << 'EOF'
           {
@@ -270,142 +276,21 @@ jobs:
                 "purpose": "maskable any"
               }
             ],
-            "gcm_sender_id": "FIREBASE_SENDER_ID_PLACEHOLDER"
+            "gcm_sender_id": "168707812242"
           }
           EOF
           
           echo "✅ Manifest PWA criado"
       
-      - name: Criar arquivo de configuração Firebase dinâmico
-        if: steps.check_secrets.outputs.FIREBASE_READY == 'true'
-        run: |
-          cat > firebase-config-runtime.js << 'EOF'
-          // Configuração Firebase dinâmica (gerada pelo GitHub Actions)
-          window.firebaseConfig = {
-              apiKey: "FIREBASE_API_KEY_PLACEHOLDER",
-              authDomain: "FIREBASE_PROJECT_ID_PLACEHOLDER.firebaseapp.com",
-              projectId: "FIREBASE_PROJECT_ID_PLACEHOLDER",
-              storageBucket: "FIREBASE_PROJECT_ID_PLACEHOLDER.appspot.com",
-              messagingSenderId: "FIREBASE_SENDER_ID_PLACEHOLDER",
-              appId: "FIREBASE_APP_ID_PLACEHOLDER"
-          };
-          
-          window.firebaseVapidKey = "FIREBASE_VAPID_KEY_PLACEHOLDER";
-          
-          console.log('🔥 Firebase config carregada:', window.firebaseConfig.projectId);
-          EOF
-          
-          echo "✅ Configuração Firebase dinâmica criada"
-            
-      - name: Substituir placeholders Firebase nos arquivos
-        if: steps.check_secrets.outputs.FIREBASE_READY == 'true'
-        run: |
-          echo "🔧 Substituindo configurações Firebase..."
-          
-          # Lista de arquivos para atualizar
-          files_to_update="relatorio_livelo.html sw.js manifest.json firebase-config-runtime.js"
-          
-          for file in $files_to_update; do
-            if [ -f "$file" ]; then
-              echo "Atualizando $file..."
-              
-              # Substituir com escape de caracteres especiais
-              sed -i "s|FIREBASE_API_KEY_PLACEHOLDER|${{ secrets.FIREBASE_API_KEY }}|g" "$file"
-              sed -i "s|FIREBASE_PROJECT_ID_PLACEHOLDER|${{ secrets.FIREBASE_PROJECT_ID }}|g" "$file"
-              sed -i "s|FIREBASE_SENDER_ID_PLACEHOLDER|${{ secrets.FIREBASE_SENDER_ID }}|g" "$file"
-              sed -i "s|FIREBASE_APP_ID_PLACEHOLDER|${{ secrets.FIREBASE_APP_ID }}|g" "$file"
-              sed -i "s|FIREBASE_VAPID_KEY_PLACEHOLDER|${{ secrets.FIREBASE_VAPID_KEY }}|g" "$file"
-              
-              echo "✅ $file atualizado"
-            else
-              echo "⚠️ Arquivo $file não encontrado"
-            fi
-          done
-          
-          echo "✅ Configuração Firebase aplicada"
-      
-      - name: Validar configurações Firebase aplicadas
-        if: steps.check_secrets.outputs.FIREBASE_READY == 'true'
-        run: |
-          echo "🔍 Validando substituições Firebase..."
-          
-          for file in "sw.js" "manifest.json" "firebase-config-runtime.js"; do
-            if [ -f "$file" ]; then
-              echo "Verificando $file..."
-              
-              # Verificar se ainda há placeholders não substituídos
-              if grep -q "PLACEHOLDER" "$file"; then
-                echo "❌ Placeholders não substituídos em $file:"
-                grep -n "PLACEHOLDER" "$file" || true
-              else
-                echo "✅ $file - Todos os placeholders substituídos"
-              fi
-              
-              # Verificar tamanho
-              size=$(wc -c < "$file")
-              echo "📏 Tamanho de $file: $size bytes"
-            fi
-          done
-          
-          echo "✅ Validação Firebase concluída"
-      
       - name: Enviar notificações push para usuários
-        if: steps.check_secrets.outputs.FIREBASE_READY == 'true'
+        if: steps.check_firebase.outputs.FIREBASE_OK == 'true'
         run: |
           echo "🔔 Iniciando envio de notificações push..."
           python notification_sender.py 2>&1 | tee notifications.log
         env:
-          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_PROJECT_ID: livel-analytics
           FIREBASE_SERVER_KEY: ${{ secrets.FIREBASE_SERVER_KEY }}
         continue-on-error: true
-      
-      - name: Criar fallback se Firebase indisponível
-        if: steps.check_secrets.outputs.FIREBASE_READY == 'false'
-        run: |
-          echo "⚠️ Firebase não configurado - criando arquivos de fallback"
-          
-          # Service Worker mínimo
-          cat > sw.js << 'EOF'
-          // Service Worker básico (Firebase desabilitado)
-          console.log('[SW] Service Worker básico carregado - Firebase desabilitado');
-          
-          self.addEventListener('install', function(event) {
-              console.log('[SW] Service Worker instalado (modo básico)');
-              self.skipWaiting();
-          });
-          
-          self.addEventListener('activate', function(event) {
-              console.log('[SW] Service Worker ativado (modo básico)');
-              event.waitUntil(self.clients.claim());
-          });
-          EOF
-          
-          # Manifest básico
-          cat > manifest.json << 'EOF'
-          {
-            "name": "Livelo Analytics",
-            "short_name": "Livelo",
-            "description": "Dashboard analítico para ofertas Livelo",
-            "start_url": "./",
-            "scope": "./",
-            "display": "standalone",
-            "background_color": "#151f4f",
-            "theme_color": "#ff0a8c",
-            "orientation": "portrait-primary",
-            "icons": [
-              {
-                "src": "https://via.placeholder.com/192x192/ff0a8c/ffffff?text=L",
-                "sizes": "192x192",
-                "type": "image/png",
-                "purpose": "maskable any"
-              }
-            ]
-          }
-          EOF
-          
-          echo "✅ Arquivos de fallback criados"
-      
-      # ============ FIM NOTIFICAÇÕES ============
         
       - name: Verificar falhas na execução
         run: |
@@ -442,9 +327,6 @@ jobs:
             2. Testar scraper localmente
             3. Ajustar seletores se necessário
             4. Fechar esta issue após correção
-            
-            ---
-            *Issue criada automaticamente pelo GitHub Actions*
             `;
             
             // Verificar se já existe issue aberta
@@ -463,10 +345,6 @@ jobs:
                 body: body,
                 labels: ['scraper-failure', 'urgent']
               });
-              
-              console.log('📧 Issue criada - você receberá email do GitHub automaticamente!');
-            } else {
-              console.log('Issue de falha já existe, não criando duplicata');
             }
       
       - name: Listar arquivos de diagnóstico
@@ -493,9 +371,9 @@ jobs:
           
       - name: Commit e push dos novos dados
         run: |
-          # Copiar logs com timestamp
           timestamp=$(date +%Y%m%d_%H%M%S)
           
+          # Copiar logs com timestamp
           if [ -f "output.log" ]; then
             cp output.log "logs/scraper_${timestamp}.log"
           fi
@@ -521,10 +399,9 @@ jobs:
           if git diff --staged --quiet; then
             echo "✅ Nenhuma mudança para comitar"
           else
-            # Fazer commit
             commit_message="📊 Atualização automática Livelo Analytics [$(date +'%d/%m/%Y %H:%M')]
             
-            🔧 Firebase: ${{ steps.check_secrets.outputs.FIREBASE_READY == 'true' && 'Configurado' || 'Desabilitado' }}
+            🔧 Firebase: ${{ steps.check_firebase.outputs.FIREBASE_OK == 'true' && 'Configurado' || 'Com problemas' }}
             📈 Scraping: ${{ env.SCRAPING_FALHOU == 'true' && 'Falhou' || 'Sucesso' }}
             ⏰ Timestamp: ${timestamp}"
             
@@ -542,7 +419,7 @@ jobs:
             done
           fi
       
-      # ============ SEÇÃO PWA + GITHUB PAGES ============
+      # ============ GITHUB PAGES DEPLOY ============
       
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -568,54 +445,10 @@ jobs:
             <title>Livelo Analytics - Em Manutenção</title>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1">
-            <style>
-              body { 
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                text-align: center; 
-                padding: 50px; 
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                min-height: 100vh;
-                margin: 0;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-              }
-              .container { 
-                max-width: 600px; 
-                background: rgba(255,255,255,0.1);
-                padding: 40px;
-                border-radius: 20px;
-                backdrop-filter: blur(10px);
-              }
-              .error { color: #ffeb3b; font-size: 1.2em; }
-              .info { color: #e0e0e0; margin-top: 20px; }
-              .loading { 
-                animation: pulse 2s infinite;
-                font-size: 3em;
-                margin-bottom: 20px;
-              }
-              @keyframes pulse {
-                0% { opacity: 0.6; }
-                50% { opacity: 1; }
-                100% { opacity: 0.6; }
-              }
-            </style>
           </head>
           <body>
-            <div class="container">
-              <div class="loading">🔧</div>
-              <h1>Livelo Analytics</h1>
-              <p class="error">Dashboard temporariamente indisponível</p>
-              <p class="info">O sistema está processando novos dados. Tente novamente em alguns minutos.</p>
-              <p class="info"><small>Última tentativa: $(date +'%d/%m/%Y %H:%M')</small></p>
-              <p class="info">
-                <a href="https://github.com/gcaressato/livelo_scraper/actions" 
-                   style="color: #81c784; text-decoration: none;">
-                  📊 Ver Status da Execução
-                </a>
-              </p>
-            </div>
+            <h1>🔧 Sistema em Manutenção</h1>
+            <p>O dashboard está sendo atualizado. Tente novamente em alguns minutos.</p>
           </body>
           </html>
           EOF
@@ -633,7 +466,6 @@ jobs:
           
           # Copiar outros arquivos úteis
           cp -f *.xlsx ./public/ 2>/dev/null || echo "📊 Nenhum arquivo Excel para copiar"
-          cp -f *.css ./public/ 2>/dev/null || echo "🎨 Nenhum CSS adicional para copiar"
           
           echo "📂 Conteúdo do diretório public:"
           ls -la ./public/
@@ -648,163 +480,17 @@ jobs:
           branch: gh-pages
           clean: true
 
-      # ============ FIREBASE HOSTING DEPLOY ============
+      # ============ FIREBASE HOSTING (OPCIONAL) ============
       
-      - name: Verificar Service Account do Firebase
-        id: check_firebase_service_account
-        run: |
-          if [[ -n "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" ]]; then
-            echo "✅ FIREBASE_SERVICE_ACCOUNT configurado"
-            echo "FIREBASE_SA_READY=true" >> $GITHUB_OUTPUT
-          else
-            echo "❌ FIREBASE_SERVICE_ACCOUNT ausente"
-            echo "💡 Para ativar Firebase Hosting:"
-            echo "   1. Crie Service Account no Google Cloud Console"
-            echo "   2. Baixe JSON key e configure como secret FIREBASE_SERVICE_ACCOUNT"
-            echo "   3. Veja o guia em: FIREBASE_SETUP_GUIDE.md"
-            echo "FIREBASE_SA_READY=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Instalar dependência google-auth (se necessário)
-        if: steps.check_firebase_service_account.outputs.FIREBASE_SA_READY == 'true'
-        run: |
-          pip install google-auth google-auth-oauthlib google-auth-httplib2
-          echo "✅ Dependências Firebase instaladas"
-
-      - name: Criar arquivos de configuração do Firebase
-        if: steps.check_firebase_service_account.outputs.FIREBASE_SA_READY == 'true'
-        run: |
-          # Criar firebase.json
-          cat > firebase.json << 'EOF'
-          {
-            "hosting": {
-              "public": "public",
-              "ignore": [
-                "firebase.json",
-                "**/.*",
-                "**/node_modules/**",
-                "**/*.log",
-                "**/backup_*/**"
-              ],
-              "rewrites": [
-                {
-                  "source": "**",
-                  "destination": "/index.html"
-                }
-              ],
-              "headers": [
-                {
-                  "source": "/sw.js",
-                  "headers": [
-                    {
-                      "key": "Cache-Control",
-                      "value": "no-cache, no-store, must-revalidate"
-                    },
-                    {
-                      "key": "Service-Worker-Allowed",
-                      "value": "/"
-                    }
-                  ]
-                },
-                {
-                  "source": "/manifest.json",
-                  "headers": [
-                    {
-                      "key": "Cache-Control",
-                      "value": "public, max-age=3600"
-                    }
-                  ]
-                },
-                {
-                  "source": "/firebase-config-runtime.js",
-                  "headers": [
-                    {
-                      "key": "Cache-Control",
-                      "value": "public, max-age=300"
-                    }
-                  ]
-                }
-              ]
-            }
-          }
-          EOF
-          
-          # Criar .firebaserc
-          cat > .firebaserc << 'EOF'
-          {
-            "projects": {
-              "default": "livel-analytics"
-            },
-            "targets": {
-              "livel-analytics": {
-                "hosting": {
-                  "livelo-analytics": [
-                    "livel-analytics"
-                  ]
-                }
-              }
-            }
-          }
-          EOF
-          
-          echo "✅ Arquivos de configuração Firebase criados"
-          echo "📄 firebase.json: $(wc -c < firebase.json) bytes"
-          echo "📄 .firebaserc: $(wc -c < .firebaserc) bytes"
-
-      - name: Deploy para Firebase Hosting
-        if: steps.check_firebase_service_account.outputs.FIREBASE_SA_READY == 'true'
+      - name: Deploy Firebase Hosting (se configurado)
+        if: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' }}
         uses: FirebaseExtended/action-hosting-deploy@v0
-        id: firebase_deploy
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           channelId: live
           projectId: livel-analytics
           entryPoint: .
-        continue-on-error: true
-
-      - name: Verificar resultado do deploy Firebase
-        if: steps.check_firebase_service_account.outputs.FIREBASE_SA_READY == 'true'
-        run: |
-          if [[ "${{ steps.firebase_deploy.outcome }}" == "success" ]]; then
-            echo "🎉 Firebase Hosting deploy bem-sucedido!"
-            echo "🔗 URL: https://livel-analytics.web.app/"
-            echo "FIREBASE_DEPLOY_SUCCESS=true" >> $GITHUB_ENV
-          else
-            echo "⚠️ Firebase Hosting deploy falhou"
-            echo "💡 Verifique:"
-            echo "   - Service Account tem permissões Firebase Hosting Admin"
-            echo "   - Firebase Hosting API está habilitada"
-            echo "   - Project ID 'livel-analytics' está correto"
-            echo "FIREBASE_DEPLOY_SUCCESS=false" >> $GITHUB_ENV
-          fi
-
-      - name: Verificar deploy e URLs
-        run: |
-          echo "🔍 Verificando URLs após deploy..."
-          
-          # Aguardar deploy
-          sleep 15
-          
-          # URLs para testar
-          base_url="https://gcaressato.github.io/livelo_scraper"
-          urls_to_test=(
-            "$base_url/"
-            "$base_url/sw.js"
-            "$base_url/manifest.json"
-          )
-          
-          for url in "${urls_to_test[@]}"; do
-            echo "Testando: $url"
-            if curl -I "$url" -s -m 10 | grep -q "200 OK"; then
-              echo "✅ $url - OK"
-            else
-              echo "❌ $url - Falha"
-            fi
-          done
-          
-          echo "🌐 Site principal: $base_url"
-          echo "🔥 Firebase: ${{ steps.check_secrets.outputs.FIREBASE_READY == 'true' && 'Ativo' || 'Desabilitado' }}"
         continue-on-error: true
 
       # ============ RESUMO FINAL ============
@@ -820,40 +506,17 @@ jobs:
           🔍 STATUS DOS COMPONENTES:
           ✅ Scraping: ${{ env.SCRAPING_FALHOU == 'true' && '❌ FALHOU' || '✅ SUCESSO' }}
           🌐 GitHub Pages: ✅ Deployado
-          🔥 Firebase Messaging: ${{ steps.check_secrets.outputs.FIREBASE_READY == 'true' && '✅ Ativo' || '⚠️ Desabilitado' }}
-          🏠 Firebase Hosting: Status disponível nos logs acima
-          🔔 Notificações: ${{ steps.check_secrets.outputs.FIREBASE_READY == 'true' && '✅ Processadas' || '⚠️ Puladas' }}
-          📧 Issues: ${{ env.SCRAPING_FALHOU == 'true' && '📧 Issue criada' || '✅ Nenhuma necessária' }}
-          
-          🔧 ARQUIVOS PWA:
-          - Service Worker: $([ -f './public/sw.js' ] && echo '✅ Criado' || echo '❌ Faltando')
-          - Manifest: $([ -f './public/manifest.json' ] && echo '✅ Criado' || echo '❌ Faltando')
-          - Firebase Config: $([ -f './public/firebase-config-runtime.js' ] && echo '✅ Criado' || echo '❌ Faltando')
-          
-          📈 DADOS:
-          - Excel: $([ -f './public/livelo_parceiros.xlsx' ] && echo '✅ Disponível' || echo '❌ Ausente')
-          - HTML: $([ -f './public/index.html' ] && echo '✅ Disponível' || echo '❌ Ausente')
+          🔥 Firebase Messaging: ${{ steps.check_firebase.outputs.FIREBASE_OK == 'true' && '✅ Ativo' || '⚠️ Com problemas' }}
+          🏠 Firebase Hosting: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' && '✅ Configurado' || '⚠️ Não configurado' }}
+          🔔 Notificações: ${{ steps.check_firebase.outputs.FIREBASE_OK == 'true' && '✅ Processadas' || '⚠️ Puladas' }}
           
           🌍 ACESSO:
           📖 GitHub Pages: https://gcaressato.github.io/livelo_scraper/
-          🔥 Firebase Hosting: https://livel-analytics.web.app/ (verificar logs acima para status)
+          🔥 Firebase Hosting: https://livel-analytics.web.app/ (se configurado)
           "
           
-          # Mostrar estatísticas de notificações se disponíveis
-          if [ -f "notification_stats.json" ]; then
-            echo "📊 ESTATÍSTICAS DE NOTIFICAÇÕES:"
-            cat notification_stats.json | python3 -m json.tool 2>/dev/null || echo "Erro ao exibir estatísticas"
-          fi
-          
-          # Status final
           if [ "${{ env.SCRAPING_FALHOU }}" = "true" ]; then
             echo "::warning::⚠️ Scraper falhou mas deploy foi mantido com dados existentes"
-          elif [ "${{ env.FIREBASE_DEPLOY_STATUS }}" = "success" ]; then
-            echo "::notice::🎉 DEPLOY DUAL completado com sucesso!"
-            echo "🌟 Disponível em:"
-            echo "   📖 GitHub Pages: https://gcaressato.github.io/livelo_scraper/"
-            echo "   🔥 Firebase: https://livel-analytics.web.app/"
           else
-            echo "::notice::✅ Deploy GitHub Pages concluído"
-            echo "💡 Para ativar Firebase Hosting, configure FIREBASE_SERVICE_ACCOUNT"
+            echo "::notice::🎉 Deploy concluído com sucesso!"
           fi
