@@ -1,21 +1,21 @@
-2025-08-18 20:48:28,610 - INFO - 🕷️ Iniciando scraping...
-2025-08-18 20:49:27,263 - INFO - ✅ Scraping concluído com sucesso
-2025-08-18 20:49:27,263 - INFO - 📊 Iniciando análise...
-2025-08-18 20:49:30,587 - INFO - ✅ Análise concluída com sucesso
-2025-08-18 20:49:30,587 - INFO - 📄 relatorio_livelo.html: 6,476,577 bytes
-2025-08-18 20:49:30,587 - INFO - 🚀 Verificando deploy GitHub Pages...
-2025-08-18 20:49:30,587 - INFO - 🔄 Deploy será feito pelo GitHub Actions workflow
-2025-08-18 20:49:30,587 - INFO - 🔔 Iniciando notificações...
-2025-08-18 20:49:30,587 - WARNING - ⚠️ Variáveis Firebase não configuradas
-2025-08-18 20:49:30,587 - INFO - 💡 Configure as variáveis de ambiente:
-2025-08-18 20:49:30,587 - INFO -    - FIREBASE_PROJECT_ID
-2025-08-18 20:49:30,587 - INFO -    - FIREBASE_SERVER_KEY
-2025-08-18 20:49:30,587 - WARNING - 🔔 Notificações serão simuladas (não enviadas)
-2025-08-18 20:49:30,587 - INFO - 📋 Gerando relatório de execução...
+2025-08-19 00:39:47,652 - INFO - 🕷️ Iniciando scraping...
+2025-08-19 00:40:47,676 - INFO - ✅ Scraping concluído com sucesso
+2025-08-19 00:40:47,676 - INFO - 📊 Iniciando análise...
+2025-08-19 00:40:51,098 - INFO - ✅ Análise concluída com sucesso
+2025-08-19 00:40:51,099 - INFO - 📄 relatorio_livelo.html: 6,678,472 bytes
+2025-08-19 00:40:51,099 - INFO - 🚀 Verificando deploy GitHub Pages...
+2025-08-19 00:40:51,099 - INFO - 🔄 Deploy será feito pelo GitHub Actions workflow
+2025-08-19 00:40:51,099 - INFO - 🔔 Iniciando notificações...
+2025-08-19 00:40:51,099 - WARNING - ⚠️ Variáveis Firebase não configuradas
+2025-08-19 00:40:51,099 - INFO - 💡 Configure as variáveis de ambiente:
+2025-08-19 00:40:51,099 - INFO -    - FIREBASE_PROJECT_ID
+2025-08-19 00:40:51,099 - INFO -    - FIREBASE_SERVER_KEY
+2025-08-19 00:40:51,099 - WARNING - 🔔 Notificações serão simuladas (não enviadas)
+2025-08-19 00:40:51,099 - INFO - 📋 Gerando relatório de execução...
 
 🚀 INICIANDO PIPELINE LIVELO ANALYTICS
 ==================================================
-⏰ Timestamp: 20250818_204828
+⏰ Timestamp: 20250819_003947
 📁 Diretório: /home/runner/work/livelo_scraper/livelo_scraper
 🐍 Python: 3.10.18
 ==================================================
@@ -23,7 +23,7 @@
 ============================================================
 📊 RELATÓRIO DE EXECUÇÃO LIVELO ANALYTICS
 ============================================================
-⏰ Timestamp: 18/08/2025 20:49:30
+⏰ Timestamp: 19/08/2025 00:40:51
 ✅ Sucesso: 4/4 etapas
 
 🔍 DETALHES DAS ETAPAS:
@@ -33,10 +33,10 @@
    🔔 Notificações: ✅ SUCESSO
 
 📁 ARQUIVOS GERADOS:
-   📄 relatorio_livelo.html: 6,476,577 bytes
-   📄 livelo_parceiros.xlsx: 207,374 bytes
-   📄 notification_sender.py: 25,954 bytes
-   📄 main_livelo.log: 3,434 bytes
+   📄 relatorio_livelo.html: 6,678,472 bytes
+   📄 livelo_parceiros.xlsx: 214,905 bytes
+   📄 notification_sender.py: 28,953 bytes
+   📄 main_livelo.log: 4,432 bytes
    📝 Logs adicionais: main_livelo.log, output.log, scraper_debug.log, validation.log, notifications.log
 
 🎉 EXECUÇÃO BEM-SUCEDIDA!

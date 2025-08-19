@@ -1,61 +1,38 @@
-2025-08-18 20:49:32,119 - WARNING - ⚠️ FIREBASE_SERVER_KEY parece inválida (muito curta)
-2025-08-18 20:49:32,744 - INFO - 📅 Encontradas 26 datas na base de dados
-2025-08-18 20:49:32,746 - INFO - 📊 Dados mais recentes (2025-08-18): 253 registros
-2025-08-18 20:49:32,748 - INFO - 📊 Dados anteriores (2025-08-17): 255 registros
-2025-08-18 20:49:32,748 - INFO - 🔔 Processando notificações...
-2025-08-18 20:49:32,779 - INFO - 🎯 Detectadas 22 novas ofertas
-2025-08-18 20:49:32,779 - INFO - 📉 Detectadas 19 ofertas finalizadas
-2025-08-18 20:49:32,780 - INFO - 📄 Arquivo exemplo criado: user_fcm_tokens.json
-2025-08-18 20:49:32,780 - INFO - 💡 Para ativar notificações:
-2025-08-18 20:49:32,780 - INFO -    1. Edite o arquivo com tokens reais dos usuários
-2025-08-18 20:49:32,780 - INFO -    2. Mude 'ativo' para true
-2025-08-18 20:49:32,780 - INFO -    3. Configure os favoritos de cada usuário
-2025-08-18 20:49:32,780 - WARNING - ⚠️ Nenhum usuário ativo registrado para notificações
+2025-08-19 00:40:52,678 - WARNING - ⚠️ FIREBASE_SERVICE_ACCOUNT não configurado
+2025-08-19 00:40:53,331 - INFO - 📅 Encontradas 27 datas na base de dados
+2025-08-19 00:40:53,333 - INFO - 📊 Dados mais recentes (2025-08-19): 253 registros
+2025-08-19 00:40:53,335 - INFO - 📊 Dados anteriores (2025-08-18): 253 registros
+2025-08-19 00:40:53,335 - INFO - 🔔 Processando notificações...
+2025-08-19 00:40:53,365 - INFO - 🎯 Detectadas 0 novas ofertas
+2025-08-19 00:40:53,365 - INFO - 📉 Detectadas 0 ofertas finalizadas
+2025-08-19 00:40:53,365 - INFO - ℹ️ Nenhuma mudança detectada - não há notificações para enviar
 
-🚀 INICIANDO SISTEMA DE NOTIFICAÇÕES LIVELO ANALYTICS
+🚀 INICIANDO SISTEMA DE NOTIFICAÇÕES LIVELO ANALYTICS v1
 ============================================================
 🔧 CONFIGURAÇÃO:
    📊 Projeto Firebase: livel-analytics
-   🔑 Server Key: ✅ Configurado
+   🔑 Service Account: ❌ Ausente
    🔥 Firebase: ❌ Indisponível
    📁 Diretório: /home/runner/work/livelo_scraper/livelo_scraper
+   🌐 FCM Endpoint: https://fcm.googleapis.com/v1/projects/livel-analytics/messages:send
 
 ============================================================
-📊 RELATÓRIO DE NOTIFICAÇÕES LIVELO ANALYTICS
+📊 RELATÓRIO DE NOTIFICAÇÕES LIVELO ANALYTICS v1
 ============================================================
-⏰ Timestamp: 18/08/2025 20:49:32
+⏰ Timestamp: 19/08/2025 00:40:53
 🔥 Firebase: ❌ Desabilitado
+🔑 Access Token: ❌ Inválido
 📁 Dados: ✅ livelo_parceiros.xlsx
 👥 Tokens: ✅ user_fcm_tokens.json
 
 📈 MUDANÇAS DETECTADAS:
-   🎯 Novas ofertas: 22
-   📉 Ofertas finalizadas: 19
+   🎯 Novas ofertas: 0
+   📉 Ofertas finalizadas: 0
 
-🔔 NOTIFICAÇÕES:
+🔔 NOTIFICAÇÕES (FCM HTTP v1):
    📤 Enviadas: 0
    🎯 Tentativas: 0
    📊 Taxa de sucesso: N/A
-
-🎯 NOVAS OFERTAS DETECTADAS:
-    1. AMOBELEZA | R$ - 12.0 pts
-    2. Aliexpress | U$ - 15.0 pts
-    3. Beleza na web | R$ - 10.0 pts
-    4. Bibi | R$ - 6.0 pts
-    5. Ciclic Seguros – Celular | R$ - 6.0 pts
-    6. Colcci | R$ - 4.0 pts
-    7. Consorcio Magalu | R$ - 35.0 pts
-    8. Dudalina | R$ - 8.0 pts
-    9. Eudora | R$ - 8.0 pts
-   10. Individual | R$ - 10.0 pts
-   ... e mais 12 ofertas
-
-📉 OFERTAS FINALIZADAS:
-   1. Allianz | R$
-   2. Bagaggio | R$
-   3. Beto Carrero World | R$
-   4. Camicado | R$
-   5. Carrefour Mercado | R$
 ============================================================
 
 ✅ PROCESSO DE NOTIFICAÇÕES CONCLUÍDO
