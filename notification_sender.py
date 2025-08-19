@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Livelo Notification Sender - Sistema de Notificações Push Firebase
-Versão corrigida com melhor tratamento de erros e relatórios no console
+Versão com FCM HTTP v1 API (sem Legacy Server Key)
 """
 
 import os
@@ -23,21 +23,25 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-class LiveloNotificationSender:
+class LiveloNotificationSenderV1:
     def __init__(self):
         # Configurações do Firebase (via environment variables)
         self.project_id = os.getenv('FIREBASE_PROJECT_ID')
-        self.server_key = os.getenv('FIREBASE_SERVER_KEY')
+        self.service_account_json = os.getenv('FIREBASE_SERVICE_ACCOUNT')
         
-        # URLs do Firebase
-        if self.server_key:
-            self.fcm_url = "https://fcm.googleapis.com/fcm/send"
+        # URLs do Firebase HTTP v1 API
+        if self.project_id:
+            self.fcm_url = f"https://fcm.googleapis.com/v1/projects/{self.project_id}/messages:send"
         else:
             self.fcm_url = None
         
         # Arquivos
         self.arquivo_dados = 'livelo_parceiros.xlsx'
         self.arquivo_tokens = 'user_fcm_tokens.json'
+        
+        # Cache de access token
+        self.access_token = None
+        self.token_expiry = None
         
         # Status da inicialização
         self.firebase_disponivel = self._verificar_configuracao_firebase()
@@ -48,16 +52,73 @@ class LiveloNotificationSender:
             logger.warning("⚠️ FIREBASE_PROJECT_ID não configurado")
             return False
             
-        if not self.server_key:
-            logger.warning("⚠️ FIREBASE_SERVER_KEY não configurado")
+        if not self.service_account_json:
+            logger.warning("⚠️ FIREBASE_SERVICE_ACCOUNT não configurado")
             return False
             
-        if len(self.server_key) < 100:  # Server keys são longas
-            logger.warning("⚠️ FIREBASE_SERVER_KEY parece inválida (muito curta)")
-            return False
+        # Verificar se o JSON é válido
+        try:
+            service_account_data = json.loads(self.service_account_json)
+            required_fields = ['type', 'project_id', 'private_key', 'client_email']
             
-        logger.info(f"✅ Firebase configurado para projeto: {self.project_id}")
-        return True
+            for field in required_fields:
+                if field not in service_account_data:
+                    logger.error(f"❌ Campo obrigatório ausente no Service Account: {field}")
+                    return False
+                    
+            if service_account_data.get('project_id') != self.project_id:
+                logger.warning(f"⚠️ Project ID no Service Account ({service_account_data.get('project_id')}) difere do configurado ({self.project_id})")
+                
+            logger.info(f"✅ Firebase configurado para projeto: {self.project_id}")
+            logger.info(f"📧 Service Account: {service_account_data.get('client_email', 'N/A')}")
+            return True
+            
+        except json.JSONDecodeError:
+            logger.error("❌ FIREBASE_SERVICE_ACCOUNT não é um JSON válido")
+            return False
+        except Exception as e:
+            logger.error(f"❌ Erro ao validar Service Account: {e}")
+            return False
+    
+    def _obter_access_token(self):
+        """Obtém access token OAuth2 usando Service Account"""
+        if not self.firebase_disponivel:
+            return None
+            
+        # Verificar se token ainda é válido (com margem de 5 minutos)
+        if self.access_token and self.token_expiry:
+            if datetime.now() < (self.token_expiry - timedelta(minutes=5)):
+                return self.access_token
+        
+        try:
+            from google.oauth2 import service_account
+            import google.auth.transport.requests
+            
+            # Preparar credenciais
+            service_account_data = json.loads(self.service_account_json)
+            scopes = ['https://www.googleapis.com/auth/firebase.messaging']
+            
+            credentials = service_account.Credentials.from_service_account_info(
+                service_account_data,
+                scopes=scopes
+            )
+            
+            # Obter token
+            request = google.auth.transport.requests.Request()
+            credentials.refresh(request)
+            
+            self.access_token = credentials.token
+            self.token_expiry = credentials.expiry
+            
+            logger.info(f"✅ Access token obtido, válido até: {self.token_expiry}")
+            return self.access_token
+            
+        except ImportError:
+            logger.error("❌ google-auth não está instalado. Execute: pip install google-auth")
+            return None
+        except Exception as e:
+            logger.error(f"❌ Erro ao obter access token: {e}")
+            return None
         
     def carregar_dados(self):
         """Carrega dados do Excel e separa por data"""
@@ -274,52 +335,57 @@ class LiveloNotificationSender:
             logger.error(f"❌ Erro ao carregar tokens: {e}")
             return {}
     
-    def enviar_notificacao_push(self, token, titulo, corpo, dados_extras=None):
-        """Envia notificação push via Firebase FCM"""
+    def enviar_notificacao_push_v1(self, token, titulo, corpo, dados_extras=None):
+        """Envia notificação push via Firebase FCM HTTP v1 API"""
         if not self.firebase_disponivel:
             logger.warning("⚠️ Firebase não configurado - pulando notificação")
             return False
+        
+        # Obter access token
+        access_token = self._obter_access_token()
+        if not access_token:
+            logger.error("❌ Não foi possível obter access token")
+            return False
             
         headers = {
-            'Authorization': f'key={self.server_key}',
+            'Authorization': f'Bearer {access_token}',
             'Content-Type': 'application/json',
             'Accept': 'application/json'
         }
         
+        # Payload para FCM HTTP v1 API
         payload = {
-            'to': token,
-            'notification': {
-                'title': titulo,
-                'body': corpo,
-                'icon': 'https://via.placeholder.com/192x192/ff0a8c/ffffff?text=L',
-                'badge': 'https://via.placeholder.com/96x96/ff0a8c/ffffff?text=L',
-                'click_action': 'https://gcaressato.github.io/livelo_scraper/',
-                'tag': 'livelo-offer',
-                'requireInteraction': True
-            },
-            'data': dados_extras or {
-                'timestamp': datetime.now().isoformat(),
-                'source': 'livelo-analytics'
-            },
-            'webpush': {
-                'headers': {
-                    'Urgency': 'high',
-                    'TTL': '86400'  # 24 horas
-                },
+            'message': {
+                'token': token,
                 'notification': {
-                    'icon': 'https://via.placeholder.com/192x192/ff0a8c/ffffff?text=L',
-                    'badge': 'https://via.placeholder.com/96x96/ff0a8c/ffffff?text=L',
-                    'requireInteraction': True,
-                    'actions': [
-                        {
-                            'action': 'view_offer',
-                            'title': '👀 Ver Oferta'
-                        },
-                        {
-                            'action': 'dismiss', 
-                            'title': '✖️ Dispensar'
-                        }
-                    ]
+                    'title': titulo,
+                    'body': corpo,
+                    'image': 'https://via.placeholder.com/512x256/ff0a8c/ffffff?text=Livelo+Analytics'
+                },
+                'data': dados_extras or {
+                    'timestamp': datetime.now().isoformat(),
+                    'source': 'livelo-analytics-v1'
+                },
+                'webpush': {
+                    'headers': {
+                        'Urgency': 'high',
+                        'TTL': '86400'  # 24 horas
+                    },
+                    'notification': {
+                        'icon': 'https://via.placeholder.com/192x192/ff0a8c/ffffff?text=L',
+                        'badge': 'https://via.placeholder.com/96x96/ff0a8c/ffffff?text=L',
+                        'requireInteraction': True,
+                        'actions': [
+                            {
+                                'action': 'view_offer',
+                                'title': '👀 Ver Oferta'
+                            },
+                            {
+                                'action': 'dismiss', 
+                                'title': '✖️ Dispensar'
+                            }
+                        ]
+                    }
                 }
             }
         }
@@ -334,25 +400,22 @@ class LiveloNotificationSender:
             
             if response.status_code == 200:
                 result = response.json()
-                if result.get('success', 0) > 0:
-                    logger.info(f"✅ Notificação enviada: {titulo[:50]}...")
-                    return True
-                else:
-                    error_result = result.get('results', [{}])[0]
-                    error_msg = error_result.get('error', 'Erro desconhecido')
-                    logger.error(f"❌ Falha no envio FCM: {error_msg}")
-                    
-                    # Classificar tipos de erro
-                    if error_msg in ['InvalidRegistration', 'NotRegistered']:
-                        logger.warning(f"⚠️ Token inválido - considere remover: {token[:20]}...")
-                    elif error_msg == 'MessageTooBig':
-                        logger.warning("⚠️ Mensagem muito grande")
-                    elif error_msg == 'InvalidTtl':
-                        logger.warning("⚠️ TTL inválido")
-                    
-                    return False
+                message_id = result.get('name', 'unknown')
+                logger.info(f"✅ Notificação enviada: {titulo[:50]}... (ID: {message_id})")
+                return True
             else:
                 logger.error(f"❌ Erro HTTP {response.status_code}: {response.text[:200]}")
+                
+                # Analisar erros específicos do FCM v1
+                if response.status_code == 400:
+                    logger.error("🔧 Possíveis problemas: Token inválido, payload malformado")
+                elif response.status_code == 401:
+                    logger.error("🔧 Problema de autenticação: Access token inválido ou expirado")
+                elif response.status_code == 403:
+                    logger.error("🔧 Problema de permissões: Service Account sem acesso FCM")
+                elif response.status_code == 404:
+                    logger.error("🔧 Project ID incorreto ou FCM API não habilitada")
+                
                 return False
                 
         except requests.exceptions.Timeout:
@@ -438,7 +501,7 @@ class LiveloNotificationSender:
                         dados_extras = {
                             'tipo': 'primeira_execucao',
                             'total_ofertas': str(len(ofertas_relevantes)),
-                            'url': 'https://gcaressato.github.io/livelo_scraper/',
+                            'url': 'https://livel-analytics.web.app/',
                             'timestamp': datetime.now().isoformat()
                         }
                     elif len(ofertas_relevantes) == 1:
@@ -453,7 +516,7 @@ class LiveloNotificationSender:
                             'moeda': oferta['moeda'],
                             'pontos': str(oferta['pontos']),
                             'valor': str(oferta['valor']),
-                            'url': 'https://gcaressato.github.io/livelo_scraper/',
+                            'url': 'https://livel-analytics.web.app/',
                             'timestamp': datetime.now().isoformat()
                         }
                     else:
@@ -471,12 +534,12 @@ class LiveloNotificationSender:
                             'tipo': 'ofertas_multiplas',
                             'total_ofertas': str(len(ofertas_relevantes)),
                             'parceiros': [o['parceiro'] for o in ofertas_relevantes[:5]],  # Limitado para não exceder tamanho
-                            'url': 'https://gcaressato.github.io/livelo_scraper/',
+                            'url': 'https://livel-analytics.web.app/',
                             'timestamp': datetime.now().isoformat()
                         }
                     
                     # Tentar enviar
-                    if self.enviar_notificacao_push(token, titulo, corpo, dados_extras):
+                    if self.enviar_notificacao_push_v1(token, titulo, corpo, dados_extras):
                         notificacoes_enviadas += 1
                         logger.info(f"📱 Notificação enviada para {user_id}: {len(ofertas_relevantes)} ofertas")
                     else:
@@ -495,10 +558,11 @@ class LiveloNotificationSender:
     def _imprimir_estatisticas(self, mudancas, enviadas, tentativas):
         """Imprime estatísticas no console ao invés de salvar arquivo"""
         print("\n" + "="*60)
-        print("📊 RELATÓRIO DE NOTIFICAÇÕES LIVELO ANALYTICS")
+        print("📊 RELATÓRIO DE NOTIFICAÇÕES LIVELO ANALYTICS v1")
         print("="*60)
         print(f"⏰ Timestamp: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
-        print(f"🔥 Firebase: {'✅ Ativo' if self.firebase_disponivel else '❌ Desabilitado'}")
+        print(f"🔥 Firebase: {'✅ HTTP v1 API Ativo' if self.firebase_disponivel else '❌ Desabilitado'}")
+        print(f"🔑 Access Token: {'✅ Válido' if self.access_token else '❌ Inválido'}")
         print(f"📁 Dados: {'✅ ' + self.arquivo_dados if os.path.exists(self.arquivo_dados) else '❌ Ausente'}")
         print(f"👥 Tokens: {'✅ ' + self.arquivo_tokens if os.path.exists(self.arquivo_tokens) else '❌ Ausente'}")
         print("")
@@ -506,7 +570,7 @@ class LiveloNotificationSender:
         print(f"   🎯 Novas ofertas: {len(mudancas['ganharam_oferta'])}")
         print(f"   📉 Ofertas finalizadas: {len(mudancas['perderam_oferta'])}")
         print("")
-        print("🔔 NOTIFICAÇÕES:")
+        print("🔔 NOTIFICAÇÕES (FCM HTTP v1):")
         print(f"   📤 Enviadas: {enviadas}")
         print(f"   🎯 Tentativas: {tentativas}")
         print(f"   📊 Taxa de sucesso: {(enviadas/tentativas*100):.1f}%" if tentativas > 0 else "   📊 Taxa de sucesso: N/A")
@@ -534,15 +598,16 @@ class LiveloNotificationSender:
     
     def executar(self):
         """Executa o processo completo de notificações"""
-        print("\n🚀 INICIANDO SISTEMA DE NOTIFICAÇÕES LIVELO ANALYTICS")
+        print("\n🚀 INICIANDO SISTEMA DE NOTIFICAÇÕES LIVELO ANALYTICS v1")
         print("="*60)
         
         # Mostrar configuração
         print("🔧 CONFIGURAÇÃO:")
         print(f"   📊 Projeto Firebase: {self.project_id or 'NÃO CONFIGURADO'}")
-        print(f"   🔑 Server Key: {'✅ Configurado' if self.server_key else '❌ Ausente'}")
-        print(f"   🔥 Firebase: {'✅ Disponível' if self.firebase_disponivel else '❌ Indisponível'}")
+        print(f"   🔑 Service Account: {'✅ Configurado' if self.service_account_json else '❌ Ausente'}")
+        print(f"   🔥 Firebase: {'✅ HTTP v1 API Disponível' if self.firebase_disponivel else '❌ Indisponível'}")
         print(f"   📁 Diretório: {os.getcwd()}")
+        print(f"   🌐 FCM Endpoint: {self.fcm_url or 'NÃO CONFIGURADO'}")
         
         try:
             # 1. Carregar dados
@@ -567,7 +632,7 @@ class LiveloNotificationSender:
 
 def main():
     """Função principal"""
-    sender = LiveloNotificationSender()
+    sender = LiveloNotificationSenderV1()
     sucesso = sender.executar()
     
     sys.exit(0 if sucesso else 1)
