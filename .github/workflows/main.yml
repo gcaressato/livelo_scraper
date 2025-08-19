@@ -648,34 +648,6 @@ jobs:
           branch: gh-pages
           clean: true
 
-      - name: Verificar deploy e URLs
-        run: |
-          echo "🔍 Verificando URLs após deploy..."
-          
-          # Aguardar deploy
-          sleep 15
-          
-          # URLs para testar
-          base_url="https://gcaressato.github.io/livelo_scraper"
-          urls_to_test=(
-            "$base_url/"
-            "$base_url/sw.js"
-            "$base_url/manifest.json"
-          )
-          
-          for url in "${urls_to_test[@]}"; do
-            echo "Testando: $url"
-            if curl -I "$url" -s -m 10 | grep -q "200 OK"; then
-              echo "✅ $url - OK"
-            else
-              echo "❌ $url - Falha"
-            fi
-          done
-          
-          echo "🌐 Site principal: $base_url"
-          echo "🔥 Firebase: ${{ steps.check_secrets.outputs.FIREBASE_READY == 'true' && 'Ativo' || 'Desabilitado' }}"
-        continue-on-error: true
-
       # ============ FIREBASE HOSTING DEPLOY ============
       
       - name: Verificar Service Account do Firebase
@@ -807,9 +779,37 @@ jobs:
             echo "FIREBASE_DEPLOY_SUCCESS=false" >> $GITHUB_ENV
           fi
 
+      - name: Verificar deploy e URLs
+        run: |
+          echo "🔍 Verificando URLs após deploy..."
+          
+          # Aguardar deploy
+          sleep 15
+          
+          # URLs para testar
+          base_url="https://gcaressato.github.io/livelo_scraper"
+          urls_to_test=(
+            "$base_url/"
+            "$base_url/sw.js"
+            "$base_url/manifest.json"
+          )
+          
+          for url in "${urls_to_test[@]}"; do
+            echo "Testando: $url"
+            if curl -I "$url" -s -m 10 | grep -q "200 OK"; then
+              echo "✅ $url - OK"
+            else
+              echo "❌ $url - Falha"
+            fi
+          done
+          
+          echo "🌐 Site principal: $base_url"
+          echo "🔥 Firebase: ${{ steps.check_secrets.outputs.FIREBASE_READY == 'true' && 'Ativo' || 'Desabilitado' }}"
+        continue-on-error: true
+
       # ============ RESUMO FINAL ============
       
-      - name: Resumo da execução COMPLETO
+      - name: Resumo da execução
         run: |
           echo "
           📊 RESUMO DA EXECUÇÃO LIVELO ANALYTICS
@@ -820,9 +820,9 @@ jobs:
           🔍 STATUS DOS COMPONENTES:
           ✅ Scraping: ${{ env.SCRAPING_FALHOU == 'true' && '❌ FALHOU' || '✅ SUCESSO' }}
           🌐 GitHub Pages: ✅ Deployado
-          🔥 Firebase: ${{ steps.check_secrets.outputs.FIREBASE_READY == 'true' && '✅ Ativo' || '⚠️ Desabilitado' }}
-          🏠 Firebase Hosting: ${{ env.FIREBASE_DEPLOY_SUCCESS == 'true' && '✅ DEPLOYADO' || '⚠️ Falhou ou não configurado' }}
-          🔔 Notificações: ${{ steps.check_secrets.outputs.FIREBASE_READY == 'true' && '✅ Processadas (FCM v1)' || '⚠️ Puladas' }}
+          🔥 Firebase Messaging: ${{ steps.check_secrets.outputs.FIREBASE_READY == 'true' && '✅ Ativo' || '⚠️ Desabilitado' }}
+          🏠 Firebase Hosting: Status disponível nos logs acima
+          🔔 Notificações: ${{ steps.check_secrets.outputs.FIREBASE_READY == 'true' && '✅ Processadas' || '⚠️ Puladas' }}
           📧 Issues: ${{ env.SCRAPING_FALHOU == 'true' && '📧 Issue criada' || '✅ Nenhuma necessária' }}
           
           🔧 ARQUIVOS PWA:
@@ -834,9 +834,9 @@ jobs:
           - Excel: $([ -f './public/livelo_parceiros.xlsx' ] && echo '✅ Disponível' || echo '❌ Ausente')
           - HTML: $([ -f './public/index.html' ] && echo '✅ Disponível' || echo '❌ Ausente')
           
-          🌍 MULTI-DEPLOY:
+          🌍 ACESSO:
           📖 GitHub Pages: https://gcaressato.github.io/livelo_scraper/
-          🔥 Firebase Hosting: ${{ env.FIREBASE_DEPLOY_SUCCESS == 'true' && 'https://livel-analytics.web.app/' || 'Não disponível' }}
+          🔥 Firebase Hosting: https://livel-analytics.web.app/ (verificar logs acima para status)
           "
           
           # Mostrar estatísticas de notificações se disponíveis
@@ -845,12 +845,12 @@ jobs:
             cat notification_stats.json | python3 -m json.tool 2>/dev/null || echo "Erro ao exibir estatísticas"
           fi
           
-          # Status final melhorado
+          # Status final
           if [ "${{ env.SCRAPING_FALHOU }}" = "true" ]; then
             echo "::warning::⚠️ Scraper falhou mas deploy foi mantido com dados existentes"
-          elif [ "${{ env.FIREBASE_DEPLOY_SUCCESS }}" = "true" ]; then
-            echo "::notice::🎉 Deploy DUAL completado com sucesso!"
-            echo "🌟 Site disponível em:"
+          elif [ "${{ env.FIREBASE_DEPLOY_STATUS }}" = "success" ]; then
+            echo "::notice::🎉 DEPLOY DUAL completado com sucesso!"
+            echo "🌟 Disponível em:"
             echo "   📖 GitHub Pages: https://gcaressato.github.io/livelo_scraper/"
             echo "   🔥 Firebase: https://livel-analytics.web.app/"
           else
