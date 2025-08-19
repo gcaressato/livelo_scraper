@@ -675,22 +675,154 @@ jobs:
           echo "🌐 Site principal: $base_url"
           echo "🔥 Firebase: ${{ steps.check_secrets.outputs.FIREBASE_READY == 'true' && 'Ativo' || 'Desabilitado' }}"
         continue-on-error: true
-        
+
+      # ============ FIREBASE HOSTING DEPLOY ============
+      
+      - name: Verificar Service Account do Firebase
+        id: check_firebase_service_account
+        run: |
+          if [[ -n "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" ]]; then
+            echo "✅ FIREBASE_SERVICE_ACCOUNT configurado"
+            echo "FIREBASE_SA_READY=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ FIREBASE_SERVICE_ACCOUNT ausente"
+            echo "💡 Para ativar Firebase Hosting:"
+            echo "   1. Crie Service Account no Google Cloud Console"
+            echo "   2. Baixe JSON key e configure como secret FIREBASE_SERVICE_ACCOUNT"
+            echo "   3. Veja o guia em: FIREBASE_SETUP_GUIDE.md"
+            echo "FIREBASE_SA_READY=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Instalar dependência google-auth (se necessário)
+        if: steps.check_firebase_service_account.outputs.FIREBASE_SA_READY == 'true'
+        run: |
+          pip install google-auth google-auth-oauthlib google-auth-httplib2
+          echo "✅ Dependências Firebase instaladas"
+
+      - name: Criar arquivos de configuração do Firebase
+        if: steps.check_firebase_service_account.outputs.FIREBASE_SA_READY == 'true'
+        run: |
+          # Criar firebase.json
+          cat > firebase.json << 'EOF'
+          {
+            "hosting": {
+              "public": "public",
+              "ignore": [
+                "firebase.json",
+                "**/.*",
+                "**/node_modules/**",
+                "**/*.log",
+                "**/backup_*/**"
+              ],
+              "rewrites": [
+                {
+                  "source": "**",
+                  "destination": "/index.html"
+                }
+              ],
+              "headers": [
+                {
+                  "source": "/sw.js",
+                  "headers": [
+                    {
+                      "key": "Cache-Control",
+                      "value": "no-cache, no-store, must-revalidate"
+                    },
+                    {
+                      "key": "Service-Worker-Allowed",
+                      "value": "/"
+                    }
+                  ]
+                },
+                {
+                  "source": "/manifest.json",
+                  "headers": [
+                    {
+                      "key": "Cache-Control",
+                      "value": "public, max-age=3600"
+                    }
+                  ]
+                },
+                {
+                  "source": "/firebase-config-runtime.js",
+                  "headers": [
+                    {
+                      "key": "Cache-Control",
+                      "value": "public, max-age=300"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+          EOF
+          
+          # Criar .firebaserc
+          cat > .firebaserc << 'EOF'
+          {
+            "projects": {
+              "default": "livel-analytics"
+            },
+            "targets": {
+              "livel-analytics": {
+                "hosting": {
+                  "livelo-analytics": [
+                    "livel-analytics"
+                  ]
+                }
+              }
+            }
+          }
+          EOF
+          
+          echo "✅ Arquivos de configuração Firebase criados"
+          echo "📄 firebase.json: $(wc -c < firebase.json) bytes"
+          echo "📄 .firebaserc: $(wc -c < .firebaserc) bytes"
+
+      - name: Deploy para Firebase Hosting
+        if: steps.check_firebase_service_account.outputs.FIREBASE_SA_READY == 'true'
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        id: firebase_deploy
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          channelId: live
+          projectId: livel-analytics
+          entryPoint: .
+        continue-on-error: true
+
+      - name: Verificar resultado do deploy Firebase
+        if: steps.check_firebase_service_account.outputs.FIREBASE_SA_READY == 'true'
+        run: |
+          if [[ "${{ steps.firebase_deploy.outcome }}" == "success" ]]; then
+            echo "🎉 Firebase Hosting deploy bem-sucedido!"
+            echo "🔗 URL: https://livel-analytics.web.app/"
+            echo "FIREBASE_DEPLOY_SUCCESS=true" >> $GITHUB_ENV
+          else
+            echo "⚠️ Firebase Hosting deploy falhou"
+            echo "💡 Verifique:"
+            echo "   - Service Account tem permissões Firebase Hosting Admin"
+            echo "   - Firebase Hosting API está habilitada"
+            echo "   - Project ID 'livel-analytics' está correto"
+            echo "FIREBASE_DEPLOY_SUCCESS=false" >> $GITHUB_ENV
+          fi
+
       # ============ RESUMO FINAL ============
       
-      - name: Resumo da execução
+      - name: Resumo da execução COMPLETO
         run: |
           echo "
           📊 RESUMO DA EXECUÇÃO LIVELO ANALYTICS
           ========================================
           ⏰ Horário: $(date +'%d/%m/%Y %H:%M:%S %Z')
-          📁 Arquivos no public: $(ls -1 ./public/ | wc -l) arquivos
+          📁 Arquivos no public: $(ls -1 ./public/ 2>/dev/null | wc -l) arquivos
           
           🔍 STATUS DOS COMPONENTES:
           ✅ Scraping: ${{ env.SCRAPING_FALHOU == 'true' && '❌ FALHOU' || '✅ SUCESSO' }}
           🌐 GitHub Pages: ✅ Deployado
           🔥 Firebase: ${{ steps.check_secrets.outputs.FIREBASE_READY == 'true' && '✅ Ativo' || '⚠️ Desabilitado' }}
-          🔔 Notificações: ${{ steps.check_secrets.outputs.FIREBASE_READY == 'true' && '✅ Processadas' || '⚠️ Puladas' }}
+          🏠 Firebase Hosting: ${{ env.FIREBASE_DEPLOY_SUCCESS == 'true' && '✅ DEPLOYADO' || '⚠️ Falhou ou não configurado' }}
+          🔔 Notificações: ${{ steps.check_secrets.outputs.FIREBASE_READY == 'true' && '✅ Processadas (FCM v1)' || '⚠️ Puladas' }}
           📧 Issues: ${{ env.SCRAPING_FALHOU == 'true' && '📧 Issue criada' || '✅ Nenhuma necessária' }}
           
           🔧 ARQUIVOS PWA:
@@ -702,8 +834,9 @@ jobs:
           - Excel: $([ -f './public/livelo_parceiros.xlsx' ] && echo '✅ Disponível' || echo '❌ Ausente')
           - HTML: $([ -f './public/index.html' ] && echo '✅ Disponível' || echo '❌ Ausente')
           
-          🌍 ACESSO:
-          Site: https://gcaressato.github.io/livelo_scraper/
+          🌍 MULTI-DEPLOY:
+          📖 GitHub Pages: https://gcaressato.github.io/livelo_scraper/
+          🔥 Firebase Hosting: ${{ env.FIREBASE_DEPLOY_SUCCESS == 'true' && 'https://livel-analytics.web.app/' || 'Não disponível' }}
           "
           
           # Mostrar estatísticas de notificações se disponíveis
@@ -712,12 +845,15 @@ jobs:
             cat notification_stats.json | python3 -m json.tool 2>/dev/null || echo "Erro ao exibir estatísticas"
           fi
           
-          # Status final
+          # Status final melhorado
           if [ "${{ env.SCRAPING_FALHOU }}" = "true" ]; then
             echo "::warning::⚠️ Scraper falhou mas deploy foi mantido com dados existentes"
-            exit 0  # Não falhar o workflow por causa do scraping
-          elif [ "${{ steps.check_secrets.outputs.FIREBASE_READY }}" = "false" ]; then
-            echo "::notice::✅ Execução concluída (Firebase desabilitado por falta de secrets)"
+          elif [ "${{ env.FIREBASE_DEPLOY_SUCCESS }}" = "true" ]; then
+            echo "::notice::🎉 Deploy DUAL completado com sucesso!"
+            echo "🌟 Site disponível em:"
+            echo "   📖 GitHub Pages: https://gcaressato.github.io/livelo_scraper/"
+            echo "   🔥 Firebase: https://livel-analytics.web.app/"
           else
-            echo "::notice::🎉 Execução completada com sucesso!"
+            echo "::notice::✅ Deploy GitHub Pages concluído"
+            echo "💡 Para ativar Firebase Hosting, configure FIREBASE_SERVICE_ACCOUNT"
           fi
