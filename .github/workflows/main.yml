@@ -27,8 +27,9 @@ jobs:
         
       - name: Instalar dependências
         run: |
-          pip install selenium webdriver-manager pandas openpyxl selenium-stealth plotly numpy requests
+          pip install selenium webdriver-manager pandas openpyxl selenium-stealth plotly numpy requests google-auth
           python -c "import selenium; print(f'Selenium version: {selenium.__version__}')"
+          python -c "from google.oauth2 import service_account; print('✅ Google Auth instalado')"
           google-chrome --version
           
       - name: Verificar ambiente
@@ -61,17 +62,25 @@ jobs:
           echo "VAPID Key: $([[ -n '${{ secrets.FIREBASE_VAPID_KEY }}' ]] && echo 'CONFIGURADO' || echo 'AUSENTE')"
           
           # Verificar tamanhos sem expor conteúdo
-          if [[ -n "${{ secrets.FIREBASE_SERVER_KEY }}" ]]; then
-            key_length=$(echo -n "${{ secrets.FIREBASE_SERVER_KEY }}" | wc -c)
+          server_key="${{ secrets.FIREBASE_SERVER_KEY }}"
+          if [[ -n "$server_key" ]]; then
+            key_length=${#server_key}
             echo "Server Key length: $key_length chars"
             if [[ $key_length -lt 100 ]]; then
-              echo "⚠️ Server Key pode estar incorreta (muito curta)"
+              echo "⚠️ Server Key pode estar incorreta (muito curta para API legada)"
+              echo "💡 Esta pode ser uma chave VAPID ou outro tipo de chave"
+            else
+              echo "✅ Server Key tem tamanho correto para API legada"
             fi
           fi
           
-          if [[ -n "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" ]]; then
-            sa_length=$(echo -n "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" | wc -c)
+          service_account="${{ secrets.FIREBASE_SERVICE_ACCOUNT }}"
+          if [[ -n "$service_account" ]]; then
+            sa_length=${#service_account}
             echo "Service Account length: $sa_length chars"
+            if [[ $sa_length -gt 1000 ]]; then
+              echo "✅ Service Account parece ser um JSON completo"
+            fi
           fi
         
       # VALIDAÇÃO INTELIGENTE DE DADOS
