@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "total_parceiros": 256,
-    "data_atualizacao": "2025-08-09T19:59:50.335248",
+    "total_parceiros": 266,
+    "data_atualizacao": "2025-08-21T18:56:54.005551",
     "script_version": "2.1"
   },
   "parceiros": [
@@ -3074,6 +3074,126 @@
       "codigo": "ZTN",
       "categoria": "Moda e Vestuário",
       "tier": 3,
+      "descricao": "",
+      "observacoes": ""
+    },
+    {
+      "id": 257,
+      "nome_aplicativo": "Cadence",
+      "url": "https://www.livelo.com.br/juntar-pontos/parceiros/cadence/CDN",
+      "logo_link": "https://a7815093c1prd-store.occa.ocs.oraclecloud.com/file/general/config_CDN_logo_cadence_300x188.jpg",
+      "slug": "cadence",
+      "codigo": "CDN",
+      "categoria": "",
+      "tier": "",
+      "descricao": "",
+      "observacoes": ""
+    },
+    {
+      "id": 258,
+      "nome_aplicativo": "Chip eSim Travalex",
+      "url": "https://www.livelo.com.br/juntar-pontos/parceiros/esim-travelex/TVL",
+      "logo_link": "https://a7815093c1prd-store.occa.ocs.oraclecloud.com/file/general/config_TVL_20250515-160803.png",
+      "slug": "esim-travelex",
+      "codigo": "TVL",
+      "categoria": "",
+      "tier": "",
+      "descricao": "",
+      "observacoes": ""
+    },
+    {
+      "id": 259,
+      "nome_aplicativo": "DPaschoal",
+      "url": "https://www.livelo.com.br/juntar-pontos/parceiros/dpaschoal/DPH",
+      "logo_link": "https://a7815093c1prd-store.occa.ocs.oraclecloud.com/file/general/config_DPH.png",
+      "slug": "dpaschoal",
+      "codigo": "DPH",
+      "categoria": "",
+      "tier": "",
+      "descricao": "",
+      "observacoes": ""
+    },
+    {
+      "id": 260,
+      "nome_aplicativo": "Flormel",
+      "url": "https://www.livelo.com.br/juntar-pontos/parceiros/flormel/FLR",
+      "logo_link": "https://a7815093c1prd-store.occa.ocs.oraclecloud.com/file/general/config_FLR_192x120-flormel.png",
+      "slug": "flormel",
+      "codigo": "FLR",
+      "categoria": "",
+      "tier": "",
+      "descricao": "",
+      "observacoes": ""
+    },
+    {
+      "id": 261,
+      "nome_aplicativo": "Nomad Trips",
+      "url": "https://www.livelo.com.br/juntar-pontos/parceiros/nomad-trips/NMD",
+      "logo_link": "https://a7815093c1prd-store.occa.ocs.oraclecloud.com/file/general/config_NMD_20250130-185227.png",
+      "slug": "nomad-trips",
+      "codigo": "NMD",
+      "categoria": "",
+      "tier": "",
+      "descricao": "",
+      "observacoes": ""
+    },
+    {
+      "id": 262,
+      "nome_aplicativo": "Panvel",
+      "url": "https://www.livelo.com.br/juntar-pontos/parceiros/panvel/DMD",
+      "logo_link": "https://a7815093c1prd-store.occa.ocs.oraclecloud.com/file/general/config_DMD.png",
+      "slug": "panvel",
+      "codigo": "DMD",
+      "categoria": "",
+      "tier": "",
+      "descricao": "",
+      "observacoes": ""
+    },
+    {
+      "id": 263,
+      "nome_aplicativo": "Travelex",
+      "url": "https://www.livelo.com.br/juntar-pontos/parceiros/travelex/TSS",
+      "logo_link": "https://a7815093c1prd-store.occa.ocs.oraclecloud.com/file/general/config_TSS_travelex_192x120.jpg",
+      "slug": "travelex",
+      "codigo": "TSS",
+      "categoria": "",
+      "tier": "",
+      "descricao": "",
+      "observacoes": ""
+    },
+    {
+      "id": 264,
+      "nome_aplicativo": "Assist Card Seguro-Viagem",
+      "url": "https://www.livelo.com.br/juntar-pontos/parceiros/assist-card-seguros/ASC",
+      "logo_link": "https://a7815093c1prd-store.occa.ocs.oraclecloud.com/file/general/config_ASC_asc-logo.png",
+      "slug": "assist-card-seguros",
+      "codigo": "ASC",
+      "categoria": "",
+      "tier": "",
+      "descricao": "",
+      "observacoes": ""
+    },
+    {
+      "id": 265,
+      "nome_aplicativo": "Embracon",
+      "url": "https://www.livelo.com.br/juntar-pontos/parceiros/embracon/EMB",
+      "logo_link": "https://a7815093c1prd-store.occa.ocs.oraclecloud.com/file/general/config_EMB_20250812-192319.png",
+      "slug": "embracon",
+      "codigo": "EMB",
+      "categoria": "",
+      "tier": "",
+      "descricao": "",
+      "observacoes": ""
+    },
+    {
+      "id": 266,
+      "nome_aplicativo": "Maltacor",
+      "url": "https://www.livelo.com.br/juntar-pontos/parceiros/maltacor/MAL",
+      "logo_link": "https://a7815093c1prd-store.occa.ocs.oraclecloud.com/file/general/config_MAL_20250812-135633.png",
+      "slug": "maltacor",
+      "codigo": "MAL",
+      "categoria": "",
+      "tier": "",
       "descricao": "",
       "observacoes": ""
     }
