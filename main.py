@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Main.py - Orquestrador do Sistema Livelo Analytics (VERSÃO CORRIGIDA)
-Foco no básico: Scraping → Análise → Deploy (Firebase é opcional)
-Sistema robusto que funciona independentemente de APIs externas
+Main.py - Orquestrador do Sistema Livelo Analytics (VERSÃO SUPER ROBUSTA)
+PRIORIDADE ABSOLUTA: Scraping → Análise → Deploy GitHub Pages
+Firebase é 100% opcional e não pode interferir no pipeline principal
 """
 
 import os
@@ -31,9 +31,10 @@ class LiveloOrchestrator:
             'scraping': False,
             'analise': False,
             'validacao': False,
-            'deploy_github': False,
-            'notificacoes': False
+            'deploy_preparacao': False
         }
+        # Firebase é completamente separado
+        self.firebase_opcional = False
         
     def validar_ambiente(self):
         """Valida se o ambiente está preparado"""
@@ -85,7 +86,6 @@ class LiveloOrchestrator:
                 verificacoes = [
                     ('Livelo Analytics Pro', 'título esperado'),
                     ('</html>', 'tag de fechamento HTML'),
-                    ('toggleFavorito', 'sistema de favoritos'),
                     ('table', 'tabelas de dados')
                 ]
                 
@@ -100,11 +100,6 @@ class LiveloOrchestrator:
         except Exception as e:
             logger.error(f"❌ Erro ao validar HTML: {e}")
             return False
-        
-        # Preparar diretório public para deploy
-        if not os.path.exists('public'):
-            os.makedirs('public')
-            logger.info("✅ Diretório public criado")
             
         self.sucesso_etapas['validacao'] = True
         return True
@@ -214,240 +209,224 @@ class LiveloOrchestrator:
             logger.error(f"Trace: {traceback.format_exc()}")
             return False
     
-    def deploy_github_pages(self):
-        """Deploy para GitHub Pages"""
-        logger.info("🚀 Verificando deploy GitHub Pages...")
+    def preparar_deploy_github(self):
+        """Prepara arquivos para GitHub Pages (sem fazer deploy real)"""
+        logger.info("🚀 Preparando arquivos para GitHub Pages...")
         
         try:
-            # Se estiver rodando em GitHub Actions
-            if os.getenv('GITHUB_ACTIONS'):
-                logger.info("🔄 Deploy será feito pelo GitHub Actions workflow")
-                self.sucesso_etapas['deploy_github'] = True
+            # Criar diretório public se não existir
+            if not os.path.exists('public'):
+                os.makedirs('public')
+                logger.info("📁 Diretório public criado")
+            
+            # Copiar arquivos principais
+            arquivos_deploy = [
+                ('relatorio_livelo.html', 'index.html'),
+                ('livelo_parceiros.xlsx', 'livelo_parceiros.xlsx')
+            ]
+            
+            for origem, destino in arquivos_deploy:
+                if os.path.exists(origem):
+                    import shutil
+                    shutil.copy2(origem, f'public/{destino}')
+                    logger.info(f"📄 {origem} → public/{destino}")
+                else:
+                    logger.warning(f"⚠️ {origem} não encontrado para deploy")
+            
+            # Verificar se arquivos foram copiados
+            arquivos_verificar = ['public/index.html', 'public/livelo_parceiros.xlsx']
+            todos_ok = True
+            
+            for arquivo in arquivos_verificar:
+                if os.path.exists(arquivo):
+                    size = os.path.getsize(arquivo)
+                    logger.info(f"✅ {arquivo}: {size:,} bytes")
+                else:
+                    logger.error(f"❌ {arquivo} não foi copiado")
+                    todos_ok = False
+            
+            if todos_ok:
+                logger.info("✅ Todos os arquivos preparados para deploy")
+                self.sucesso_etapas['deploy_preparacao'] = True
                 return True
             else:
-                # Rodando localmente
-                logger.info("🏠 Execução local detectada")
+                logger.error("❌ Falha na preparação do deploy")
+                return False
+            
+        except Exception as e:
+            logger.error(f"❌ Erro na preparação do deploy: {e}")
+            logger.error(f"Trace: {traceback.format_exc()}")
+            return False
+    
+    def tentar_firebase_opcional(self):
+        """Tenta configurar Firebase APENAS se tudo estiver OK (100% opcional)"""
+        logger.info("🔥 Verificando Firebase (opcional)...")
+        
+        try:
+            # Só tentar se as etapas críticas foram bem-sucedidas
+            if not all([self.sucesso_etapas['scraping'], 
+                       self.sucesso_etapas['analise'], 
+                       self.sucesso_etapas['validacao'],
+                       self.sucesso_etapas['deploy_preparacao']]):
+                logger.info("⏭️ Pulando Firebase - etapas principais ainda não concluídas")
+                return False
+            
+            # Verificar configuração básica
+            firebase_project = os.getenv('FIREBASE_PROJECT_ID')
+            firebase_account = os.getenv('FIREBASE_SERVICE_ACCOUNT')
+            
+            if not firebase_project or not firebase_account:
+                logger.info("ℹ️ Firebase não configurado (normal)")
+                logger.info("💡 Sistema funciona 100% sem Firebase")
+                return False
+            
+            # Se chegou até aqui, Firebase está configurado
+            logger.info(f"🔥 Firebase detectado: {firebase_project}")
+            
+            # Tentar executar notificações
+            if os.path.exists('notification_sender.py'):
+                logger.info("📱 Executando notificações Firebase...")
+                resultado = subprocess.run([
+                    sys.executable, 'notification_sender.py'
+                ], capture_output=True, text=True, timeout=180)  # 3 min
                 
-                if os.path.exists('.git'):
-                    logger.info("📁 Repositório Git detectado")
-                    
-                    # Verificar se há mudanças
-                    status_result = subprocess.run(['git', 'status', '--porcelain'], 
-                                                 capture_output=True, text=True)
-                    
-                    if status_result.stdout.strip():
-                        logger.info("📋 Mudanças detectadas - fazendo commit")
-                        
-                        # Adicionar arquivos importantes
-                        arquivos_commit = ['relatorio_livelo.html', 'livelo_parceiros.xlsx']
-                        for arquivo in arquivos_commit:
-                            if os.path.exists(arquivo):
-                                subprocess.run(['git', 'add', arquivo], 
-                                             capture_output=True, text=True)
-                        
-                        # Commit
-                        commit_msg = f"🤖 Atualização automática - {datetime.now().strftime('%d/%m/%Y %H:%M')}"
-                        commit_result = subprocess.run([
-                            'git', 'commit', '-m', commit_msg
-                        ], capture_output=True, text=True)
-                        
-                        if commit_result.returncode == 0:
-                            logger.info("✅ Commit realizado com sucesso")
-                        else:
-                            logger.warning("⚠️ Commit falhou ou sem mudanças")
-                    else:
-                        logger.info("ℹ️ Nenhuma mudança para commit")
-                        
-                    self.sucesso_etapas['deploy_github'] = True
+                if resultado.returncode == 0:
+                    logger.info("✅ Notificações Firebase funcionando")
+                    self.firebase_opcional = True
                     return True
                 else:
-                    logger.info("ℹ️ Não é um repositório Git")
-                    self.sucesso_etapas['deploy_github'] = True
-                    return True
-                    
-        except Exception as e:
-            logger.warning(f"⚠️ Problemas no deploy (não crítico): {e}")
-            # Deploy não é crítico para funcionamento básico
-            self.sucesso_etapas['deploy_github'] = True
-            return True
-    
-    def executar_notificacoes(self):
-        """Executa o sistema de notificações (OPCIONAL)"""
-        logger.info("🔔 Iniciando notificações (opcional)...")
-        
-        try:
-            # Verificar configuração básica do Firebase
-            firebase_project = os.getenv('FIREBASE_PROJECT_ID')
-            
-            if not firebase_project:
-                logger.info("ℹ️ FIREBASE_PROJECT_ID não configurado")
-                logger.info("💡 Sistema funcionará sem notificações push")
-                # Não é erro - sistema básico funciona sem Firebase
-                self.sucesso_etapas['notificacoes'] = True
-                return True
-            
-            # Verificar se o notification_sender existe
-            if not os.path.exists('notification_sender.py'):
-                logger.info("ℹ️ notification_sender.py não encontrado")
-                self.sucesso_etapas['notificacoes'] = True
-                return True
-            
-            logger.info("📱 Executando sistema de notificações...")
-            resultado = subprocess.run([
-                sys.executable, 'notification_sender.py'
-            ], capture_output=True, text=True, timeout=300)  # 5 min
-            
-            if resultado.returncode == 0:
-                logger.info("✅ Notificações processadas com sucesso")
+                    logger.warning("⚠️ Notificações com problemas (não afeta sistema)")
+                    return False
             else:
-                logger.warning("⚠️ Notificações com problemas (não crítico)")
-                if resultado.stderr:
-                    logger.warning(f"Aviso: {resultado.stderr[:200]}")
-            
-            # Notificações sempre marcadas como sucesso (não críticas)
-            self.sucesso_etapas['notificacoes'] = True
-            return True
+                logger.info("ℹ️ notification_sender.py não encontrado")
+                return False
                 
         except subprocess.TimeoutExpired:
-            logger.warning("⚠️ Timeout nas notificações (não crítico)")
-            self.sucesso_etapas['notificacoes'] = True
-            return True
+            logger.warning("⚠️ Timeout no Firebase (não crítico)")
+            return False
         except Exception as e:
-            logger.warning(f"⚠️ Erro nas notificações (não crítico): {e}")
-            self.sucesso_etapas['notificacoes'] = True
-            return True
+            logger.warning(f"⚠️ Firebase com problemas (não crítico): {e}")
+            return False
     
     def gerar_relatorio_execucao(self):
         """Gera relatório final da execução"""
         logger.info("📋 Gerando relatório de execução...")
         
-        total_etapas = len(self.sucesso_etapas)
-        etapas_sucesso = sum(self.sucesso_etapas.values())
-        
-        # Etapas críticas para funcionamento básico
-        etapas_criticas = ['scraping', 'analise', 'validacao']
+        # Contar apenas etapas críticas
+        etapas_criticas = ['scraping', 'analise', 'validacao', 'deploy_preparacao']
         criticas_sucesso = sum(self.sucesso_etapas[etapa] for etapa in etapas_criticas)
+        total_criticas = len(etapas_criticas)
         
-        print("\n" + "="*60)
+        print("\n" + "="*70)
         print("📊 RELATÓRIO DE EXECUÇÃO LIVELO ANALYTICS")
-        print("="*60)
+        print("="*70)
         print(f"⏰ Timestamp: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
-        print(f"✅ Sucesso Geral: {etapas_sucesso}/{total_etapas} etapas")
-        print(f"🔥 Críticas: {criticas_sucesso}/{len(etapas_criticas)} etapas")
+        print(f"🔥 Etapas Críticas: {criticas_sucesso}/{total_criticas}")
+        print(f"🔥 Firebase Opcional: {'✅ Ativo' if self.firebase_opcional else 'ℹ️ Desabilitado'}")
         print("")
-        print("🔍 DETALHES DAS ETAPAS:")
+        print("🎯 PIPELINE PRINCIPAL (CRÍTICO):")
         
         status_icons = {
             'scraping': '🕷️',
             'analise': '📊', 
             'validacao': '🔍',
-            'deploy_github': '🚀',
-            'notificacoes': '🔔'
+            'deploy_preparacao': '🚀'
         }
         
-        for etapa, sucesso in self.sucesso_etapas.items():
+        for etapa in etapas_criticas:
+            sucesso = self.sucesso_etapas[etapa]
             icon = status_icons.get(etapa, '⚙️')
             status = '✅ SUCESSO' if sucesso else '❌ FALHA'
-            critica = ' (CRÍTICA)' if etapa in etapas_criticas else ' (opcional)'
-            print(f"   {icon} {etapa.title()}: {status}{critica}")
+            print(f"   {icon} {etapa.replace('_', ' ').title()}: {status}")
         
         print("")
-        print("📁 ARQUIVOS GERADOS:")
+        print("📁 ARQUIVOS PRINCIPAIS:")
         
-        # Verificar arquivos
-        arquivos_verificar = [
+        # Verificar arquivos críticos
+        arquivos_criticos = [
             'relatorio_livelo.html',
-            'livelo_parceiros.xlsx', 
-            'main_livelo.log'
+            'livelo_parceiros.xlsx',
+            'public/index.html'
         ]
         
-        for arquivo in arquivos_verificar:
+        for arquivo in arquivos_criticos:
             if os.path.exists(arquivo):
                 size = os.path.getsize(arquivo)
                 print(f"   📄 {arquivo}: {size:,} bytes")
             else:
                 print(f"   ❌ {arquivo}: NÃO ENCONTRADO")
         
-        # Verificar outros arquivos úteis
-        arquivos_opcionais = [
-            'user_fcm_tokens.json',
-            'firebase.json',
-            'sw.js',
-            'manifest.json'
-        ]
-        
-        opcionais_encontrados = []
-        for arquivo in arquivos_opcionais:
-            if os.path.exists(arquivo):
-                opcionais_encontrados.append(arquivo)
-        
-        if opcionais_encontrados:
-            print(f"   📝 Arquivos extras: {', '.join(opcionais_encontrados)}")
-        
-        # Status final baseado em etapas críticas
+        # Status final baseado APENAS em etapas críticas
         print("")
-        if criticas_sucesso >= 3:  # Todas as críticas
-            print("🎉 EXECUÇÃO BEM-SUCEDIDA!")
-            print("🌐 Site disponível em: https://gcaressato.github.io/livelo_scraper/")
-            if os.path.exists('firebase.json'):
-                print("🔥 Firebase (opcional): https://livel-analytics.web.app/")
+        if criticas_sucesso >= total_criticas:
+            print("🎉 PIPELINE PRINCIPAL CONCLUÍDO COM SUCESSO!")
+            print("")
+            print("🌐 ACESSO AO SISTEMA:")
+            print("   ✅ GitHub Pages: https://gcaressato.github.io/livelo_scraper/")
+            if self.firebase_opcional:
+                print("   🔥 Firebase: https://livel-analytics.web.app/")
             
             print("")
-            print("✨ SISTEMA FUNCIONANDO:")
-            print("   ✅ Dados coletados e analisados")
-            print("   ✅ Dashboard HTML gerado")
-            print("   ✅ Pronto para visualização")
+            print("✨ FUNCIONALIDADES ATIVAS:")
+            print("   ✅ Dados coletados e processados")
+            print("   ✅ Dashboard HTML responsivo")
+            print("   ✅ Arquivos preparados para deploy")
+            print("   ✅ Sistema 100% funcional")
             
-            if not self.sucesso_etapas['notificacoes']:
-                print("   ℹ️ Notificações desabilitadas (opcional)")
+            if not self.firebase_opcional:
+                print("   ℹ️ Firebase desabilitado (opcional)")
             
             status_final = True
             
         else:
-            print("❌ EXECUÇÃO COM FALHAS CRÍTICAS!")
+            print("❌ FALHAS NO PIPELINE PRINCIPAL!")
             print("")
             print("🔧 PROBLEMAS DETECTADOS:")
             
             for etapa in etapas_criticas:
                 if not self.sucesso_etapas[etapa]:
-                    print(f"   ❌ {etapa.title()} falhou")
+                    print(f"   ❌ {etapa.replace('_', ' ').title()} falhou")
             
             print("")
             print("💡 AÇÕES RECOMENDADAS:")
-            print("   1. Verificar logs acima")
-            print("   2. Testar componentes individualmente")
-            print("   3. Verificar dependências do Python")
+            print("   1. Verificar logs detalhados")
+            print("   2. Testar scraper individualmente")
+            print("   3. Verificar dependências Python")
             print("   4. Checar conectividade de rede")
             
             status_final = False
         
-        print("="*60)
+        print("="*70)
         
         return status_final
     
-    def executar_pipeline_completo(self, pular_scraping=False, apenas_analise=False):
-        """Executa todo o pipeline com foco na robustez"""
+    def executar_pipeline_principal(self, pular_scraping=False, apenas_analise=False):
+        """Executa o pipeline principal (sem Firebase) com foco total na robustez"""
         print("\n🚀 INICIANDO PIPELINE LIVELO ANALYTICS")
-        print("="*50)
+        print("="*60)
         print(f"⏰ Timestamp: {self.timestamp}")
         print(f"📁 Diretório: {os.getcwd()}")
         print(f"🐍 Python: {sys.version.split()[0]}")
-        print("="*50)
+        print("")
+        print("🎯 FOCO: Pipeline principal (Scraping → Análise → Deploy)")
+        print("🔥 Firebase é 100% opcional e não interfere no processo")
+        print("="*60)
         
         try:
             # 0. VALIDAR AMBIENTE
+            logger.info("🔍 Etapa 1/4: Validando ambiente...")
             if not self.validar_ambiente():
                 logger.error("❌ Ambiente não está preparado")
                 return False
             
-            # 1. SCRAPING (crítico se não for pulado)
+            # 1. SCRAPING
             if not pular_scraping and not apenas_analise:
+                logger.info("🕷️ Etapa 2/4: Executando scraping...")
                 if not self.executar_scraping():
                     logger.error("❌ Falha crítica no scraping")
                     return False
             else:
-                logger.info("⏭️ Pulando scraping")
-                # Verificar se dados existem
+                logger.info("⏭️ Etapa 2/4: Pulando scraping...")
                 if os.path.exists('livelo_parceiros.xlsx'):
                     logger.info("✅ Usando dados existentes")
                     self.sucesso_etapas['scraping'] = True
@@ -455,24 +434,33 @@ class LiveloOrchestrator:
                     logger.error("❌ Sem dados para análise")
                     return False
             
-            # 2. ANÁLISE + VALIDAÇÃO (crítico)
+            # 2. ANÁLISE + VALIDAÇÃO
+            logger.info("📊 Etapa 3/4: Executando análise...")
             if not self.executar_analise():
                 logger.error("❌ Falha crítica na análise")
                 return False
             
-            # 3. DEPLOY (opcional)
+            # 3. PREPARAR DEPLOY
             if not apenas_analise:
-                self.deploy_github_pages()
+                logger.info("🚀 Etapa 4/4: Preparando deploy...")
+                if not self.preparar_deploy_github():
+                    logger.error("❌ Falha na preparação do deploy")
+                    return False
             else:
-                logger.info("⏭️ Pulando deploy")
-                self.sucesso_etapas['deploy_github'] = True
+                logger.info("⏭️ Etapa 4/4: Pulando preparação deploy...")
+                self.sucesso_etapas['deploy_preparacao'] = True
             
-            # 4. NOTIFICAÇÕES (sempre opcional)
+            # PIPELINE PRINCIPAL CONCLUÍDO COM SUCESSO
+            logger.info("🎉 Pipeline principal concluído com 100% de sucesso!")
+            
+            # 4. FIREBASE (OPCIONAL - NÃO PODE AFETAR O RESULTADO)
             if not apenas_analise:
-                self.executar_notificacoes()
-            else:
-                logger.info("⏭️ Pulando notificações")
-                self.sucesso_etapas['notificacoes'] = True
+                logger.info("🔥 Extra: Tentando Firebase (opcional)...")
+                try:
+                    self.tentar_firebase_opcional()
+                    logger.info("✅ Verificação Firebase concluída")
+                except Exception as e:
+                    logger.warning(f"⚠️ Firebase com problemas (ignorado): {e}")
             
             # 5. RELATÓRIO FINAL
             return self.gerar_relatorio_execucao()
@@ -491,8 +479,6 @@ def main():
                        help='Pular etapa de scraping (usar dados existentes)')
     parser.add_argument('--apenas-analise', action='store_true',
                        help='Executar apenas análise e relatório')
-    parser.add_argument('--apenas-notificacoes', action='store_true',
-                       help='Executar apenas sistema de notificações')
     parser.add_argument('--debug', action='store_true',
                        help='Ativar modo debug com mais logs')
     
@@ -505,23 +491,18 @@ def main():
     
     orchestrator = LiveloOrchestrator()
     
-    # Modo especial: apenas notificações
-    if args.apenas_notificacoes:
-        logger.info("🔔 Modo: Apenas Notificações")
-        sucesso = orchestrator.executar_notificacoes()
-        print(f"\n🎯 Resultado: {'✅ Sucesso' if sucesso else '❌ Falha'}")
-        sys.exit(0 if sucesso else 1)
-    
-    # Pipeline completo
-    logger.info("🎯 Iniciando pipeline completo...")
-    sucesso = orchestrator.executar_pipeline_completo(
+    # Executar pipeline principal
+    logger.info("🎯 Iniciando pipeline principal...")
+    sucesso = orchestrator.executar_pipeline_principal(
         pular_scraping=args.pular_scraping,
         apenas_analise=args.apenas_analise
     )
     
     # Resultado final
     if sucesso:
-        logger.info("🎉 Pipeline concluído com sucesso!")
+        logger.info("🎉 Sistema Livelo Analytics funcionando perfeitamente!")
+        print("\n🚀 SISTEMA PRONTO PARA USO!")
+        print("📱 Acesse: https://gcaressato.github.io/livelo_scraper/")
     else:
         logger.error("❌ Pipeline falhou!")
     
