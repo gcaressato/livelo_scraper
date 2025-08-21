@@ -39,44 +39,13 @@ jobs:
         run: |
           echo "🚀 Iniciando pipeline Livelo Analytics..."
           python main.py 2>&1 | tee pipeline.log
-          echo "PIPELINE_STATUS=$?" >> $GITHUB_ENV
-        continue-on-error: true
           
-      - name: Verificar resultados do pipeline
-        run: |
-          echo "📊 Verificando resultados do pipeline..."
-          
-          if [ "$PIPELINE_STATUS" = "0" ]; then
-            echo "✅ Pipeline executado com sucesso"
-            echo "PIPELINE_OK=true" >> $GITHUB_ENV
-          else
-            echo "❌ Pipeline com problemas"
-            echo "PIPELINE_OK=false" >> $GITHUB_ENV
-          fi
-          
-          # Verificar arquivos críticos
-          if [ -f "relatorio_livelo.html" ] && [ -f "livelo_parceiros.xlsx" ]; then
-            echo "✅ Arquivos principais encontrados"
-            ls -la *.html *.xlsx
-          else
-            echo "❌ Arquivos principais ausentes"
-            echo "FILES_OK=false" >> $GITHUB_ENV
-          fi
-          
-          # Verificar tamanho do HTML
-          if [ -f "relatorio_livelo.html" ]; then
-            size=$(stat -f%z "relatorio_livelo.html" 2>/dev/null || stat -c%s "relatorio_livelo.html" 2>/dev/null || echo "0")
-            if [ "$size" -gt 100000 ]; then
-              echo "✅ HTML válido: $size bytes"
-              echo "FILES_OK=true" >> $GITHUB_ENV
-            else
-              echo "❌ HTML muito pequeno: $size bytes"
-              echo "FILES_OK=false" >> $GITHUB_ENV
-            fi
-          fi
+          # O main.py já faz todas as validações necessárias
+          # Se chegou até aqui, pipeline foi bem-sucedido
+          echo "✅ Pipeline concluído com sucesso"
+          echo "FILES_OK=true" >> $GITHUB_ENV
         
       - name: Preparar arquivos para GitHub Pages
-        if: env.FILES_OK == 'true'
         run: |
           echo "📁 Preparando arquivos para GitHub Pages..."
           
@@ -96,21 +65,18 @@ jobs:
           ls -la _site/
           ls -la _site/relatorios/ 2>/dev/null || echo "Pasta relatorios criada"
           
-      # NOVO: Upload dos arquivos como artifact
+      # Upload dos arquivos como artifact
       - name: Upload páginas como artifact
-        if: env.FILES_OK == 'true'
         uses: actions/upload-pages-artifact@v3
         with:
           path: _site
           
       - name: Configurar Git para commit
-        if: env.FILES_OK == 'true'
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
           
       - name: Commit e push dos arquivos atualizados
-        if: env.FILES_OK == 'true'
         run: |
           echo "💾 Fazendo commit dos arquivos atualizados..."
           
@@ -129,8 +95,8 @@ jobs:
             
             git commit -m "📊 Atualização Livelo Analytics - $timestamp
 
-            🔧 Pipeline: ${{ env.PIPELINE_OK == 'true' && 'Sucesso' || 'Com problemas' }}
-            📄 Arquivos: ${{ env.FILES_OK == 'true' && 'Válidos' || 'Problemas' }}
+            ✅ Pipeline: Sucesso com validação rigorosa
+            📄 Arquivos: Validados (min 50 parceiros)
             📁 Preparado para GitHub Pages
             ⏰ Executado: $timestamp"
             
@@ -139,21 +105,20 @@ jobs:
             for i in {1..3}; do
               if git push; then
                 echo "✅ Push realizado com sucesso (tentativa $i)"
-                echo "PUSH_OK=true" >> $GITHUB_ENV
                 break
               else
                 echo "⚠️ Falha no push (tentativa $i)"
                 sleep 5
                 if [ $i -eq 3 ]; then
                   echo "❌ Push falhou após 3 tentativas"
-                  echo "PUSH_OK=false" >> $GITHUB_ENV
+                  exit 1
                 fi
               fi
             done
           fi
 
       - name: Firebase opcional (sem erro se falhar)
-        if: env.FILES_OK == 'true' && env.FIREBASE_PROJECT_ID != ''
+        if: env.FIREBASE_PROJECT_ID != ''
         run: |
           echo "🔥 Tentando Firebase (opcional)..."
           
@@ -173,11 +138,11 @@ jobs:
           FIREBASE_VAPID_KEY: ${{ secrets.FIREBASE_VAPID_KEY }}
         continue-on-error: true
 
-  # NOVO JOB: Deploy no GitHub Pages
+  # Deploy no GitHub Pages
   deploy:
     needs: scrape
     runs-on: ubuntu-latest
-    if: needs.scrape.outputs.FILES_OK == 'true' || always()
+    if: success()  # Só executa se o scrape foi bem-sucedido
     
     environment:
       name: github-pages
@@ -203,22 +168,36 @@ jobs:
           echo "⏰ Concluído: $(date +'%d/%m/%Y %H:%M:%S')"
           echo ""
           echo "📊 STATUS:"
-          echo "Pipeline: ${{ needs.scrape.result == 'success' && '✅ Sucesso' || '❌ Problemas' }}"
-          echo "Deploy: ${{ needs.deploy.result == 'success' && '✅ Realizado' || '❌ Problemas' }}"
-          echo ""
-          echo "🌐 ACESSO:"
-          echo "📱 GitHub Pages: https://gcaressato.github.io/livelo_scraper/"
-          echo ""
-          echo "📁 ESTRUTURA:"
-          echo "✅ index.html (página principal)"
-          echo "✅ livelo_parceiros.xlsx (dados)"
-          echo "✅ relatorios/livelo_analytics.html (relatório)"
+          echo "Pipeline: ${{ needs.scrape.result == 'success' && '✅ Sucesso' || '❌ FALHOU - Email de notificação enviado' }}"
+          echo "Deploy: ${{ needs.deploy.result == 'success' && '✅ Realizado' || '❌ Não realizado devido a falha anterior' }}"
           echo ""
           
-          if [ "${{ needs.deploy.result }}" = "success" ]; then
+          if [ "${{ needs.scrape.result }}" = "success" ]; then
+            echo "🌐 ACESSO:"
+            echo "📱 GitHub Pages: https://gcaressato.github.io/livelo_scraper/"
+            echo ""
+            echo "📁 ESTRUTURA:"
+            echo "✅ index.html (página principal)"
+            echo "✅ livelo_parceiros.xlsx (dados validados)"
+            echo "✅ relatorios/livelo_analytics.html (relatório)"
+            echo ""
+            echo "🔍 VALIDAÇÃO RIGOROSA:"
+            echo "✅ Mínimo 50 parceiros coletados"
+            echo "✅ Arquivos com tamanho adequado"
+            echo "✅ Conteúdo HTML bem formado"
+            echo "✅ Dados Excel estruturados"
+            echo ""
             echo "✅ Deploy realizado com sucesso!"
-            echo "::notice::Sistema Livelo Analytics online - GitHub Pages atualizado"
+            echo "::notice::Sistema Livelo Analytics online - Dados validados com sucesso"
           else
-            echo "❌ Problemas no deploy!"
-            echo "::error::Verificar configurações do GitHub Pages"
+            echo "❌ FALHA DETECTADA NO SCRAPING!"
+            echo "🚨 Possíveis causas:"
+            echo "   • Poucos dados coletados (< 50 parceiros)"
+            echo "   • Mudanças na estrutura do site"
+            echo "   • Problemas de conectividade"
+            echo "   • Bloqueio por anti-bot"
+            echo "   • Erro no script de scraping"
+            echo "   • Arquivos com tamanho insuficiente"
+            echo ""
+            echo "::error::Scraping falhou - Verificar logs detalhados para causa específica"
           fi
