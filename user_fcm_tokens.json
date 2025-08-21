@@ -1,35 +1,41 @@
 {
-  "exemplo_user_1": {
-    "fcm_token": "EXEMPLO_TOKEN_FCM_AQUI_-_SUBSTITUA_PELO_TOKEN_REAL",
+  "_instrucoes": {
+    "como_usar": "1. Obtenha seu token FCM no console do navegador 2. Substitua 'SEU_TOKEN_AQUI' 3. Mude 'ativo' para true",
+    "obter_token": "No console (F12): firebase.messaging().getToken().then(token => console.log(token))",
+    "formato_favoritos": "Use 'NomeParceiro|Moeda' exatamente como aparece na tabela (ex: 'Netshoes|R$')",
+    "configuracoes": {
+      "notificar_novas_ofertas": "Receber notificação quando parceiro ganhar oferta",
+      "apenas_favoritos": "Receber apenas notificações dos parceiros favoritados",
+      "notificar_grandes_mudancas": "Receber quando pontos variarem >20%"
+    }
+  },
+  "_exemplo_usuario": {
+    "fcm_token": "SEU_TOKEN_FCM_AQUI_DO_CONSOLE_FIREBASE",
     "favoritos": [
       "Netshoes|R$",
       "Magazine Luiza|R$",
-      "Amazon|R$"
+      "Amazon|R$",
+      "Americanas|R$"
     ],
     "ativo": false,
-    "ultimo_acesso": "2025-08-18T20:49:32.779900",
     "configuracoes": {
       "notificar_novas_ofertas": true,
-      "notificar_ofertas_perdidas": false,
       "apenas_favoritos": true,
-      "horario_silencioso_inicio": "23:00",
-      "horario_silencioso_fim": "07:00"
+      "notificar_grandes_mudancas": false
     },
-    "observacoes": "ESTE É UM EXEMPLO - Configure tokens reais de usuários"
+    "observacoes": "Exemplo - configure token real e mude ativo para true"
   },
-  "exemplo_user_2": {
-    "fcm_token": "OUTRO_EXEMPLO_TOKEN_FCM_AQUI",
+  "usuario_teste": {
+    "fcm_token": "COLE_SEU_TOKEN_REAL_AQUI",
     "favoritos": [
-      "Carrefour|R$",
-      "Extra|R$"
+      "Livelo|R$"
     ],
-    "ativo": false,
-    "ultimo_acesso": "2025-08-11T20:49:32.779907",
+    "ativo": true,
     "configuracoes": {
       "notificar_novas_ofertas": true,
-      "notificar_ofertas_perdidas": true,
-      "apenas_favoritos": false
+      "apenas_favoritos": false,
+      "notificar_grandes_mudancas": true
     },
-    "observacoes": "EXEMPLO - Token de teste"
+    "observacoes": "Token de teste ativo - substitua por token real"
   }
 }
