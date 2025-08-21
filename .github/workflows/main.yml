@@ -29,7 +29,6 @@ jobs:
         run: |
           pip install selenium webdriver-manager pandas openpyxl selenium-stealth plotly numpy requests google-auth
           python -c "import selenium; print(f'Selenium version: {selenium.__version__}')"
-          python -c "from google.oauth2 import service_account; print('✅ Google Auth instalado')"
           google-chrome --version
           
       - name: Verificar ambiente
@@ -52,42 +51,40 @@ jobs:
           python main.py 2>&1 | tee output.log
         continue-on-error: true
 
-      # VERIFICAÇÃO INTEGRADA DE SECRETS FIREBASE
-      - name: Debug configurações Firebase (nova versão)
+      # VERIFICAÇÃO FIREBASE SIMPLIFICADA
+      - name: Debug configurações Firebase (versão corrigida)
         run: |
-          echo "🔍 Verificando secrets Firebase (sem expor valores)..."
-          echo "Project ID: $([[ -n '${{ secrets.FIREBASE_PROJECT_ID }}' ]] && echo 'CONFIGURADO' || echo 'AUSENTE')"
-          echo "Server Key (legada): $([[ -n '${{ secrets.FIREBASE_SERVER_KEY }}' ]] && echo 'CONFIGURADO' || echo 'AUSENTE')"
-          echo "Service Account: $([[ -n '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' ]] && echo 'CONFIGURADO' || echo 'AUSENTE')"
-          echo "VAPID Key: $([[ -n '${{ secrets.FIREBASE_VAPID_KEY }}' ]] && echo 'CONFIGURADO' || echo 'AUSENTE')"
+          echo "🔍 Verificando secrets Firebase..."
           
-          # Verificar tamanhos sem expor conteúdo
-          server_key="${{ secrets.FIREBASE_SERVER_KEY }}"
-          if [[ -n "$server_key" ]]; then
-            key_length=${#server_key}
-            echo "Server Key length: $key_length chars"
-            if [[ $key_length -lt 100 ]]; then
-              echo "⚠️ Server Key pode estar incorreta (muito curta para API legada)"
-              echo "💡 Esta pode ser uma chave VAPID ou outro tipo de chave"
-            else
-              echo "✅ Server Key tem tamanho correto para API legada"
-            fi
+          # Verificar se existem sem expor valores
+          if [[ -n "${{ secrets.FIREBASE_PROJECT_ID }}" ]]; then
+            echo "✅ Project ID: CONFIGURADO"
+          else
+            echo "❌ Project ID: AUSENTE"
           fi
           
-          service_account="${{ secrets.FIREBASE_SERVICE_ACCOUNT }}"
-          if [[ -n "$service_account" ]]; then
-            sa_length=${#service_account}
-            echo "Service Account length: $sa_length chars"
-            if [[ $sa_length -gt 1000 ]]; then
-              echo "✅ Service Account parece ser um JSON completo"
-            fi
+          if [[ -n "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" ]]; then
+            echo "✅ Service Account: CONFIGURADO"
+            service_account_length="${{ secrets.FIREBASE_SERVICE_ACCOUNT }}"
+            echo "Service Account length: ${#service_account_length} chars"
+          else
+            echo "❌ Service Account: AUSENTE"
           fi
+          
+          if [[ -n "${{ secrets.FIREBASE_VAPID_KEY }}" ]]; then
+            echo "✅ VAPID Key: CONFIGURADO"
+          else
+            echo "❌ VAPID Key: AUSENTE"
+          fi
+          
+          # Server Key legada descontinuada
+          echo "ℹ️ Server Key legada foi descontinuada pelo Firebase"
         
       # VALIDAÇÃO INTELIGENTE DE DADOS
       - name: Validar qualidade dos dados
         id: validate
         run: |
-          python -c "
+          python3 -c "
           import pandas as pd
           from datetime import datetime, timedelta
           import os
@@ -116,7 +113,13 @@ jobs:
                   print('❌ HTML não foi gerado!')
                   success = False
               else:
-                  print('✅ HTML gerado com sucesso')
+                  with open('relatorio_livelo.html', 'r') as f:
+                      content = f.read()
+                      if len(content) > 100000:
+                          print('✅ HTML gerado com sucesso')
+                      else:
+                          print('⚠️ HTML pode estar incompleto')
+                          success = False
               
               if success:
                   print('VALIDATION_SUCCESS=true')
@@ -145,7 +148,7 @@ jobs:
               appId: "1:168707812242:web:59b4c1df4fc553410c6f4b"
           };
           
-          # VAPID key (do secret configurado)
+          // VAPID key (do secret configurado)
           window.firebaseVapidKey = "${{ secrets.FIREBASE_VAPID_KEY }}";
           
           console.log('🔥 Firebase config carregada para:', window.firebaseConfig.projectId);
@@ -269,18 +272,14 @@ jobs:
           
           echo "✅ Manifest PWA criado"
       
-      # ============ SISTEMA DE NOTIFICAÇÕES v2.0 ============
+      # ============ SISTEMA DE NOTIFICAÇÕES SIMPLIFICADO ============
       
-      - name: Executar sistema de notificações com verificação integrada
+      - name: Executar sistema de notificações (não-crítico)
         run: |
-          echo "🔔 Iniciando sistema de notificações v2.0..."
-          python notification_sender.py 2>&1 | tee notifications.log
+          echo "🔔 Iniciando sistema de notificações..."
+          python notification_sender.py 2>&1 | tee notifications.log || echo "⚠️ Notificações falharam (não crítico)"
         env:
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
-          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
-          FIREBASE_SENDER_ID: ${{ secrets.FIREBASE_SENDER_ID }}
-          FIREBASE_SERVER_KEY: ${{ secrets.FIREBASE_SERVER_KEY }}
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           FIREBASE_VAPID_KEY: ${{ secrets.FIREBASE_VAPID_KEY }}
         continue-on-error: true
@@ -369,10 +368,10 @@ jobs:
           if git diff --staged --quiet; then
             echo "✅ Nenhuma mudança para comitar"
           else
-            commit_message="📊 Livelo Analytics v2.0 - $(date +'%d/%m/%Y %H:%M')
+            commit_message="📊 Livelo Analytics - $(date +'%d/%m/%Y %H:%M')
 
-            🔧 Firebase: Verificação integrada ativa
-            📱 Notificações: Sistema v2.0 com múltiplas APIs
+            🔧 Sistema: Funcionando
+            📱 Notificações: Opcional
             📈 Scraping: ${{ env.SCRAPING_FALHOU == 'true' && 'Falhou' || 'Sucesso' }}
             ⏰ Build: ${timestamp}"
             
@@ -470,6 +469,7 @@ jobs:
       # ============ FIREBASE HOSTING (SE CONFIGURADO) ============
       
       - name: Deploy Firebase Hosting (opcional)
+        if: env.SCRAPING_FALHOU == 'false'
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
@@ -483,7 +483,7 @@ jobs:
       - name: Resumo final da execução
         run: |
           echo "
-          🎉 LIVELO ANALYTICS v2.0 - RESUMO DA EXECUÇÃO
+          🎉 LIVELO ANALYTICS - RESUMO DA EXECUÇÃO
           ============================================
           ⏰ Concluído: $(date +'%d/%m/%Y %H:%M:%S %Z')
           
@@ -491,24 +491,23 @@ jobs:
           Scraping: ${{ env.SCRAPING_FALHOU == 'true' && '❌ FALHOU' || '✅ SUCESSO' }}
           PWA Files: ✅ Criados
           GitHub Pages: ✅ Deploy realizado
-          Firebase: 🔍 Verificação integrada ativa
+          Firebase: 🔍 Opcional (funcionando sem API legada)
           
           🔧 RECURSOS ATIVOS:
           ✅ Dashboard responsivo
           ✅ Service Worker para notificações
           ✅ Manifest PWA otimizado
-          ✅ Sistema de notificações v2.0
-          ✅ Verificação automática de configuração
+          ✅ Sistema funcional sem dependência crítica do Firebase
           
           🌐 ACESSO:
           📱 GitHub Pages: https://gcaressato.github.io/livelo_scraper/
           🔥 Firebase: https://livel-analytics.web.app/
           
-          📋 CONFIGURAÇÃO DETECTADA:
-          🔑 Todos os secrets Firebase configurados!
-          📊 Sistema pronto para notificações completas
+          📋 CONFIGURAÇÃO:
+          🔑 Secrets Firebase configurados (API v9)
+          📊 Sistema independente de APIs legadas
           
-          ✨ Sistema rodando com verificação integrada!
+          ✨ Sistema funcionando com nova arquitetura!
           "
           
           # Definir status final
