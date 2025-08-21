@@ -3,6 +3,7 @@
 Main.py - Orquestrador do Sistema Livelo Analytics (VERSÃO SUPER ROBUSTA)
 PRIORIDADE ABSOLUTA: Scraping → Análise → Deploy GitHub Pages
 Firebase é 100% opcional e não pode interferir no pipeline principal
+VALIDAÇÃO RIGOROSA: Falha imediatamente se dados insuficientes forem coletados
 """
 
 import os
@@ -36,6 +37,11 @@ class LiveloOrchestrator:
         # Firebase é completamente separado
         self.firebase_opcional = False
         
+        # CONFIGURAÇÕES CRÍTICAS DE VALIDAÇÃO
+        self.MIN_PARCEIROS = 50  # Número mínimo de parceiros esperados
+        self.MIN_HTML_SIZE = 100000  # 100KB mínimo para HTML
+        self.MIN_EXCEL_SIZE = 5000   # 5KB mínimo para Excel
+        
     def validar_ambiente(self):
         """Valida se o ambiente está preparado"""
         logger.info("🔍 Validando ambiente...")
@@ -56,49 +62,140 @@ class LiveloOrchestrator:
             return False
         
         return True
+    
+    def validar_dados_excel(self):
+        """Validação RIGOROSA dos dados coletados no Excel"""
+        logger.info("🔍 Validando dados coletados (RIGOROSO)...")
+        
+        if not os.path.exists('livelo_parceiros.xlsx'):
+            logger.error("❌ FALHA CRÍTICA: livelo_parceiros.xlsx não encontrado")
+            return False
+        
+        try:
+            import pandas as pd
+            
+            # Ler o Excel
+            df = pd.read_excel('livelo_parceiros.xlsx')
+            num_registros = len(df)
+            
+            logger.info(f"📊 Registros encontrados: {num_registros}")
+            
+            # VALIDAÇÃO 1: Número mínimo de registros
+            if num_registros < self.MIN_PARCEIROS:
+                logger.error(f"❌ FALHA CRÍTICA: Poucos dados coletados!")
+                logger.error(f"   Coletados: {num_registros}")
+                logger.error(f"   Mínimo esperado: {self.MIN_PARCEIROS}")
+                logger.error("   Possíveis causas:")
+                logger.error("   • Mudança na estrutura do site")
+                logger.error("   • Bloqueio por anti-bot")
+                logger.error("   • Problemas de conectividade")
+                logger.error("   • Erro no script de scraping")
+                return False
+            
+            # VALIDAÇÃO 2: Verificar se há colunas essenciais
+            colunas_essenciais = ['nome', 'categoria']  # Ajustar conforme sua estrutura
+            colunas_encontradas = df.columns.tolist()
+            
+            for coluna in colunas_essenciais:
+                # Busca flexível por colunas (case insensitive)
+                encontrou = any(coluna.lower() in col.lower() for col in colunas_encontradas)
+                if not encontrou:
+                    logger.warning(f"⚠️ Coluna esperada não encontrada: {coluna}")
+            
+            # VALIDAÇÃO 3: Verificar se dados não estão vazios
+            dados_vazios = df.isnull().all(axis=1).sum()
+            if dados_vazios > (num_registros * 0.5):  # Mais de 50% vazios
+                logger.error(f"❌ FALHA CRÍTICA: Muitos registros vazios ({dados_vazios}/{num_registros})")
+                return False
+            
+            # VALIDAÇÃO 4: Verificar diversidade de dados (não todos iguais)
+            if len(df.columns) > 0:
+                primeira_coluna = df.iloc[:, 0]
+                valores_unicos = primeira_coluna.nunique()
+                if valores_unicos < 3:  # Menos de 3 valores únicos é suspeito
+                    logger.warning(f"⚠️ Pouca diversidade nos dados: {valores_unicos} valores únicos")
+            
+            logger.info(f"✅ Dados validados: {num_registros} parceiros coletados")
+            logger.info(f"✅ Colunas encontradas: {len(colunas_encontradas)}")
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"❌ FALHA CRÍTICA: Erro ao validar Excel: {e}")
+            logger.error(f"Trace: {traceback.format_exc()}")
+            return False
         
     def validar_arquivos_gerados(self):
-        """Valida se os arquivos foram gerados corretamente"""
-        logger.info("🔍 Validando arquivos gerados...")
+        """Valida se os arquivos foram gerados corretamente com critérios RIGOROSOS"""
+        logger.info("🔍 Validando arquivos gerados (RIGOROSO)...")
         
+        # VALIDAÇÃO 1: Existência e tamanho dos arquivos
         arquivos_criticos = {
-            'relatorio_livelo.html': 50000,  # Mínimo 50KB
-            'livelo_parceiros.xlsx': 1000    # Mínimo 1KB
+            'relatorio_livelo.html': self.MIN_HTML_SIZE,
+            'livelo_parceiros.xlsx': self.MIN_EXCEL_SIZE
         }
         
         for arquivo, tamanho_min in arquivos_criticos.items():
             if not os.path.exists(arquivo):
-                logger.error(f"❌ Arquivo crítico não encontrado: {arquivo}")
+                logger.error(f"❌ FALHA CRÍTICA: Arquivo não encontrado: {arquivo}")
                 return False
             
             size = os.path.getsize(arquivo)
             if size < tamanho_min:
-                logger.error(f"❌ {arquivo} muito pequeno: {size:,} bytes (mín: {tamanho_min:,})")
+                logger.error(f"❌ FALHA CRÍTICA: {arquivo} muito pequeno!")
+                logger.error(f"   Tamanho atual: {size:,} bytes")
+                logger.error(f"   Mínimo esperado: {tamanho_min:,} bytes")
+                logger.error("   Indica falha no processo de geração")
                 return False
             
             logger.info(f"✅ {arquivo}: {size:,} bytes")
         
-        # Verificar conteúdo HTML específico
+        # VALIDAÇÃO 2: Dados do Excel (CRÍTICA)
+        if not self.validar_dados_excel():
+            logger.error("❌ FALHA CRÍTICA: Validação de dados falhou")
+            return False
+        
+        # VALIDAÇÃO 3: Conteúdo HTML específico (RIGOROSA)
         try:
             with open('relatorio_livelo.html', 'r', encoding='utf-8') as f:
                 conteudo = f.read()
                 
-                verificacoes = [
-                    ('Livelo Analytics Pro', 'título esperado'),
-                    ('</html>', 'tag de fechamento HTML'),
-                    ('table', 'tabelas de dados')
+                # Verificações obrigatórias
+                verificacoes_criticas = [
+                    ('</html>', 'HTML bem formado'),
+                    ('Livelo', 'conteúdo relacionado ao Livelo'),
+                    ('table', 'tabelas de dados'),
                 ]
                 
-                for busca, desc in verificacoes:
+                for busca, desc in verificacoes_criticas:
                     if busca not in conteudo:
-                        logger.warning(f"⚠️ HTML não contém {desc}")
-                    
-                if len(conteudo) < 100000:
-                    logger.warning(f"⚠️ HTML pode estar incompleto: {len(conteudo):,} chars")
-                else:
-                    logger.info("✅ Conteúdo HTML validado")
+                        logger.error(f"❌ FALHA CRÍTICA: HTML não contém {desc}")
+                        return False
+                
+                # Verificar se não é uma página de erro
+                indicadores_erro = [
+                    'erro 404', '404 not found', 'página não encontrada',
+                    'access denied', 'blocked', 'captcha',
+                    'erro 500', 'internal server error'
+                ]
+                
+                conteudo_lower = conteudo.lower()
+                for indicador in indicadores_erro:
+                    if indicador in conteudo_lower:
+                        logger.error(f"❌ FALHA CRÍTICA: HTML indica erro: '{indicador}'")
+                        return False
+                
+                # Verificar tamanho mínimo do conteúdo
+                if len(conteudo) < self.MIN_HTML_SIZE:
+                    logger.error(f"❌ FALHA CRÍTICA: HTML muito pequeno!")
+                    logger.error(f"   Tamanho: {len(conteudo):,} caracteres")
+                    logger.error(f"   Mínimo: {self.MIN_HTML_SIZE:,} caracteres")
+                    return False
+                
+                logger.info(f"✅ HTML validado: {len(conteudo):,} caracteres")
+                
         except Exception as e:
-            logger.error(f"❌ Erro ao validar HTML: {e}")
+            logger.error(f"❌ FALHA CRÍTICA: Erro ao validar HTML: {e}")
             return False
             
         self.sucesso_etapas['validacao'] = True
@@ -113,11 +210,16 @@ class LiveloOrchestrator:
             if not os.path.exists('livelo_scraper.py'):
                 logger.warning("⚠️ livelo_scraper.py não encontrado")
                 
-                # Verificar se dados já existem
+                # Verificar se dados já existem E são válidos
                 if os.path.exists('livelo_parceiros.xlsx'):
-                    logger.info("✅ Usando dados existentes")
-                    self.sucesso_etapas['scraping'] = True
-                    return True
+                    logger.info("ℹ️ Tentando usar dados existentes...")
+                    if self.validar_dados_excel():
+                        logger.info("✅ Usando dados existentes válidos")
+                        self.sucesso_etapas['scraping'] = True
+                        return True
+                    else:
+                        logger.error("❌ Dados existentes são inválidos")
+                        return False
                 else:
                     logger.error("❌ Scraper ausente e sem dados")
                     return False
@@ -129,18 +231,26 @@ class LiveloOrchestrator:
             ], capture_output=True, text=True, timeout=1800)  # 30 min
             
             if resultado.returncode == 0:
-                logger.info("✅ Scraping concluído com sucesso")
-                # Verificar se arquivo foi gerado
+                logger.info("✅ Scraper executado sem erros")
+                
+                # VALIDAÇÃO IMEDIATA: Verificar se arquivo foi gerado E é válido
                 if os.path.exists('livelo_parceiros.xlsx'):
                     size = os.path.getsize('livelo_parceiros.xlsx')
                     logger.info(f"📄 livelo_parceiros.xlsx: {size:,} bytes")
-                    self.sucesso_etapas['scraping'] = True
-                    return True
+                    
+                    # Validar os dados imediatamente
+                    if self.validar_dados_excel():
+                        logger.info("✅ Scraping concluído com dados válidos")
+                        self.sucesso_etapas['scraping'] = True
+                        return True
+                    else:
+                        logger.error("❌ FALHA CRÍTICA: Scraper gerou dados inválidos")
+                        return False
                 else:
-                    logger.error("❌ Scraper executou mas não gerou arquivo")
+                    logger.error("❌ FALHA CRÍTICA: Scraper executou mas não gerou arquivo")
                     return False
             else:
-                logger.error(f"❌ Falha no scraping (código {resultado.returncode})")
+                logger.error(f"❌ FALHA CRÍTICA: Scraper falhou (código {resultado.returncode})")
                 if resultado.stderr:
                     logger.error(f"Erro: {resultado.stderr[:500]}")
                 if resultado.stdout:
@@ -148,10 +258,10 @@ class LiveloOrchestrator:
                 return False
                 
         except subprocess.TimeoutExpired:
-            logger.error("❌ Timeout no scraping (30 minutos)")
+            logger.error("❌ FALHA CRÍTICA: Timeout no scraping (30 minutos)")
             return False
         except Exception as e:
-            logger.error(f"❌ Erro inesperado no scraping: {e}")
+            logger.error(f"❌ FALHA CRÍTICA: Erro inesperado no scraping: {e}")
             logger.error(f"Trace: {traceback.format_exc()}")
             return False
     
@@ -160,14 +270,19 @@ class LiveloOrchestrator:
         logger.info("📊 Iniciando análise...")
         
         try:
-            # Verificar se o arquivo de dados existe
+            # Verificar se o arquivo de dados existe E é válido
             if not os.path.exists('livelo_parceiros.xlsx'):
-                logger.error("❌ livelo_parceiros.xlsx não encontrado para análise")
+                logger.error("❌ FALHA CRÍTICA: livelo_parceiros.xlsx não encontrado para análise")
+                return False
+            
+            # Validar dados antes da análise
+            if not self.validar_dados_excel():
+                logger.error("❌ FALHA CRÍTICA: Dados inválidos para análise")
                 return False
             
             # Verificar se o reporter existe
             if not os.path.exists('livelo_reporter.py'):
-                logger.error("❌ livelo_reporter.py não encontrado")
+                logger.error("❌ FALHA CRÍTICA: livelo_reporter.py não encontrado")
                 return False
             
             logger.info("📈 Executando análise com reporter...")
@@ -176,25 +291,28 @@ class LiveloOrchestrator:
             ], capture_output=True, text=True, timeout=600)  # 10 min
             
             if resultado.returncode == 0:
-                logger.info("✅ Análise concluída com sucesso")
+                logger.info("✅ Reporter executado sem erros")
                 
-                # Verificar arquivos gerados
-                arquivos_esperados = ['relatorio_livelo.html']
-                for arquivo in arquivos_esperados:
-                    if os.path.exists(arquivo):
-                        size = os.path.getsize(arquivo)
-                        logger.info(f"📄 {arquivo}: {size:,} bytes")
-                    else:
-                        logger.error(f"❌ {arquivo} não foi gerado")
-                        return False
+                # VALIDAÇÃO IMEDIATA: Verificar arquivos gerados
+                if not os.path.exists('relatorio_livelo.html'):
+                    logger.error("❌ FALHA CRÍTICA: Reporter não gerou relatorio_livelo.html")
+                    return False
+                
+                size = os.path.getsize('relatorio_livelo.html')
+                logger.info(f"📄 relatorio_livelo.html: {size:,} bytes")
                 
                 self.sucesso_etapas['analise'] = True
                 
-                # Executar validação imediatamente
-                return self.validar_arquivos_gerados()
+                # Executar validação completa imediatamente
+                if self.validar_arquivos_gerados():
+                    logger.info("✅ Análise concluída com arquivos válidos")
+                    return True
+                else:
+                    logger.error("❌ FALHA CRÍTICA: Análise gerou arquivos inválidos")
+                    return False
                 
             else:
-                logger.error(f"❌ Falha na análise (código {resultado.returncode})")
+                logger.error(f"❌ FALHA CRÍTICA: Reporter falhou (código {resultado.returncode})")
                 if resultado.stderr:
                     logger.error(f"Erro: {resultado.stderr[:500]}")
                 if resultado.stdout:
@@ -202,10 +320,10 @@ class LiveloOrchestrator:
                 return False
                 
         except subprocess.TimeoutExpired:
-            logger.error("❌ Timeout na análise (10 minutos)")
+            logger.error("❌ FALHA CRÍTICA: Timeout na análise (10 minutos)")
             return False
         except Exception as e:
-            logger.error(f"❌ Erro inesperado na análise: {e}")
+            logger.error(f"❌ FALHA CRÍTICA: Erro inesperado na análise: {e}")
             logger.error(f"Trace: {traceback.format_exc()}")
             return False
     
@@ -231,30 +349,32 @@ class LiveloOrchestrator:
                     shutil.copy2(origem, f'public/{destino}')
                     logger.info(f"📄 {origem} → public/{destino}")
                 else:
-                    logger.warning(f"⚠️ {origem} não encontrado para deploy")
+                    logger.error(f"❌ FALHA CRÍTICA: {origem} não encontrado para deploy")
+                    return False
             
-            # Verificar se arquivos foram copiados
-            arquivos_verificar = ['public/index.html', 'public/livelo_parceiros.xlsx']
-            todos_ok = True
+            # Verificar se arquivos foram copiados E são válidos
+            arquivos_verificar = [
+                ('public/index.html', self.MIN_HTML_SIZE),
+                ('public/livelo_parceiros.xlsx', self.MIN_EXCEL_SIZE)
+            ]
             
-            for arquivo in arquivos_verificar:
+            for arquivo, tamanho_min in arquivos_verificar:
                 if os.path.exists(arquivo):
                     size = os.path.getsize(arquivo)
+                    if size < tamanho_min:
+                        logger.error(f"❌ FALHA CRÍTICA: {arquivo} muito pequeno para deploy: {size:,} bytes")
+                        return False
                     logger.info(f"✅ {arquivo}: {size:,} bytes")
                 else:
-                    logger.error(f"❌ {arquivo} não foi copiado")
-                    todos_ok = False
+                    logger.error(f"❌ FALHA CRÍTICA: {arquivo} não foi copiado")
+                    return False
             
-            if todos_ok:
-                logger.info("✅ Todos os arquivos preparados para deploy")
-                self.sucesso_etapas['deploy_preparacao'] = True
-                return True
-            else:
-                logger.error("❌ Falha na preparação do deploy")
-                return False
+            logger.info("✅ Todos os arquivos preparados e validados para deploy")
+            self.sucesso_etapas['deploy_preparacao'] = True
+            return True
             
         except Exception as e:
-            logger.error(f"❌ Erro na preparação do deploy: {e}")
+            logger.error(f"❌ FALHA CRÍTICA: Erro na preparação do deploy: {e}")
             logger.error(f"Trace: {traceback.format_exc()}")
             return False
     
@@ -393,6 +513,7 @@ class LiveloOrchestrator:
             print("   2. Testar scraper individualmente")
             print("   3. Verificar dependências Python")
             print("   4. Checar conectividade de rede")
+            print("   5. Verificar se site mudou estrutura")
             
             status_final = False
         
@@ -410,41 +531,46 @@ class LiveloOrchestrator:
         print("")
         print("🎯 FOCO: Pipeline principal (Scraping → Análise → Deploy)")
         print("🔥 Firebase é 100% opcional e não interfere no processo")
+        print(f"📊 Validação rigorosa: min {self.MIN_PARCEIROS} parceiros")
         print("="*60)
         
         try:
             # 0. VALIDAR AMBIENTE
             logger.info("🔍 Etapa 1/4: Validando ambiente...")
             if not self.validar_ambiente():
-                logger.error("❌ Ambiente não está preparado")
+                logger.error("❌ FALHA CRÍTICA: Ambiente não está preparado")
                 return False
             
             # 1. SCRAPING
             if not pular_scraping and not apenas_analise:
                 logger.info("🕷️ Etapa 2/4: Executando scraping...")
                 if not self.executar_scraping():
-                    logger.error("❌ Falha crítica no scraping")
+                    logger.error("❌ FALHA CRÍTICA: Scraping falhou")
                     return False
             else:
                 logger.info("⏭️ Etapa 2/4: Pulando scraping...")
                 if os.path.exists('livelo_parceiros.xlsx'):
-                    logger.info("✅ Usando dados existentes")
-                    self.sucesso_etapas['scraping'] = True
+                    if self.validar_dados_excel():
+                        logger.info("✅ Usando dados existentes válidos")
+                        self.sucesso_etapas['scraping'] = True
+                    else:
+                        logger.error("❌ FALHA CRÍTICA: Dados existentes são inválidos")
+                        return False
                 else:
-                    logger.error("❌ Sem dados para análise")
+                    logger.error("❌ FALHA CRÍTICA: Sem dados para análise")
                     return False
             
             # 2. ANÁLISE + VALIDAÇÃO
             logger.info("📊 Etapa 3/4: Executando análise...")
             if not self.executar_analise():
-                logger.error("❌ Falha crítica na análise")
+                logger.error("❌ FALHA CRÍTICA: Análise falhou")
                 return False
             
             # 3. PREPARAR DEPLOY
             if not apenas_analise:
                 logger.info("🚀 Etapa 4/4: Preparando deploy...")
                 if not self.preparar_deploy_github():
-                    logger.error("❌ Falha na preparação do deploy")
+                    logger.error("❌ FALHA CRÍTICA: Preparação do deploy falhou")
                     return False
             else:
                 logger.info("⏭️ Etapa 4/4: Pulando preparação deploy...")
@@ -469,7 +595,7 @@ class LiveloOrchestrator:
             logger.info("⚠️ Execução interrompida pelo usuário")
             return False
         except Exception as e:
-            logger.error(f"❌ Erro inesperado no pipeline: {e}")
+            logger.error(f"❌ FALHA CRÍTICA: Erro inesperado no pipeline: {e}")
             logger.error(f"Trace: {traceback.format_exc()}")
             return False
 
@@ -481,6 +607,8 @@ def main():
                        help='Executar apenas análise e relatório')
     parser.add_argument('--debug', action='store_true',
                        help='Ativar modo debug com mais logs')
+    parser.add_argument('--min-parceiros', type=int, default=50,
+                       help='Número mínimo de parceiros para considerar sucesso')
     
     args = parser.parse_args()
     
@@ -490,6 +618,11 @@ def main():
         logger.info("🐛 Modo debug ativado")
     
     orchestrator = LiveloOrchestrator()
+    
+    # Aplicar configuração personalizada
+    if args.min_parceiros:
+        orchestrator.MIN_PARCEIROS = args.min_parceiros
+        logger.info(f"🎯 Mínimo de parceiros ajustado para: {args.min_parceiros}")
     
     # Executar pipeline principal
     logger.info("🎯 Iniciando pipeline principal...")
@@ -503,10 +636,12 @@ def main():
         logger.info("🎉 Sistema Livelo Analytics funcionando perfeitamente!")
         print("\n🚀 SISTEMA PRONTO PARA USO!")
         print("📱 Acesse: https://gcaressato.github.io/livelo_scraper/")
+        sys.exit(0)
     else:
-        logger.error("❌ Pipeline falhou!")
-    
-    sys.exit(0 if sucesso else 1)
+        logger.error("❌ FALHA CRÍTICA: Pipeline falhou!")
+        print("\n💥 SISTEMA COM FALHAS CRÍTICAS!")
+        print("📧 Notificação de erro será enviada pelo GitHub")
+        sys.exit(1)  # FALHA EXPLÍCITA
 
 if __name__ == "__main__":
     main()
