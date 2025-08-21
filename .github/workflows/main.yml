@@ -12,6 +12,7 @@ permissions:
 jobs:
   scrape:
     runs-on: ubuntu-latest
+    timeout-minutes: 45  # Timeout de 45 minutos
     steps:
       - name: Checkout do repositório
         uses: actions/checkout@v4
@@ -39,11 +40,45 @@ jobs:
         run: |
           echo "🚀 Iniciando pipeline Livelo Analytics..."
           python main.py 2>&1 | tee pipeline.log
+          echo "PIPELINE_STATUS=$?" >> $GITHUB_ENV
+        continue-on-error: true
           
-          # O main.py já faz todas as validações necessárias
-          # Se chegou até aqui, pipeline foi bem-sucedido
-          echo "✅ Pipeline concluído com sucesso"
-          echo "FILES_OK=true" >> $GITHUB_ENV
+      - name: Verificar resultados do pipeline
+        run: |
+          echo "📊 Verificando resultados do pipeline..."
+          
+          if [ "$PIPELINE_STATUS" = "0" ]; then
+            echo "✅ Pipeline executado com sucesso"
+            echo "PIPELINE_OK=true" >> $GITHUB_ENV
+          else
+            echo "❌ Pipeline com problemas"
+            echo "PIPELINE_OK=false" >> $GITHUB_ENV
+            # FALHA EXPLÍCITA - main.py já fez todas as validações
+            exit 1
+          fi
+          
+          # Verificar arquivos críticos
+          if [ -f "relatorio_livelo.html" ] && [ -f "livelo_parceiros.xlsx" ]; then
+            echo "✅ Arquivos principais encontrados"
+            ls -la *.html *.xlsx
+            echo "FILES_OK=true" >> $GITHUB_ENV
+          else
+            echo "❌ Arquivos principais ausentes"
+            echo "FILES_OK=false" >> $GITHUB_ENV
+            exit 1
+          fi
+          
+          # Verificar tamanho do HTML (verificação rápida adicional)
+          if [ -f "relatorio_livelo.html" ]; then
+            size=$(stat -f%z "relatorio_livelo.html" 2>/dev/null || stat -c%s "relatorio_livelo.html" 2>/dev/null || echo "0")
+            if [ "$size" -gt 50000 ]; then
+              echo "✅ HTML válido: $size bytes"
+            else
+              echo "❌ HTML muito pequeno: $size bytes"
+              echo "FILES_OK=false" >> $GITHUB_ENV
+              exit 1
+            fi
+          fi
         
       - name: Preparar arquivos para GitHub Pages
         run: |
@@ -142,7 +177,8 @@ jobs:
   deploy:
     needs: scrape
     runs-on: ubuntu-latest
-    if: success()  # Só executa se o scrape foi bem-sucedido
+    timeout-minutes: 10  # Timeout de 10 minutos para deploy
+    if: needs.scrape.result == 'success'
     
     environment:
       name: github-pages
@@ -157,6 +193,7 @@ jobs:
   summary:
     needs: [scrape, deploy]
     runs-on: ubuntu-latest
+    timeout-minutes: 5  # Timeout de 5 minutos para summary
     if: always()
     
     steps:
