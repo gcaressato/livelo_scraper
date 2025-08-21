@@ -1,9 +1,0 @@
-2025-08-14 12:58:27,014 - INFO - ✅ Firebase configurado para projeto: livel-analytics
-2025-08-14 12:58:27,014 - INFO - 🚀 Iniciando sistema de notificações Livelo Analytics
-2025-08-14 12:58:27,570 - INFO - 📊 Dados de hoje (2025-08-14): 264 registros
-2025-08-14 12:58:27,572 - INFO - 📊 Dados de ontem (2025-08-13): 264 registros
-2025-08-14 12:58:27,603 - INFO - 🎯 Detectadas 7 novas ofertas
-2025-08-14 12:58:27,603 - INFO - 📉 Detectadas 2 ofertas finalizadas
-2025-08-14 12:58:27,604 - INFO - 📄 Arquivo exemplo criado: user_fcm_tokens.json
-2025-08-14 12:58:27,604 - WARNING - ⚠️ Nenhum usuário registrado para notificações
-2025-08-14 12:58:27,604 - INFO - ✅ Processo de notificações concluído
