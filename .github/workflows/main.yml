@@ -8,7 +8,6 @@ permissions:
   contents: write
   pages: write
   id-token: write
-  issues: write
 
 jobs:
   scrape:
@@ -27,492 +26,182 @@ jobs:
         
       - name: Instalar dependências
         run: |
-          pip install selenium webdriver-manager pandas openpyxl selenium-stealth plotly numpy requests google-auth
+          pip install selenium webdriver-manager pandas openpyxl selenium-stealth plotly numpy requests
           python -c "import selenium; print(f'Selenium version: {selenium.__version__}')"
           google-chrome --version
           
-      - name: Verificar ambiente
-        run: |
-          echo "Diretório atual: $(pwd)"
-          echo "Conteúdo do diretório: $(ls -la)"
-          
-      - name: Criar diretórios para logs e saída
+      - name: Criar diretórios necessários
         run: |
           mkdir -p logs
           mkdir -p relatorios
+          mkdir -p public
           
-      - name: Executar scraper diretamente (para depuração)
+      - name: Executar pipeline principal
         run: |
-          python livelo_scraper.py 2>&1 | tee scraper_debug.log
+          echo "🚀 Iniciando pipeline Livelo Analytics..."
+          python main.py 2>&1 | tee pipeline.log
+          echo "PIPELINE_STATUS=$?" >> $GITHUB_ENV
         continue-on-error: true
           
-      - name: Executar script principal
+      - name: Verificar resultados do pipeline
         run: |
-          python main.py 2>&1 | tee output.log
-        continue-on-error: true
-
-      # VERIFICAÇÃO FIREBASE SIMPLIFICADA
-      - name: Debug configurações Firebase (versão corrigida)
-        run: |
-          echo "🔍 Verificando secrets Firebase..."
+          echo "📊 Verificando resultados do pipeline..."
           
-          # Verificar se existem sem expor valores
-          if [[ -n "${{ secrets.FIREBASE_PROJECT_ID }}" ]]; then
-            echo "✅ Project ID: CONFIGURADO"
+          if [ "$PIPELINE_STATUS" = "0" ]; then
+            echo "✅ Pipeline executado com sucesso"
+            echo "PIPELINE_OK=true" >> $GITHUB_ENV
           else
-            echo "❌ Project ID: AUSENTE"
+            echo "❌ Pipeline com problemas"
+            echo "PIPELINE_OK=false" >> $GITHUB_ENV
           fi
           
-          if [[ -n "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" ]]; then
-            echo "✅ Service Account: CONFIGURADO"
-            service_account_length="${{ secrets.FIREBASE_SERVICE_ACCOUNT }}"
-            echo "Service Account length: ${#service_account_length} chars"
+          # Verificar arquivos críticos
+          if [ -f "relatorio_livelo.html" ] && [ -f "livelo_parceiros.xlsx" ]; then
+            echo "✅ Arquivos principais encontrados"
+            ls -la *.html *.xlsx
           else
-            echo "❌ Service Account: AUSENTE"
+            echo "❌ Arquivos principais ausentes"
+            echo "FILES_OK=false" >> $GITHUB_ENV
           fi
           
-          if [[ -n "${{ secrets.FIREBASE_VAPID_KEY }}" ]]; then
-            echo "✅ VAPID Key: CONFIGURADO"
-          else
-            echo "❌ VAPID Key: AUSENTE"
+          # Verificar tamanho dos arquivos
+          if [ -f "relatorio_livelo.html" ]; then
+            size=$(stat -f%z "relatorio_livelo.html" 2>/dev/null || stat -c%s "relatorio_livelo.html" 2>/dev/null || echo "0")
+            if [ "$size" -gt 100000 ]; then
+              echo "✅ HTML válido: $size bytes"
+              echo "FILES_OK=true" >> $GITHUB_ENV
+            else
+              echo "❌ HTML muito pequeno: $size bytes"
+              echo "FILES_OK=false" >> $GITHUB_ENV
+            fi
           fi
-          
-          # Server Key legada descontinuada
-          echo "ℹ️ Server Key legada foi descontinuada pelo Firebase"
         
-      # VALIDAÇÃO INTELIGENTE DE DADOS
-      - name: Validar qualidade dos dados
-        id: validate
+      - name: Preparar arquivos para GitHub Pages
+        if: env.FILES_OK == 'true'
         run: |
-          python3 -c "
-          import pandas as pd
-          from datetime import datetime, timedelta
-          import os
+          echo "📁 Preparando arquivos para GitHub Pages..."
           
-          success = True
+          # Copiar HTML principal como index.html
+          cp relatorio_livelo.html public/index.html
+          echo "✅ HTML copiado para public/index.html"
           
-          try:
-              if not os.path.exists('livelo_parceiros.xlsx'):
-                  print('❌ Arquivo Excel não encontrado!')
-                  success = False
-              else:
-                  df = pd.read_excel('livelo_parceiros.xlsx')
-                  df['Timestamp'] = pd.to_datetime(df['Timestamp'])
-                  latest_date = df['Timestamp'].max()
-                  now = datetime.now()
-                  
-                  if (now - latest_date).total_seconds() > 86400:
-                      print(f'⚠️ Dados podem estar antigos! Último: {latest_date}')
-                  
-                  if len(df) < 30:
-                      print(f'⚠️ Poucos dados coletados: {len(df)} registros')
-                  else:
-                      print(f'✅ Dados validados: {len(df)} registros, último em {latest_date}')
-              
-              if not os.path.exists('relatorio_livelo.html'):
-                  print('❌ HTML não foi gerado!')
-                  success = False
-              else:
-                  with open('relatorio_livelo.html', 'r') as f:
-                      content = f.read()
-                      if len(content) > 100000:
-                          print('✅ HTML gerado com sucesso')
-                      else:
-                          print('⚠️ HTML pode estar incompleto')
-                          success = False
-              
-              if success:
-                  print('VALIDATION_SUCCESS=true')
-              else:
-                  print('VALIDATION_FAILED=true')
-                  
-          except Exception as e:
-              print(f'❌ Erro na validação: {e}')
-              print('VALIDATION_ERROR=true')
-          " 2>&1 | tee validation.log
-        continue-on-error: true
+          # Copiar dados Excel
+          cp livelo_parceiros.xlsx public/
+          echo "✅ Excel copiado para public/"
+          
+          # Verificar arquivos no public
+          echo "📂 Conteúdo do diretório public:"
+          ls -la public/
+          
+          # Verificar tamanhos
+          echo "📊 Tamanhos dos arquivos:"
+          du -h public/*
         
-      # ============ FIREBASE PWA FILES (SEMPRE CRIAR) ============
+      - name: Configurar Git para commit
+        if: env.FILES_OK == 'true'
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+          
+      - name: Commit e push dos arquivos atualizados
+        if: env.FILES_OK == 'true'
+        run: |
+          echo "💾 Fazendo commit dos arquivos atualizados..."
+          
+          timestamp=$(date +"%d/%m/%Y %H:%M")
+          
+          # Adicionar arquivos principais
+          git add -f relatorio_livelo.html livelo_parceiros.xlsx
+          git add -f public/
+          git add -f *.log 2>/dev/null || true
+          
+          # Verificar se há mudanças para comitar
+          if git diff --staged --quiet; then
+            echo "ℹ️ Nenhuma mudança detectada para commit"
+          else
+            echo "📝 Mudanças detectadas, fazendo commit..."
+            
+            # Fazer commit
+            git commit -m "📊 Atualização Livelo Analytics - $timestamp
+
+            🔧 Pipeline: ${{ env.PIPELINE_OK == 'true' && 'Sucesso' || 'Com problemas' }}
+            📄 Arquivos: ${{ env.FILES_OK == 'true' && 'Válidos' || 'Problemas' }}
+            ⏰ Executado: $timestamp"
+            
+            # Push com retry
+            echo "🚀 Fazendo push das mudanças..."
+            for i in {1..3}; do
+              if git push; then
+                echo "✅ Push realizado com sucesso (tentativa $i)"
+                echo "PUSH_OK=true" >> $GITHUB_ENV
+                break
+              else
+                echo "⚠️ Falha no push (tentativa $i)"
+                sleep 5
+                if [ $i -eq 3 ]; then
+                  echo "❌ Push falhou após 3 tentativas"
+                  echo "PUSH_OK=false" >> $GITHUB_ENV
+                fi
+              fi
+            done
+          fi
       
-      - name: Criar configuração Firebase estática
+      - name: Setup Pages
+        if: env.FILES_OK == 'true'
+        uses: actions/configure-pages@v3
+        
+      - name: Deploy para GitHub Pages
+        if: env.FILES_OK == 'true'
+        uses: actions/deploy-pages@v4
+        with:
+          path: public
+        continue-on-error: true
+
+      - name: Firebase opcional (sem erro se falhar)
+        if: env.FILES_OK == 'true' && env.FIREBASE_PROJECT_ID != ''
         run: |
-          # Usar configuração estática conhecida do projeto
-          cat > firebase-config-runtime.js << 'EOF'
-          // Configuração Firebase Livelo Analytics
-          window.firebaseConfig = {
-              apiKey: "AIzaSyAibNVfTL0kvG_R3rKYYSnAeQWc5oVBFYk",
-              authDomain: "livel-analytics.firebaseapp.com", 
-              projectId: "livel-analytics",
-              storageBucket: "livel-analytics.appspot.com",
-              messagingSenderId: "168707812242",
-              appId: "1:168707812242:web:59b4c1df4fc553410c6f4b"
-          };
+          echo "🔥 Tentando Firebase (opcional)..."
           
-          // VAPID key (do secret configurado)
-          window.firebaseVapidKey = "${{ secrets.FIREBASE_VAPID_KEY }}";
-          
-          console.log('🔥 Firebase config carregada para:', window.firebaseConfig.projectId);
-          EOF
-          
-          echo "✅ Configuração Firebase criada"
-
-      - name: Criar Service Worker Firebase moderno
-        run: |
-          cat > sw.js << 'EOF'
-          // Service Worker Firebase v9 - Livelo Analytics
-          importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
-          importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
-
-          console.log('[SW] Livelo Analytics Service Worker iniciando...');
-
-          const firebaseConfig = {
-              apiKey: "AIzaSyAibNVfTL0kvG_R3rKYYSnAeQWc5oVBFYk",
-              authDomain: "livel-analytics.firebaseapp.com",
-              projectId: "livel-analytics", 
-              storageBucket: "livel-analytics.appspot.com",
-              messagingSenderId: "168707812242",
-              appId: "1:168707812242:web:59b4c1df4fc553410c6f4b"
-          };
-
-          let messaging;
-
-          try {
-              if (!firebase.apps.length) {
-                  firebase.initializeApp(firebaseConfig);
-              }
-              
-              messaging = firebase.messaging();
-              console.log('[SW] Firebase Messaging inicializado para livel-analytics');
-              
-              messaging.onBackgroundMessage(function(payload) {
-                  console.log('[SW] Nova oferta Livelo recebida:', payload);
-                  
-                  const notificationTitle = payload.notification?.title || 'Nova Oferta Livelo!';
-                  const notificationOptions = {
-                      body: payload.notification?.body || 'Confira as ofertas atualizadas',
-                      icon: 'https://via.placeholder.com/192x192/ff0a8c/ffffff?text=L',
-                      badge: 'https://via.placeholder.com/96x96/ff0a8c/ffffff?text=L',
-                      tag: 'livelo-offer',
-                      requireInteraction: true,
-                      data: payload.data || {},
-                      actions: [
-                          {
-                              action: 'view_offers',
-                              title: '👀 Ver Ofertas'
-                          },
-                          {
-                              action: 'dismiss',
-                              title: '✖️ Dispensar'
-                          }
-                      ]
-                  };
-                  
-                  return self.registration.showNotification(notificationTitle, notificationOptions);
-              });
-              
-          } catch (error) {
-              console.error('[SW] Erro Firebase:', error);
-          }
-
-          self.addEventListener('notificationclick', function(event) {
-              console.log('[SW] Clique na notificação Livelo:', event.action);
-              event.notification.close();
-              
-              if (event.action === 'view_offers') {
-                  event.waitUntil(
-                      clients.openWindow('https://gcaressato.github.io/livelo_scraper/')
-                  );
-              }
-          });
-
-          self.addEventListener('activate', function(event) {
-              console.log('[SW] Livelo Service Worker ativado');
-              event.waitUntil(self.clients.claim());
-          });
-
-          self.addEventListener('install', function(event) {
-              console.log('[SW] Livelo Service Worker instalado');
-              self.skipWaiting();
-          });
-          EOF
-          
-          echo "✅ Service Worker criado"
-
-      - name: Criar manifest.json otimizado
-        run: |
-          cat > manifest.json << 'EOF'
-          {
-            "name": "Livelo Analytics Pro",
-            "short_name": "Livelo",
-            "description": "Dashboard profissional para análise de ofertas Livelo com notificações inteligentes",
-            "start_url": "./",
-            "scope": "./",
-            "display": "standalone",
-            "orientation": "portrait-primary",
-            "background_color": "#151f4f",
-            "theme_color": "#ff0a8c",
-            "categories": ["finance", "shopping", "productivity"],
-            "icons": [
-              {
-                "src": "https://via.placeholder.com/192x192/ff0a8c/ffffff?text=L",
-                "sizes": "192x192",
-                "type": "image/png",
-                "purpose": "maskable any"
-              },
-              {
-                "src": "https://via.placeholder.com/512x512/ff0a8c/ffffff?text=L",
-                "sizes": "512x512", 
-                "type": "image/png",
-                "purpose": "maskable any"
-              }
-            ],
-            "gcm_sender_id": "168707812242"
-          }
-          EOF
-          
-          echo "✅ Manifest PWA criado"
-      
-      # ============ SISTEMA DE NOTIFICAÇÕES SIMPLIFICADO ============
-      
-      - name: Executar sistema de notificações (não-crítico)
-        run: |
-          echo "🔔 Iniciando sistema de notificações..."
-          python notification_sender.py 2>&1 | tee notifications.log || echo "⚠️ Notificações falharam (não crítico)"
+          # Só tentar se project ID estiver configurado
+          if [ -n "${{ secrets.FIREBASE_PROJECT_ID }}" ]; then
+            echo "Firebase Project ID detectado"
+            
+            # Tentar executar notificações se existir
+            if [ -f "notification_sender.py" ]; then
+              echo "📱 Executando notificações..."
+              timeout 300 python notification_sender.py || echo "⚠️ Notificações falharam (não crítico)"
+            fi
+          else
+            echo "ℹ️ Firebase não configurado (normal)"
+          fi
         env:
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           FIREBASE_VAPID_KEY: ${{ secrets.FIREBASE_VAPID_KEY }}
         continue-on-error: true
         
-      - name: Verificar falhas na execução
-        run: |
-          if cat output.log | grep -q "Falha no scraper\|Falha no reporter\|ERRO FATAL"; then
-            echo "::warning::Falhas detectadas na execução!"
-            grep -A 10 "Falha\|ERRO" output.log || true
-            echo "SCRAPING_FALHOU=true" >> $GITHUB_ENV
-          else
-            echo "Nenhuma falha detectada na execução."
-            echo "SCRAPING_FALHOU=false" >> $GITHUB_ENV
-          fi
-      
-      # CRIAR ISSUE AUTOMÁTICA SE FALHOU
-      - name: Criar issue se scraper falhou
-        if: env.SCRAPING_FALHOU == 'true'
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const title = `🚨 Scraper falhou em ${new Date().toLocaleString('pt-BR')}`;
-            const body = `
-            ## ❌ Falha no Scraper Livelo
-            
-            **⏰ Horário:** ${new Date().toLocaleString('pt-BR', {timeZone: 'America/Sao_Paulo'})}
-            **🔗 Logs:** [Ver detalhes](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
-            
-            ### ⚠️ Ação necessária:
-            1. Verificar logs do workflow
-            2. Testar scraper localmente
-            3. Ajustar seletores se necessário
-            `;
-            
-            const existingIssues = await github.rest.issues.listForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              labels: 'scraper-failure'
-            });
-            
-            if (existingIssues.data.length === 0) {
-              await github.rest.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                title: title,
-                body: body,
-                labels: ['scraper-failure', 'urgent']
-              });
-            }
-      
-      - name: Listar arquivos de diagnóstico
-        run: |
-          echo "📁 Arquivos gerados:"
-          echo "HTML:"
-          ls -la *.html 2>/dev/null || echo "  Nenhum arquivo HTML"
-          echo "Logs:"
-          ls -la *.log 2>/dev/null || echo "  Nenhum log"
-          echo "PWA/Firebase:"
-          ls -la sw.js manifest.json firebase-config-runtime.js 2>/dev/null || echo "  Arquivos PWA ausentes"
-          echo "Dados:"
-          ls -la *.xlsx *.json 2>/dev/null || echo "  Nenhum arquivo de dados"
-      
-      - name: Configurar Git para commit
-        run: |
-          git config --local user.email "actions@github.com"
-          git config --local user.name "GitHub Actions"
-          
-      - name: Commit e push dos novos dados
-        run: |
-          timestamp=$(date +%Y%m%d_%H%M%S)
-          
-          # Copiar logs importantes
-          mkdir -p logs
-          for log_file in output.log notifications.log validation.log; do
-            if [ -f "$log_file" ]; then
-              cp "$log_file" "logs/${log_file%.log}_${timestamp}.log"
-            fi
-          done
-          
-          # Adicionar arquivos principais
-          git add -f *.html *.xlsx *.json sw.js manifest.json firebase-config-runtime.js 2>/dev/null || true
-          git add logs/ relatorios/ 2>/dev/null || true
-          git add -f debug_*.* *.log 2>/dev/null || true
-          
-          if git diff --staged --quiet; then
-            echo "✅ Nenhuma mudança para comitar"
-          else
-            commit_message="📊 Livelo Analytics - $(date +'%d/%m/%Y %H:%M')
-
-            🔧 Sistema: Funcionando
-            📱 Notificações: Opcional
-            📈 Scraping: ${{ env.SCRAPING_FALHOU == 'true' && 'Falhou' || 'Sucesso' }}
-            ⏰ Build: ${timestamp}"
-            
-            git commit -m "$commit_message"
-            
-            # Push com retry
-            for i in {1..3}; do
-              if git push; then
-                echo "✅ Push realizado (tentativa $i)"
-                break
-              else
-                echo "⚠️ Falha no push (tentativa $i), tentando novamente..."
-                sleep 5
-              fi
-            done
-          fi
-      
-      # ============ DEPLOY PARA GITHUB PAGES ============
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-      
-      - name: Preparar arquivos para deploy
-        run: |
-          mkdir -p ./public
-          
-          echo "📁 Preparando deploy..."
-          
-          # HTML principal
-          if [ -f "relatorio_livelo.html" ]; then
-            cp relatorio_livelo.html ./public/index.html
-            echo "✅ Dashboard copiado"
-          else
-            echo "❌ Dashboard não encontrado - criando página de manutenção"
-            cat > ./public/index.html << 'EOF'
-          <!DOCTYPE html>
-          <html lang="pt-BR">
-          <head>
-              <meta charset="utf-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1">
-              <title>Livelo Analytics - Processando</title>
-              <style>
-                  body { 
-                      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                      color: white; margin: 0; padding: 50px;
-                      text-align: center; min-height: 100vh;
-                      display: flex; align-items: center; justify-content: center;
-                  }
-                  .container { 
-                      background: rgba(255,255,255,0.1); padding: 40px;
-                      border-radius: 20px; backdrop-filter: blur(10px);
-                  }
-                  .spinner { animation: spin 2s linear infinite; font-size: 3em; }
-                  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-              </style>
-          </head>
-          <body>
-              <div class="container">
-                  <div class="spinner">⚙️</div>
-                  <h1>Livelo Analytics</h1>
-                  <p>Sistema processando dados...</p>
-                  <p><small>Atualizado: $(date +'%d/%m/%Y %H:%M')</small></p>
-              </div>
-          </body>
-          </html>
-          EOF
-          fi
-          
-          # Arquivos PWA
-          for file in manifest.json sw.js firebase-config-runtime.js; do
-            if [ -f "$file" ]; then
-              cp "$file" ./public/
-              echo "✅ $file copiado"
-            fi
-          done
-          
-          # Dados Excel
-          cp -f *.xlsx ./public/ 2>/dev/null || echo "📊 Nenhum Excel para copiar"
-          
-          echo "📂 Arquivos no public: $(ls -1 ./public/ | wc -l)"
-          
-      - name: Setup Pages
-        uses: actions/configure-pages@v3
-        
-      - name: Deploy para GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4
-        with:
-          folder: public
-          branch: gh-pages
-          clean: true
-
-      # ============ FIREBASE HOSTING (SE CONFIGURADO) ============
-      
-      - name: Deploy Firebase Hosting (opcional)
-        if: env.SCRAPING_FALHOU == 'false'
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          channelId: live
-          projectId: livel-analytics
-        continue-on-error: true
-
-      # ============ RESUMO FINAL ============
-      
       - name: Resumo final da execução
         run: |
-          echo "
-          🎉 LIVELO ANALYTICS - RESUMO DA EXECUÇÃO
-          ============================================
-          ⏰ Concluído: $(date +'%d/%m/%Y %H:%M:%S %Z')
+          echo ""
+          echo "🎉 RESUMO DA EXECUÇÃO LIVELO ANALYTICS"
+          echo "====================================="
+          echo "⏰ Concluído: $(date +'%d/%m/%Y %H:%M:%S')"
+          echo ""
+          echo "📊 STATUS:"
+          echo "Pipeline: ${{ env.PIPELINE_OK == 'true' && '✅ Sucesso' || '❌ Problemas' }}"
+          echo "Arquivos: ${{ env.FILES_OK == 'true' && '✅ Válidos' || '❌ Problemas' }}"
+          echo "Push: ${{ env.PUSH_OK == 'true' && '✅ Realizado' || '⚠️ Problemas' }}"
+          echo ""
+          echo "🌐 ACESSO:"
+          echo "📱 GitHub Pages: https://gcaressato.github.io/livelo_scraper/"
+          echo ""
           
-          📊 STATUS GERAL:
-          Scraping: ${{ env.SCRAPING_FALHOU == 'true' && '❌ FALHOU' || '✅ SUCESSO' }}
-          PWA Files: ✅ Criados
-          GitHub Pages: ✅ Deploy realizado
-          Firebase: 🔍 Opcional (funcionando sem API legada)
-          
-          🔧 RECURSOS ATIVOS:
-          ✅ Dashboard responsivo
-          ✅ Service Worker para notificações
-          ✅ Manifest PWA otimizado
-          ✅ Sistema funcional sem dependência crítica do Firebase
-          
-          🌐 ACESSO:
-          📱 GitHub Pages: https://gcaressato.github.io/livelo_scraper/
-          🔥 Firebase: https://livel-analytics.web.app/
-          
-          📋 CONFIGURAÇÃO:
-          🔑 Secrets Firebase configurados (API v9)
-          📊 Sistema independente de APIs legadas
-          
-          ✨ Sistema funcionando com nova arquitetura!
-          "
-          
-          # Definir status final
-          if [ "${{ env.SCRAPING_FALHOU }}" = "true" ]; then
-            echo "::warning::Scraper teve problemas, mas sistema continua operacional"
+          # Status final baseado nos resultados críticos
+          if [ "${{ env.FILES_OK }}" = "true" ]; then
+            echo "✅ Execução bem-sucedida!"
+            echo "::notice::Sistema Livelo Analytics funcionando"
           else
-            echo "::notice::✅ Execução completamente bem-sucedida!"
+            echo "❌ Execução com problemas!"
+            echo "::error::Verificar logs para detalhes"
+            exit 1
           fi
