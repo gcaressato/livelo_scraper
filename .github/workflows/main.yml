@@ -75,37 +75,34 @@ jobs:
             fi
           fi
         
-      - name: Organizar arquivos para GitHub Pages
+      - name: Preparar arquivos para GitHub Pages
         if: env.FILES_OK == 'true'
         run: |
-          echo "📁 Organizando arquivos para GitHub Pages..."
+          echo "📁 Preparando arquivos para GitHub Pages..."
           
-          # Garantir que a pasta relatorios existe
-          mkdir -p relatorios
+          # Criar estrutura para GitHub Pages
+          mkdir -p _site
           
-          # Mover/copiar HTML principal para relatorios com nome correto
-          cp relatorio_livelo.html relatorios/livelo_analytics.html
-          echo "✅ HTML copiado para relatorios/livelo_analytics.html"
+          # Copiar arquivos para _site (estrutura do GitHub Pages)
+          cp relatorio_livelo.html _site/index.html
+          cp livelo_parceiros.xlsx _site/
           
-          # Dados Excel na raiz (como era antes)
-          echo "✅ Excel já está na raiz: livelo_parceiros.xlsx"
+          # Criar também a pasta relatorios se necessário
+          mkdir -p _site/relatorios
+          cp relatorio_livelo.html _site/relatorios/livelo_analytics.html
           
-          # Verificar estrutura final
-          echo "📂 Estrutura dos arquivos:"
-          echo "Raiz:"
-          ls -la *.html *.xlsx 2>/dev/null || echo "  Nenhum arquivo na raiz"
-          echo "Relatórios:"
-          ls -la relatorios/ 2>/dev/null || echo "  Pasta relatorios vazia"
+          echo "✅ Arquivos preparados para GitHub Pages"
+          echo "📂 Estrutura do _site:"
+          ls -la _site/
+          ls -la _site/relatorios/ 2>/dev/null || echo "Pasta relatorios criada"
           
-          # Verificar tamanhos
-          echo "📊 Tamanhos dos arquivos:"
-          if [ -f "relatorios/livelo_analytics.html" ]; then
-            du -h relatorios/livelo_analytics.html
-          fi
-          if [ -f "livelo_parceiros.xlsx" ]; then
-            du -h livelo_parceiros.xlsx
-          fi
-        
+      # NOVO: Upload dos arquivos como artifact
+      - name: Upload páginas como artifact
+        if: env.FILES_OK == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+          
       - name: Configurar Git para commit
         if: env.FILES_OK == 'true'
         run: |
@@ -119,17 +116,10 @@ jobs:
           
           timestamp=$(date +"%d/%m/%Y %H:%M")
           
-          # Adicionar arquivos na estrutura correta para GitHub Pages
+          # Adicionar arquivos (manter estrutura original também)
           git add -f relatorio_livelo.html
           git add -f livelo_parceiros.xlsx
-          git add -f relatorios/livelo_analytics.html
           git add -f *.log 2>/dev/null || true
-          
-          # Remover pasta public se existir (não precisamos mais)
-          if [ -d "public" ]; then
-            git rm -rf public/ 2>/dev/null || rm -rf public/
-            echo "🗑️ Removida pasta public desnecessária"
-          fi
           
           # Verificar se há mudanças para comitar
           if git diff --staged --quiet; then
@@ -137,12 +127,11 @@ jobs:
           else
             echo "📝 Mudanças detectadas, fazendo commit..."
             
-            # Fazer commit
             git commit -m "📊 Atualização Livelo Analytics - $timestamp
 
             🔧 Pipeline: ${{ env.PIPELINE_OK == 'true' && 'Sucesso' || 'Com problemas' }}
             📄 Arquivos: ${{ env.FILES_OK == 'true' && 'Válidos' || 'Problemas' }}
-            📁 Estrutura: relatorios/ + raiz (GitHub Pages)
+            📁 Preparado para GitHub Pages
             ⏰ Executado: $timestamp"
             
             # Push com retry
@@ -168,11 +157,9 @@ jobs:
         run: |
           echo "🔥 Tentando Firebase (opcional)..."
           
-          # Só tentar se project ID estiver configurado
           if [ -n "${{ secrets.FIREBASE_PROJECT_ID }}" ]; then
             echo "Firebase Project ID detectado"
             
-            # Tentar executar notificações se existir
             if [ -f "notification_sender.py" ]; then
               echo "📱 Executando notificações..."
               timeout 300 python notification_sender.py || echo "⚠️ Notificações falharam (não crítico)"
@@ -185,7 +172,29 @@ jobs:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           FIREBASE_VAPID_KEY: ${{ secrets.FIREBASE_VAPID_KEY }}
         continue-on-error: true
+
+  # NOVO JOB: Deploy no GitHub Pages
+  deploy:
+    needs: scrape
+    runs-on: ubuntu-latest
+    if: needs.scrape.outputs.FILES_OK == 'true' || always()
+    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+      
+    steps:
+      - name: Deploy para GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
         
+  # Job de resumo final
+  summary:
+    needs: [scrape, deploy]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
       - name: Resumo final da execução
         run: |
           echo ""
@@ -194,24 +203,22 @@ jobs:
           echo "⏰ Concluído: $(date +'%d/%m/%Y %H:%M:%S')"
           echo ""
           echo "📊 STATUS:"
-          echo "Pipeline: ${{ env.PIPELINE_OK == 'true' && '✅ Sucesso' || '❌ Problemas' }}"
-          echo "Arquivos: ${{ env.FILES_OK == 'true' && '✅ Válidos' || '❌ Problemas' }}"
-          echo "Push: ${{ env.PUSH_OK == 'true' && '✅ Realizado' || '⚠️ Problemas' }}"
+          echo "Pipeline: ${{ needs.scrape.result == 'success' && '✅ Sucesso' || '❌ Problemas' }}"
+          echo "Deploy: ${{ needs.deploy.result == 'success' && '✅ Realizado' || '❌ Problemas' }}"
           echo ""
           echo "🌐 ACESSO:"
           echo "📱 GitHub Pages: https://gcaressato.github.io/livelo_scraper/"
           echo ""
-          echo "📁 ESTRUTURA DE ARQUIVOS:"
-          echo "✅ relatorios/livelo_analytics.html (arquivo principal)"
+          echo "📁 ESTRUTURA:"
+          echo "✅ index.html (página principal)"
           echo "✅ livelo_parceiros.xlsx (dados)"
+          echo "✅ relatorios/livelo_analytics.html (relatório)"
           echo ""
           
-          # Status final baseado nos resultados críticos
-          if [ "${{ env.FILES_OK }}" = "true" ]; then
-            echo "✅ Execução bem-sucedida!"
-            echo "::notice::Sistema Livelo Analytics funcionando - arquivos na estrutura correta"
+          if [ "${{ needs.deploy.result }}" = "success" ]; then
+            echo "✅ Deploy realizado com sucesso!"
+            echo "::notice::Sistema Livelo Analytics online - GitHub Pages atualizado"
           else
-            echo "❌ Execução com problemas!"
-            echo "::error::Verificar logs para detalhes"
-            exit 1
+            echo "❌ Problemas no deploy!"
+            echo "::error::Verificar configurações do GitHub Pages"
           fi
