@@ -34,7 +34,6 @@ jobs:
         run: |
           mkdir -p logs
           mkdir -p relatorios
-          mkdir -p public
           
       - name: Executar pipeline principal
         run: |
@@ -64,7 +63,7 @@ jobs:
             echo "FILES_OK=false" >> $GITHUB_ENV
           fi
           
-          # Verificar tamanho dos arquivos
+          # Verificar tamanho do HTML
           if [ -f "relatorio_livelo.html" ]; then
             size=$(stat -f%z "relatorio_livelo.html" 2>/dev/null || stat -c%s "relatorio_livelo.html" 2>/dev/null || echo "0")
             if [ "$size" -gt 100000 ]; then
@@ -76,26 +75,36 @@ jobs:
             fi
           fi
         
-      - name: Preparar arquivos para GitHub Pages
+      - name: Organizar arquivos para GitHub Pages
         if: env.FILES_OK == 'true'
         run: |
-          echo "📁 Preparando arquivos para GitHub Pages..."
+          echo "📁 Organizando arquivos para GitHub Pages..."
           
-          # Copiar HTML principal como index.html
-          cp relatorio_livelo.html public/index.html
-          echo "✅ HTML copiado para public/index.html"
+          # Garantir que a pasta relatorios existe
+          mkdir -p relatorios
           
-          # Copiar dados Excel
-          cp livelo_parceiros.xlsx public/
-          echo "✅ Excel copiado para public/"
+          # Mover/copiar HTML principal para relatorios com nome correto
+          cp relatorio_livelo.html relatorios/livelo_analytics.html
+          echo "✅ HTML copiado para relatorios/livelo_analytics.html"
           
-          # Verificar arquivos no public
-          echo "📂 Conteúdo do diretório public:"
-          ls -la public/
+          # Dados Excel na raiz (como era antes)
+          echo "✅ Excel já está na raiz: livelo_parceiros.xlsx"
+          
+          # Verificar estrutura final
+          echo "📂 Estrutura dos arquivos:"
+          echo "Raiz:"
+          ls -la *.html *.xlsx 2>/dev/null || echo "  Nenhum arquivo na raiz"
+          echo "Relatórios:"
+          ls -la relatorios/ 2>/dev/null || echo "  Pasta relatorios vazia"
           
           # Verificar tamanhos
           echo "📊 Tamanhos dos arquivos:"
-          du -h public/*
+          if [ -f "relatorios/livelo_analytics.html" ]; then
+            du -h relatorios/livelo_analytics.html
+          fi
+          if [ -f "livelo_parceiros.xlsx" ]; then
+            du -h livelo_parceiros.xlsx
+          fi
         
       - name: Configurar Git para commit
         if: env.FILES_OK == 'true'
@@ -110,10 +119,17 @@ jobs:
           
           timestamp=$(date +"%d/%m/%Y %H:%M")
           
-          # Adicionar arquivos principais
-          git add -f relatorio_livelo.html livelo_parceiros.xlsx
-          git add -f public/
+          # Adicionar arquivos na estrutura correta para GitHub Pages
+          git add -f relatorio_livelo.html
+          git add -f livelo_parceiros.xlsx
+          git add -f relatorios/livelo_analytics.html
           git add -f *.log 2>/dev/null || true
+          
+          # Remover pasta public se existir (não precisamos mais)
+          if [ -d "public" ]; then
+            git rm -rf public/ 2>/dev/null || rm -rf public/
+            echo "🗑️ Removida pasta public desnecessária"
+          fi
           
           # Verificar se há mudanças para comitar
           if git diff --staged --quiet; then
@@ -126,6 +142,7 @@ jobs:
 
             🔧 Pipeline: ${{ env.PIPELINE_OK == 'true' && 'Sucesso' || 'Com problemas' }}
             📄 Arquivos: ${{ env.FILES_OK == 'true' && 'Válidos' || 'Problemas' }}
+            📁 Estrutura: relatorios/ + raiz (GitHub Pages)
             ⏰ Executado: $timestamp"
             
             # Push com retry
@@ -145,17 +162,6 @@ jobs:
               fi
             done
           fi
-      
-      - name: Setup Pages
-        if: env.FILES_OK == 'true'
-        uses: actions/configure-pages@v3
-        
-      - name: Deploy para GitHub Pages
-        if: env.FILES_OK == 'true'
-        uses: actions/deploy-pages@v4
-        with:
-          path: public
-        continue-on-error: true
 
       - name: Firebase opcional (sem erro se falhar)
         if: env.FILES_OK == 'true' && env.FIREBASE_PROJECT_ID != ''
@@ -195,11 +201,15 @@ jobs:
           echo "🌐 ACESSO:"
           echo "📱 GitHub Pages: https://gcaressato.github.io/livelo_scraper/"
           echo ""
+          echo "📁 ESTRUTURA DE ARQUIVOS:"
+          echo "✅ relatorios/livelo_analytics.html (arquivo principal)"
+          echo "✅ livelo_parceiros.xlsx (dados)"
+          echo ""
           
           # Status final baseado nos resultados críticos
           if [ "${{ env.FILES_OK }}" = "true" ]; then
             echo "✅ Execução bem-sucedida!"
-            echo "::notice::Sistema Livelo Analytics funcionando"
+            echo "::notice::Sistema Livelo Analytics funcionando - arquivos na estrutura correta"
           else
             echo "❌ Execução com problemas!"
             echo "::error::Verificar logs para detalhes"
