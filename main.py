@@ -2,7 +2,7 @@
 """
 Main.py - Orquestrador do Sistema Livelo Analytics
 Gerencia todo o pipeline: Scraping → Análise → Deploy → Notificações
-Versão corrigida com melhor relatórios no console
+Versão corrigida com melhor relatórios no console e validação aprimorada
 """
 
 import os
@@ -29,9 +29,65 @@ class LiveloOrchestrator:
         self.sucesso_etapas = {
             'scraping': False,
             'analise': False,
+            'validacao': False,
             'deploy_github': False,
             'notificacoes': False
         }
+        
+    def validar_arquivos_gerados(self):
+        """Valida se os arquivos foram gerados corretamente"""
+        logger.info("🔍 Validando arquivos gerados...")
+        
+        arquivos_criticos = [
+            'relatorio_livelo.html',
+            'livelo_parceiros.xlsx'
+        ]
+        
+        for arquivo in arquivos_criticos:
+            if not os.path.exists(arquivo):
+                logger.error(f"❌ Arquivo crítico não encontrado: {arquivo}")
+                return False
+            
+            # Verificar tamanho mínimo
+            size = os.path.getsize(arquivo)
+            if arquivo.endswith('.html') and size < 50000:  # HTML deve ter pelo menos 50KB
+                logger.error(f"❌ HTML muito pequeno: {arquivo} ({size:,} bytes)")
+                return False
+            elif arquivo.endswith('.xlsx') and size < 1000:  # Excel deve ter pelo menos 1KB
+                logger.error(f"❌ Excel muito pequeno: {arquivo} ({size:,} bytes)")
+                return False
+            
+            logger.info(f"✅ {arquivo}: {size:,} bytes")
+        
+        # Verificar conteúdo HTML específico
+        if os.path.exists('relatorio_livelo.html'):
+            with open('relatorio_livelo.html', 'r', encoding='utf-8') as f:
+                conteudo = f.read()
+                
+                # Verificações críticas
+                if 'Livelo Analytics Pro' not in conteudo:
+                    logger.error("❌ HTML não contém título esperado")
+                    return False
+                    
+                if len(conteudo) < 100000:  # HTML deve ser substancial
+                    logger.warning(f"⚠️ HTML pode estar incompleto: {len(conteudo):,} chars")
+                    
+                if 'toggleFavorito' not in conteudo:
+                    logger.warning("⚠️ Sistema de favoritos não detectado no HTML")
+                    
+                if '</html>' not in conteudo:
+                    logger.error("❌ HTML malformado - tag de fechamento ausente")
+                    return False
+                    
+                logger.info("✅ Conteúdo HTML validado")
+        
+        # Preparar diretório public para deploy
+        if not os.path.exists('public'):
+            os.makedirs('public')
+            logger.info("✅ Diretório public criado")
+            
+        self.sucesso_etapas['validacao'] = True
+        return True
         
     def executar_scraping(self):
         """Executa o scraping do site Livelo"""
@@ -90,6 +146,11 @@ class LiveloOrchestrator:
                         logger.info(f"📄 {arquivo}: {size:,} bytes")
                     else:
                         logger.warning(f"⚠️ {arquivo} não foi gerado")
+                
+                # Executar validação imediatamente após análise
+                if not self.validar_arquivos_gerados():
+                    logger.error("❌ Falha na validação dos arquivos")
+                    return False
                 
                 return True
             else:
@@ -154,13 +215,13 @@ class LiveloOrchestrator:
         try:
             # Verificar se as variáveis de ambiente estão configuradas
             firebase_project = os.getenv('FIREBASE_PROJECT_ID')
-            firebase_server_key = os.getenv('FIREBASE_SERVER_KEY')
+            firebase_service_account = os.getenv('FIREBASE_SERVICE_ACCOUNT')
             
-            if not firebase_project or not firebase_server_key:
-                logger.warning("⚠️ Variáveis Firebase não configuradas")
+            if not firebase_project:
+                logger.warning("⚠️ FIREBASE_PROJECT_ID não configurado")
                 logger.info("💡 Configure as variáveis de ambiente:")
                 logger.info("   - FIREBASE_PROJECT_ID")
-                logger.info("   - FIREBASE_SERVER_KEY")
+                logger.info("   - FIREBASE_SERVICE_ACCOUNT")
                 logger.warning("🔔 Notificações serão simuladas (não enviadas)")
                 # Não é erro crítico - sistema pode funcionar sem notificações
                 self.sucesso_etapas['notificacoes'] = True
@@ -206,6 +267,7 @@ class LiveloOrchestrator:
         print("🔍 DETALHES DAS ETAPAS:")
         print(f"   🕷️ Scraping: {'✅ SUCESSO' if self.sucesso_etapas['scraping'] else '❌ FALHA'}")
         print(f"   📊 Análise: {'✅ SUCESSO' if self.sucesso_etapas['analise'] else '❌ FALHA'}")
+        print(f"   🔍 Validação: {'✅ SUCESSO' if self.sucesso_etapas['validacao'] else '❌ FALHA'}")
         print(f"   🚀 Deploy GitHub: {'✅ SUCESSO' if self.sucesso_etapas['deploy_github'] else '❌ FALHA'}")
         print(f"   🔔 Notificações: {'✅ SUCESSO' if self.sucesso_etapas['notificacoes'] else '❌ FALHA'}")
         print("")
@@ -215,7 +277,8 @@ class LiveloOrchestrator:
         arquivos_verificar = [
             'relatorio_livelo.html',
             'livelo_parceiros.xlsx',
-            'notification_sender.py',
+            'user_fcm_tokens.json',
+            'firebase.json',
             'main_livelo.log'
         ]
         
@@ -226,6 +289,14 @@ class LiveloOrchestrator:
             else:
                 print(f"   ❌ {arquivo}: NÃO ENCONTRADO")
         
+        # Verificar diretório public
+        if os.path.exists('public'):
+            public_files = os.listdir('public')
+            if public_files:
+                print(f"   📁 public/: {len(public_files)} arquivos prontos para deploy")
+            else:
+                print("   📁 public/: vazio")
+        
         # Verificar logs adicionais
         logs_gerados = [f for f in os.listdir('.') if f.endswith('.log')]
         if logs_gerados:
@@ -233,13 +304,16 @@ class LiveloOrchestrator:
         
         # Status final
         print("")
-        if etapas_sucesso >= 2:  # Pelo menos scraping + análise OU análise + deploy
+        if etapas_sucesso >= 3:  # Pelo menos scraping/análise + validação + deploy
             print("🎉 EXECUÇÃO BEM-SUCEDIDA!")
             print("🌐 Site disponível em: https://gcaressato.github.io/livelo_scraper/")
+            if os.path.exists('firebase.json'):
+                print("🔥 Firebase disponível em: https://livel-analytics.web.app/")
             status_final = True
         else:
             print("❌ EXECUÇÃO COM FALHAS CRÍTICAS!")
             print("🔧 Verifique os logs acima para identificar problemas")
+            print("💡 Execute: python fix_system.py para diagnóstico automático")
             status_final = False
         
         print("="*60)
@@ -265,7 +339,7 @@ class LiveloOrchestrator:
                 logger.info("⏭️ Pulando scraping")
                 self.sucesso_etapas['scraping'] = True
             
-            # 2. ANÁLISE (obrigatório)
+            # 2. ANÁLISE + VALIDAÇÃO (obrigatório)
             if not self.executar_analise():
                 logger.error("❌ Falha crítica na análise")
                 return False
