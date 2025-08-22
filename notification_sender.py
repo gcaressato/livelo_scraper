@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Sistema de Notificações Firebase para Livelo Analytics
-Integração perfeita com pipeline existente - Firebase Admin SDK v2
-Totalmente opcional - não quebra o sistema principal
+Sistema de Notificações Firebase para Livelo Analytics - GitHub Actions
+Caminhos corrigidos para ambiente GitHub Actions
+100% opcional - nunca quebra o pipeline principal
 """
 
 import os
@@ -13,12 +13,16 @@ import pandas as pd
 from datetime import datetime, timedelta
 import traceback
 
+# CONFIGURAR CAMINHOS GLOBAIS PARA GITHUB ACTIONS
+script_dir = os.path.dirname(os.path.abspath(__file__))
+print(f"Script executando em: {script_dir}")
+
 # Configurar logging
 logging.basicConfig(
     level=logging.INFO, 
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('firebase_notifications.log'),
+        logging.FileHandler(os.path.join(script_dir, 'firebase_notifications.log')),
         logging.StreamHandler()
     ]
 )
@@ -29,7 +33,7 @@ class LiveloFirebaseNotifier:
         self.firebase_configurado = False
         self.messaging = None
         self.projeto_id = None
-        self.service_account_data = None
+        self.script_dir = script_dir
         
         # Estatísticas
         self.stats = {
@@ -69,16 +73,16 @@ class LiveloFirebaseNotifier:
             
             # 3. Parse e validação do service account
             try:
-                self.service_account_data = json.loads(service_account_json)
+                service_account_data = json.loads(service_account_json)
                 
                 # Verificar campos obrigatórios
                 campos_obrigatorios = ['type', 'project_id', 'private_key', 'client_email']
                 for campo in campos_obrigatorios:
-                    if campo not in self.service_account_data:
+                    if campo not in service_account_data:
                         logger.warning(f"Campo obrigatório ausente: {campo}")
                         return False
                 
-                logger.info(f"Service account válido para projeto: {self.service_account_data.get('project_id')}")
+                logger.info(f"Service account válido para projeto: {service_account_data.get('project_id')}")
                 
             except json.JSONDecodeError as e:
                 logger.warning(f"FIREBASE_SERVICE_ACCOUNT não é um JSON válido: {e}")
@@ -87,7 +91,7 @@ class LiveloFirebaseNotifier:
             # 4. Inicializar Firebase Admin SDK v2
             try:
                 # Criar credenciais
-                cred = credentials.Certificate(self.service_account_data)
+                cred = credentials.Certificate(service_account_data)
                 
                 # Verificar se já foi inicializado
                 if not firebase_admin._apps:
@@ -114,47 +118,57 @@ class LiveloFirebaseNotifier:
             return False
     
     def carregar_usuarios_favoritos(self):
-        """Carrega usuários e seus favoritos"""
+        """Carrega usuários e seus favoritos com caminhos corretos"""
         logger.info("Carregando usuários com favoritos...")
         
-        # Estrutura simulada - você pode adaptar para sua implementação
+        # Arquivo de usuários com caminho absoluto
+        arquivo_usuarios = os.path.join(self.script_dir, 'usuarios_favoritos.json')
+        
+        # Usuários de exemplo
         usuarios_exemplo = {
-            "user1": {
-                "fcm_token": "exemplo_token_1",
+            "user_demo_1": {
+                "fcm_token": "exemplo_token_demo_1",
                 "favoritos": ["Netshoes|R$", "Amazon|R$", "Magazine Luiza|R$"],
                 "configuracoes": {
                     "notificar_ofertas": True,
                     "notificar_mudancas": True,
                     "apenas_favoritos": True
                 },
-                "ativo": True
+                "ativo": True,
+                "nome": "Usuário Demo 1"
             },
-            "user2": {
-                "fcm_token": "exemplo_token_2", 
+            "user_demo_2": {
+                "fcm_token": "exemplo_token_demo_2", 
                 "favoritos": ["Submarino|R$", "Americanas|R$"],
                 "configuracoes": {
                     "notificar_ofertas": True,
                     "notificar_mudancas": False,
                     "apenas_favoritos": True
                 },
-                "ativo": True
+                "ativo": True,
+                "nome": "Usuário Demo 2"
             }
         }
         
         # Tentar carregar do arquivo
         try:
-            if os.path.exists('usuarios_favoritos.json'):
-                with open('usuarios_favoritos.json', 'r', encoding='utf-8') as f:
+            if os.path.exists(arquivo_usuarios):
+                with open(arquivo_usuarios, 'r', encoding='utf-8') as f:
                     usuarios_data = json.load(f)
                     logger.info(f"Carregados {len(usuarios_data)} usuários do arquivo")
                     return usuarios_data
             else:
-                logger.info("Arquivo usuarios_favoritos.json não encontrado")
+                logger.info(f"Arquivo não encontrado: {arquivo_usuarios}")
                 logger.info("Usando dados de exemplo para demonstração")
                 
                 # Salvar exemplo para referência
-                with open('usuarios_favoritos_exemplo.json', 'w', encoding='utf-8') as f:
-                    json.dump(usuarios_exemplo, f, indent=2, ensure_ascii=False)
+                arquivo_exemplo = os.path.join(self.script_dir, 'usuarios_favoritos_exemplo.json')
+                try:
+                    with open(arquivo_exemplo, 'w', encoding='utf-8') as f:
+                        json.dump(usuarios_exemplo, f, indent=2, ensure_ascii=False)
+                    logger.info(f"Arquivo de exemplo criado: {arquivo_exemplo}")
+                except Exception as e:
+                    logger.warning(f"Erro ao criar arquivo de exemplo: {e}")
                 
                 return usuarios_exemplo
                 
@@ -163,19 +177,27 @@ class LiveloFirebaseNotifier:
             return usuarios_exemplo
     
     def analisar_mudancas_ofertas(self):
-        """Analisa mudanças nas ofertas baseado nos dados do scraper"""
+        """Analisa mudanças nas ofertas baseado nos dados do scraper com caminhos corretos"""
         logger.info("Analisando mudanças nas ofertas...")
         
         try:
+            # Arquivo Excel com caminho absoluto
+            arquivo_excel = os.path.join(self.script_dir, 'livelo_parceiros.xlsx')
+            
             # Verificar se existem dados
-            if not os.path.exists('livelo_parceiros.xlsx'):
-                logger.info("livelo_parceiros.xlsx não encontrado")
+            if not os.path.exists(arquivo_excel):
+                logger.info(f"Arquivo não encontrado: {arquivo_excel}")
                 return self._gerar_mudancas_demo()
             
             # Carregar dados
-            df = pd.read_excel('livelo_parceiros.xlsx')
+            df = pd.read_excel(arquivo_excel)
+            logger.info(f"Dados carregados: {len(df)} registros")
             
-            # Simular análise de mudanças (você pode melhorar esta lógica)
+            # Converter timestamp para datetime se necessário
+            if 'Timestamp' in df.columns:
+                df['Timestamp'] = pd.to_datetime(df['Timestamp'])
+            
+            # Analisar mudanças reais
             mudancas = []
             
             # Exemplo: detectar ofertas baseado em dados
@@ -203,6 +225,7 @@ class LiveloFirebaseNotifier:
             
         except Exception as e:
             logger.warning(f"Erro na análise de mudanças: {e}")
+            logger.warning(f"Trace: {traceback.format_exc()}")
             return self._gerar_mudancas_demo()
     
     def _gerar_mudancas_demo(self):
@@ -306,7 +329,7 @@ class LiveloFirebaseNotifier:
                     ttl=timedelta(hours=1),
                     notification=self.messaging.AndroidNotification(
                         icon='ic_notification',
-                        color='#ff6b35',
+                        color='#ff0a8c',
                         sound='default',
                         click_action='FLUTTER_NOTIFICATION_CLICK'
                     )
@@ -395,6 +418,7 @@ class LiveloFirebaseNotifier:
         print("🔔 SISTEMA DE NOTIFICAÇÕES FIREBASE")
         print("="*60)
         print(f"⏰ Executado: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
+        print(f"📁 Diretório: {self.script_dir}")
         print(f"🔥 Firebase: {'✅ Configurado' if self.firebase_configurado else '❌ Não configurado'}")
         print("")
         print("📊 ESTATÍSTICAS:")
