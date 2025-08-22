@@ -1,0 +1,62 @@
+{
+  "_metadata": {
+    "version": "1.0",
+    "description": "Sistema de favoritos Livelo Analytics - GitHub",
+    "created": "2025-01-01",
+    "formato_chave_parceiro": "Nome|Moeda (ex: Netshoes|R$)",
+    "instrucoes": "Configure tokens FCM reais obtidos do frontend"
+  },
+  "_configuracoes_globais": {
+    "max_notificacoes_por_dia": 50,
+    "intervalo_minimo_notificacoes": 300,
+    "notificacoes_ativas": true,
+    "github_compatible": true
+  },
+  "user_exemplo_1": {
+    "ativo": true,
+    "nome": "Usuário Exemplo 1",
+    "email": "usuario1@email.com",
+    "fcm_token": "SUBSTITUA_POR_TOKEN_FCM_REAL_OBTIDO_DO_FRONTEND",
+    "favoritos": [
+      "Netshoes|R$",
+      "Amazon|R$",
+      "Magazine Luiza|R$",
+      "Submarino|R$"
+    ],
+    "configuracoes": {
+      "notificar_novas_ofertas": true,
+      "notificar_perdeu_oferta": false,
+      "notificar_grandes_mudancas": true,
+      "apenas_favoritos": true,
+      "horario_silencioso_inicio": "22:00",
+      "horario_silencioso_fim": "08:00"
+    },
+    "estatisticas": {
+      "total_notificacoes_enviadas": 0,
+      "ultima_notificacao": null,
+      "registrado_em": "2025-01-01T12:00:00Z"
+    }
+  },
+  "user_exemplo_2": {
+    "ativo": false,
+    "nome": "Usuário Exemplo 2 (Inativo)",
+    "email": "usuario2@email.com",
+    "fcm_token": "token_inativo_exemplo",
+    "favoritos": [
+      "Casas Bahia|R$",
+      "Extra|R$"
+    ],
+    "configuracoes": {
+      "notificar_novas_ofertas": false,
+      "notificar_perdeu_oferta": false,
+      "notificar_grandes_mudancas": false,
+      "apenas_favoritos": true
+    },
+    "estatisticas": {
+      "total_notificacoes_enviadas": 5,
+      "ultima_notificacao": "2024-12-15T10:30:00Z",
+      "registrado_em": "2024-11-01T09:00:00Z",
+      "desativado_em": "2024-12-20T14:20:00Z"
+    }
+  }
+}
