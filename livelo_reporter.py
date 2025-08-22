@@ -8,6 +8,11 @@ from datetime import datetime, timedelta
 import numpy as np
 import json
 
+# DIRETÓRIOS BASE
+script_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(script_dir)
+print(f"📂 Diretório ajustado para: {os.getcwd()}")
+
 # Cores da Livelo
 LIVELO_ROSA = '#ff0a8c'
 LIVELO_ROSA_CLARO = '#ff8cc1'
@@ -25,11 +30,15 @@ class LiveloAnalytics:
         self.analytics = {}
         self.dimensoes = {}
         
+
     def carregar_dimensoes(self):
         """Carrega as dimensões dos parceiros do arquivo JSON"""
         try:
-            if os.path.exists('dimensoes.json'):
-                with open('dimensoes.json', 'r', encoding='utf-8') as f:
+            # Simples: apenas o nome do arquivo (relativo ao diretório de execução)
+            arquivo_dimensoes = "dimensoes.json"
+            
+            if os.path.exists(arquivo_dimensoes):
+                with open(arquivo_dimensoes, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                     self.dimensoes = {item['nome_aplicativo']: item for item in data.get('parceiros', [])}
                 print(f"✓ {len(self.dimensoes)} dimensões carregadas")
@@ -73,6 +82,7 @@ class LiveloAnalytics:
         # Carregar dimensões primeiro
         self.carregar_dimensoes()
         
+        # Simples: apenas o nome do arquivo
         if not os.path.exists(self.arquivo_entrada):
             print(f"❌ Arquivo não encontrado: {self.arquivo_entrada}")
             return False
@@ -1069,11 +1079,15 @@ class LiveloAnalytics:
                     else:
                         html += f'<td>{valor}</td>'
                 elif col == 'Favorito':
-                    # NOVA COLUNA DE FAVORITOS
+                    # NOVA COLUNA DE FAVORITOS - SEM ONCLICK, USANDO APENAS EVENT LISTENER
                     parceiro = row['Parceiro']
                     moeda = row['Moeda']
                     html += f'''<td style="text-align: center;">
-                        <button class="favorito-btn" data-parceiro="{parceiro}" data-moeda="{moeda}" onclick="toggleFavorito('{parceiro}', '{moeda}')" title="Adicionar aos favoritos">
+                        <button class="favorito-btn" 
+                                data-parceiro="{parceiro}" 
+                                data-moeda="{moeda}" 
+                                title="Adicionar aos favoritos"
+                                type="button">
                             <i class="bi bi-star"></i>
                         </button>
                     </td>'''
@@ -1261,7 +1275,7 @@ class LiveloAnalytics:
         return html
     
     def gerar_html_completo(self):
-        """Gera HTML completo com todas as funcionalidades"""
+        """Gera HTML completo com todas as funcionalidades e responsividade móvel aprimorada"""
         dados = self.analytics['dados_completos']
         metricas = self.analytics['metricas']
         graficos = self.analytics['graficos']
@@ -1290,7 +1304,7 @@ class LiveloAnalytics:
     <html lang="pt-br">
     <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <title>Livelo Analytics Pro - {metricas['ultima_atualizacao']}</title>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
@@ -1329,14 +1343,195 @@ class LiveloAnalytics:
                 --shadow-hover: rgba(0,0,0,0.6);
             }}
             
-            /* ========== MINHA CARTEIRA - ESTILOS ========== */
+            /* TOOLTIPS HÍBRIDOS */
+            .help-icon {{
+                font-size: 0.7rem;
+                color: var(--text-secondary);
+                cursor: pointer;
+                margin-left: 4px;
+                opacity: 0.7;
+                transition: all 0.2s ease;
+                position: relative;
+            }}
+            
+            .help-icon:hover {{
+                opacity: 1;
+                color: var(--livelo-rosa);
+                transform: scale(1.1);
+            }}
+            
+            .tooltip-container {{
+                position: relative;
+                display: inline-block;
+            }}
+            
+            .custom-tooltip {{
+                position: absolute;
+                bottom: 120%;
+                left: 50%;
+                transform: translateX(-50%);
+                background: var(--livelo-azul);
+                color: white;
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-size: 0.75rem;
+                white-space: nowrap;
+                z-index: 1000;
+                opacity: 0;
+                visibility: hidden;
+                transition: all 0.3s ease;
+                pointer-events: none;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                max-width: 250px;
+                white-space: normal;
+                text-align: center;
+                line-height: 1.3;
+            }}
+            
+            .custom-tooltip::after {{
+                content: '';
+                position: absolute;
+                top: 100%;
+                left: 50%;
+                transform: translateX(-50%);
+                border: 5px solid transparent;
+                border-top-color: var(--livelo-azul);
+            }}
+            
+            .custom-tooltip.show {{
+                opacity: 1;
+                visibility: visible;
+                bottom: 125%;
+            }}
+            
+            /* Desktop: hover */
+            @media (hover: hover) {{
+                .help-icon:hover + .custom-tooltip {{
+                    opacity: 1;
+                    visibility: visible;
+                    bottom: 125%;
+                }}
+            }}
+            
+            /* Mobile: ajustes */
+            @media (max-width: 768px) {{
+                .custom-tooltip {{
+                    max-width: 200px;
+                    font-size: 0.7rem;
+                    padding: 6px 10px;
+                }}
+                
+                .help-icon {{
+                    font-size: 0.8rem;
+                    padding: 4px;
+                    margin-left: 2px;
+                }}
+            }}
+            
+            [data-theme="dark"] .custom-tooltip {{
+                background: var(--livelo-rosa);
+                color: white;
+            }}
+            
+            [data-theme="dark"] .custom-tooltip::after {{
+                border-top-color: var(--livelo-rosa);
+            }}
+            
+            /* TOAST NOTIFICATIONS */
+            .toast-container {{
+                position: fixed;
+                top: 80px;
+                right: 20px;
+                z-index: 1055;
+                max-width: 300px;
+            }}
+            
+            .custom-toast {{
+                background: var(--bg-card);
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                box-shadow: 0 4px 15px var(--shadow-hover);
+                margin-bottom: 10px;
+                opacity: 0;
+                transform: translateX(100%);
+                transition: all 0.3s ease;
+            }}
+            
+            .custom-toast.show {{
+                opacity: 1;
+                transform: translateX(0);
+            }}
+            
+            .custom-toast.hide {{
+                opacity: 0;
+                transform: translateX(100%);
+            }}
+            
+            .toast-header {{
+                background: transparent;
+                border-bottom: 1px solid var(--border-color);
+                padding: 8px 12px;
+                display: flex;
+                align-items: center;
+                font-size: 0.9rem;
+            }}
+            
+            .toast-body {{
+                padding: 8px 12px;
+                font-size: 0.85rem;
+                color: var(--text-primary);
+            }}
+            
+            .toast-success .toast-header {{
+                color: #28a745;
+            }}
+            
+            .toast-error .toast-header {{
+                color: #dc3545;
+            }}
+            
+            .toast-info .toast-header {{
+                color: #17a2b8;
+            }}
+            
+            [data-theme="dark"] .custom-toast {{
+                background: #374151;
+                border-color: #6b7280;
+            }}
+            
+            [data-theme="dark"] .toast-header {{
+                border-bottom-color: #6b7280;
+            }}
+            
+            [data-theme="dark"] .toast-body {{
+                color: #f9fafb;
+            }}
+            
+            @media (max-width: 768px) {{
+                .toast-container {{
+                    top: 60px;
+                    right: 10px;
+                    left: 10px;
+                    max-width: none;
+                }}
+                
+                .custom-toast {{
+                    margin-bottom: 8px;
+                }}
+            }}
             .favorito-btn {{
                 background: none;
                 border: none;
                 cursor: pointer;
-                padding: 2px 5px;
+                padding: 4px 6px;
                 border-radius: 50%;
                 transition: all 0.2s ease;
+                font-size: 0.9rem;
+                min-width: 28px;
+                min-height: 28px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }}
             
             .favorito-btn:hover {{
@@ -1345,16 +1540,16 @@ class LiveloAnalytics:
             }}
             
             .favorito-btn.ativo {{
-                color: #ffc107;
+                color: #ffc107 !important;
             }}
             
             .favorito-btn:not(.ativo) {{
-                color: #ccc;
+                color: #ccc !important;
             }}
             
             .carteira-vazia {{
                 text-align: center;
-                padding: 40px 20px;
+                padding: 30px 15px;
                 color: var(--text-secondary);
             }}
             
@@ -1362,11 +1557,11 @@ class LiveloAnalytics:
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                padding: 10px 15px;
+                padding: 12px 15px;
                 background: var(--bg-card);
                 border: 1px solid var(--border-color);
                 border-radius: 8px;
-                margin-bottom: 10px;
+                margin-bottom: 8px;
                 transition: all 0.2s ease;
             }}
             
@@ -1378,16 +1573,19 @@ class LiveloAnalytics:
             .carteira-nome {{
                 font-weight: 500;
                 color: var(--text-primary);
+                font-size: 0.9rem;
             }}
             
             .carteira-info {{
-                font-size: 0.85rem;
+                font-size: 0.75rem;
                 color: var(--text-secondary);
+                margin-top: 2px;
             }}
             
             .carteira-pontos {{
                 font-weight: 600;
                 color: var(--livelo-rosa);
+                font-size: 0.9rem;
             }}
             
             [data-theme="dark"] .carteira-item {{
@@ -1408,24 +1606,26 @@ class LiveloAnalytics:
                 line-height: 1.4;
                 color: var(--text-primary);
                 transition: all 0.3s ease;
+                padding-top: 0;
+                overflow-x: hidden;
             }}
             
             .container-fluid {{ 
                 max-width: 100%; 
-                padding: 10px 15px; 
+                padding: 8px 12px; 
             }}
             
-            /* THEME TOGGLE - MELHORADO */
+            /* THEME TOGGLE - RESPONSIVO MELHORADO */
             .theme-toggle {{
                 position: fixed;
-                top: 20px;
-                right: 20px;
-                z-index: 1000;
+                top: 15px;
+                right: 15px;
+                z-index: 1050;
                 background: var(--bg-card);
                 border: 2px solid var(--border-color);
                 border-radius: 25px;
-                width: 50px;
-                height: 50px;
+                width: 45px;
+                height: 45px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -1435,13 +1635,13 @@ class LiveloAnalytics:
             }}
             
             .theme-toggle:hover {{
-                transform: scale(1.1);
+                transform: scale(1.05);
                 box-shadow: 0 4px 15px var(--shadow-hover);
                 border-color: var(--livelo-rosa);
             }}
             
             .theme-toggle i {{
-                font-size: 1.2rem;
+                font-size: 1.1rem;
                 color: var(--text-primary);
                 transition: all 0.3s ease;
             }}
@@ -1459,16 +1659,16 @@ class LiveloAnalytics:
                 color: white;
             }}
             
-            /* ALERTAS COMPACTOS */
+            /* ALERTAS COMPACTOS - RESPONSIVOS */
             .alerts-container {{
-                margin-bottom: 20px;
+                margin-bottom: 15px;
             }}
             
             .alert-compact {{
                 background: var(--bg-card);
                 border: 1px solid var(--border-color);
-                border-radius: 12px;
-                margin-bottom: 10px;
+                border-radius: 10px;
+                margin-bottom: 8px;
                 overflow: hidden;
                 transition: all 0.3s ease;
                 box-shadow: 0 2px 8px var(--shadow);
@@ -1480,7 +1680,7 @@ class LiveloAnalytics:
             }}
             
             .alert-header {{
-                padding: 12px 15px;
+                padding: 10px 12px;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
@@ -1498,17 +1698,19 @@ class LiveloAnalytics:
                 align-items: center;
                 flex: 1;
                 color: var(--text-primary);
+                font-size: 0.9rem;
             }}
             
             .alert-title strong {{
-                margin-right: 10px;
+                margin-right: 8px;
             }}
             
             .alert-chevron {{
                 margin-left: auto;
-                margin-right: 10px;
+                margin-right: 8px;
                 transition: transform 0.3s ease;
                 color: var(--text-secondary);
+                font-size: 0.8rem;
             }}
             
             .alert-compact.expanded .alert-chevron {{
@@ -1518,17 +1720,18 @@ class LiveloAnalytics:
             .alert-close {{
                 background: none;
                 border: none;
-                font-size: 1.2rem;
+                font-size: 1.1rem;
                 color: var(--text-secondary);
                 cursor: pointer;
                 padding: 0;
-                width: 24px;
-                height: 24px;
+                width: 22px;
+                height: 22px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 border-radius: 50%;
                 transition: all 0.2s ease;
+                flex-shrink: 0;
             }}
             
             .alert-close:hover {{
@@ -1537,8 +1740,9 @@ class LiveloAnalytics:
             }}
             
             .alert-preview {{
-                padding: 0 15px 12px 15px;
+                padding: 0 12px 10px 12px;
                 color: var(--text-secondary);
+                font-size: 0.8rem;
             }}
             
             .alert-details {{
@@ -1548,30 +1752,31 @@ class LiveloAnalytics:
             }}
             
             .alert-content {{
-                padding: 15px;
+                padding: 12px;
             }}
             
             .alert-content h6 {{
-                margin-bottom: 10px;
+                margin-bottom: 8px;
                 color: var(--text-primary);
-                font-size: 0.9rem;
+                font-size: 0.85rem;
             }}
             
-            /* GRIDS E LISTAS DOS ALERTAS */
+            /* GRIDS E LISTAS DOS ALERTAS - RESPONSIVOS */
             .partners-grid {{
                 display: flex;
                 flex-wrap: wrap;
-                gap: 5px;
-                margin-bottom: 10px;
+                gap: 4px;
+                margin-bottom: 8px;
             }}
             
             .partner-tag, .lost-tag {{
                 background: var(--livelo-rosa);
                 color: white;
-                padding: 3px 8px;
-                border-radius: 12px;
-                font-size: 0.7rem;
+                padding: 2px 6px;
+                border-radius: 10px;
+                font-size: 0.65rem;
                 font-weight: 500;
+                flex-shrink: 0;
             }}
             
             .lost-tag {{
@@ -1581,58 +1786,58 @@ class LiveloAnalytics:
             .ranking-list, .rare-opportunities, .increases-list, .newbies-list, .lost-offers {{
                 display: flex;
                 flex-direction: column;
-                gap: 5px;
+                gap: 4px;
             }}
             
             .lost-offers {{
                 display: flex;
                 flex-direction: row;
                 flex-wrap: wrap;
-                gap: 5px;
+                gap: 4px;
             }}
             
             .rank-item, .rare-item, .increase-item, .newbie-item {{
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                padding: 5px 10px;
+                padding: 4px 8px;
                 background: var(--bg-primary);
-                border-radius: 6px;
-                font-size: 0.8rem;
+                border-radius: 5px;
+                font-size: 0.75rem;
             }}
             
             .rank-number {{
                 background: var(--livelo-rosa);
                 color: white;
-                padding: 2px 6px;
-                border-radius: 10px;
+                padding: 1px 5px;
+                border-radius: 8px;
                 font-weight: bold;
-                font-size: 0.7rem;
-                min-width: 25px;
+                font-size: 0.65rem;
+                min-width: 22px;
                 text-align: center;
             }}
             
             .rank-points, .rare-points {{
                 background: var(--livelo-azul);
                 color: white;
-                padding: 2px 8px;
-                border-radius: 8px;
+                padding: 1px 6px;
+                border-radius: 6px;
                 font-weight: 500;
-                font-size: 0.7rem;
+                font-size: 0.65rem;
             }}
             
             .rare-freq {{
                 background: #ffc107;
                 color: #212529;
-                padding: 2px 6px;
-                border-radius: 6px;
-                font-size: 0.7rem;
+                padding: 1px 5px;
+                border-radius: 5px;
+                font-size: 0.65rem;
                 font-weight: 500;
             }}
             
             .increase-percent {{
                 font-weight: bold;
-                font-size: 0.8rem;
+                font-size: 0.75rem;
             }}
             
             /* CORES DOS ALERTAS */
@@ -1654,12 +1859,26 @@ class LiveloAnalytics:
                 }}
             }}
             
+            @keyframes slideUp {{
+                from {{
+                    opacity: 1;
+                    max-height: 200px;
+                    transform: translateY(0);
+                }}
+                to {{
+                    opacity: 0;
+                    max-height: 0;
+                    transform: translateY(-10px);
+                }}
+            }}
+            
+            /* CARDS E LAYOUT PRINCIPAL */
             .card {{
                 border: none;
-                border-radius: 12px;
+                border-radius: 10px;
                 box-shadow: 0 2px 12px var(--shadow);
                 transition: all 0.3s ease;
-                margin-bottom: 15px;
+                margin-bottom: 12px;
                 background: var(--bg-card);
                 color: var(--text-primary);
             }}
@@ -1672,11 +1891,12 @@ class LiveloAnalytics:
             .metric-card {{
                 background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-primary) 100%);
                 border-left: 3px solid var(--livelo-rosa);
-                padding: 15px;
+                padding: 12px;
+                border-radius: 10px;
             }}
             
             .metric-value {{
-                font-size: 1.8rem;
+                font-size: 1.6rem;
                 font-weight: 700;
                 color: var(--livelo-azul);
                 margin: 0;
@@ -1685,38 +1905,54 @@ class LiveloAnalytics:
             
             .metric-label {{
                 color: var(--text-secondary);
-                font-size: 0.75rem;
+                font-size: 0.7rem;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
                 margin-top: 2px;
             }}
             
             .metric-change {{
-                font-size: 0.7rem;
-                margin-top: 3px;
+                font-size: 0.65rem;
+                margin-top: 2px;
             }}
             
-            .nav-pills .nav-link.active {{ background-color: var(--livelo-rosa); }}
+            /* NAVEGAÇÃO RESPONSIVA */
+            .nav-pills .nav-link.active {{ 
+                background-color: var(--livelo-rosa); 
+                border-color: var(--livelo-rosa);
+            }}
+            
             .nav-pills .nav-link {{ 
                 color: var(--livelo-azul); 
-                padding: 8px 16px;
-                margin-right: 5px;
-                border-radius: 20px;
-                font-size: 0.9rem;
+                padding: 6px 12px;
+                margin-right: 3px;
+                margin-bottom: 3px;
+                border-radius: 15px;
+                font-size: 0.8rem;
+                white-space: nowrap;
+                border: 1px solid transparent;
+                transition: all 0.2s ease;
             }}
             
+            .nav-pills .nav-link:hover {{
+                background-color: rgba(255, 10, 140, 0.1);
+                border-color: var(--livelo-rosa);
+            }}
+            
+            /* TABELAS RESPONSIVAS */
             .table-container {{
                 background: var(--bg-card);
-                border-radius: 12px;
+                border-radius: 10px;
                 overflow: hidden;
-                max-height: 70vh;
+                max-height: 65vh;
                 overflow-y: auto;
                 overflow-x: auto;
+                border: 1px solid var(--border-color);
             }}
             
             .table {{ 
                 margin: 0; 
-                font-size: 0.85rem;
+                font-size: 0.8rem;
                 white-space: nowrap;
                 min-width: 100%;
             }}
@@ -1725,19 +1961,19 @@ class LiveloAnalytics:
                 background-color: var(--livelo-azul) !important;
                 color: white !important;
                 border: none !important;
-                padding: 12px 8px !important;
+                padding: 10px 6px !important;
                 font-weight: 600 !important;
                 position: sticky !important;
                 top: 0 !important;
                 z-index: 10 !important;
-                font-size: 0.8rem !important;
+                font-size: 0.75rem !important;
                 cursor: pointer !important;
                 user-select: none !important;
                 transition: all 0.2s ease !important;
                 text-align: center !important;
                 vertical-align: middle !important;
                 white-space: nowrap !important;
-                min-width: 100px;
+                min-width: 90px;
             }}
             
             .table th:hover {{ 
@@ -1746,10 +1982,10 @@ class LiveloAnalytics:
             }}
             
             .table td {{
-                padding: 8px !important;
+                padding: 6px 4px !important;
                 border-bottom: 1px solid var(--border-color) !important;
                 vertical-align: middle !important;
-                font-size: 0.8rem !important;
+                font-size: 0.75rem !important;
                 white-space: nowrap !important;
                 text-align: center !important;
                 background: var(--bg-card) !important;
@@ -1763,7 +1999,7 @@ class LiveloAnalytics:
             .table td:first-child {{
                 text-align: left !important;
                 font-weight: 500;
-                max-width: 200px;
+                max-width: 150px;
                 overflow: hidden;
                 text-overflow: ellipsis;
             }}
@@ -1771,17 +2007,25 @@ class LiveloAnalytics:
             /* COLUNA DE FAVORITOS NA TABELA */
             .table td:nth-child(2) {{
                 text-align: center !important;
-                width: 50px !important;
-                min-width: 50px !important;
-                max-width: 50px !important;
+                width: 30px !important;
+                min-width: 30px !important;
+                max-width: 30px !important;
+                padding: 4px 2px !important;
+            }}
+            
+            .table th:nth-child(2) {{
+                text-align: center !important;
+                width: 30px !important;
+                min-width: 30px !important;
+                max-width: 30px !important;
             }}
             
             .badge-status {{
-                padding: 4px 8px;
-                border-radius: 12px;
-                font-size: 0.7rem;
+                padding: 3px 6px;
+                border-radius: 10px;
+                font-size: 0.65rem;
                 font-weight: 500;
-                min-width: 60px;
+                min-width: 50px;
                 text-align: center;
                 white-space: nowrap;
             }}
@@ -1789,9 +2033,9 @@ class LiveloAnalytics:
             /* BADGES SUAVES PARA MELHOR CONTRASTE */
             .badge-soft {{
                 display: inline-block;
-                padding: 4px 8px;
-                border-radius: 12px;
-                font-size: 0.75rem;
+                padding: 3px 6px;
+                border-radius: 10px;
+                font-size: 0.7rem;
                 font-weight: 500;
                 text-align: center;
                 white-space: nowrap;
@@ -1804,13 +2048,15 @@ class LiveloAnalytics:
                 box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             }}
             
+            /* INPUTS E FORMULÁRIOS RESPONSIVOS */
             .search-input {{
-                border-radius: 20px;
+                border-radius: 15px;
                 border: 2px solid var(--border-color);
-                padding: 8px 15px;
-                font-size: 0.9rem;
+                padding: 6px 12px;
+                font-size: 0.85rem;
                 background: var(--bg-card);
                 color: var(--text-primary);
+                width: 100%;
             }}
             
             .search-input:focus {{
@@ -1820,14 +2066,29 @@ class LiveloAnalytics:
                 color: var(--text-primary);
             }}
             
+            .form-select {{
+                border-radius: 8px;
+                border: 1px solid var(--border-color);
+                padding: 4px 8px;
+                font-size: 0.8rem;
+                background: var(--bg-card);
+                color: var(--text-primary);
+            }}
+            
+            .form-select:focus {{
+                border-color: var(--livelo-rosa);
+                box-shadow: 0 0 0 0.1rem rgba(255, 10, 140, 0.25);
+            }}
+            
             .btn-download {{
                 background: linear-gradient(135deg, var(--livelo-rosa) 0%, var(--livelo-azul) 100%);
                 border: none;
-                border-radius: 20px;
+                border-radius: 15px;
                 color: white;
-                padding: 8px 20px;
+                padding: 6px 15px;
                 font-weight: 500;
-                font-size: 0.9rem;
+                font-size: 0.8rem;
+                white-space: nowrap;
             }}
             
             .btn-download:hover {{ 
@@ -1837,15 +2098,16 @@ class LiveloAnalytics:
             
             .individual-analysis {{
                 background: var(--bg-secondary);
-                border-radius: 12px;
-                padding: 20px;
-                margin-bottom: 20px;
+                border-radius: 10px;
+                padding: 15px;
+                margin-bottom: 15px;
             }}
             
             .sort-indicator {{
-                margin-left: 5px;
+                margin-left: 4px;
                 opacity: 0.3;
                 transition: all 0.2s ease;
+                font-size: 0.7rem;
             }}
             
             .sort-indicator.active {{ 
@@ -1859,7 +2121,7 @@ class LiveloAnalytics:
             }}
             
             .table-responsive {{ 
-                border-radius: 12px; 
+                border-radius: 10px; 
             }}
             
             .plotly {{ 
@@ -1868,7 +2130,7 @@ class LiveloAnalytics:
             
             /* Melhorias para gráficos */
             .card .plotly-graph-div {{
-                border-radius: 8px;
+                border-radius: 6px;
             }}
             
             /* MODO ESCURO - ESTILOS CORRIGIDOS */
@@ -2052,10 +2314,10 @@ class LiveloAnalytics:
             
             .footer {{
                 text-align: center;
-                margin-top: 40px;
-                padding: 20px;
+                margin-top: 30px;
+                padding: 15px;
                 color: var(--text-secondary);
-                font-size: 0.9rem;
+                font-size: 0.85rem;
                 border-top: 1px solid var(--border-color);
             }}
             
@@ -2079,16 +2341,62 @@ class LiveloAnalytics:
             
             /* LOGO DO PARCEIRO NA ANÁLISE INDIVIDUAL */
             .logo-parceiro {{
-                max-width: 80px;
-                max-height: 50px;
-                border-radius: 8px;
+                max-width: 70px;
+                max-height: 45px;
+                border-radius: 6px;
                 box-shadow: 0 2px 8px rgba(0,0,0,0.1);
                 background: white;
-                padding: 5px;
-                margin-right: 15px;
+                padding: 4px;
+                margin-right: 12px;
             }}
             
-            /* MOBILE RESPONSIVENESS */
+            /* ========== RESPONSIVIDADE MOBILE MELHORADA ========== */
+            @media (max-width: 991px) {{
+                .theme-toggle {{
+                    top: 12px;
+                    right: 12px;
+                    width: 42px;
+                    height: 42px;
+                }}
+                
+                .container-fluid {{ 
+                    padding: 6px 10px; 
+                }}
+                
+                .metric-value {{ 
+                    font-size: 1.4rem; 
+                }}
+                
+                .metric-label {{
+                    font-size: 0.65rem;
+                }}
+                
+                .metric-card {{
+                    padding: 10px;
+                }}
+                
+                .card {{
+                    margin-bottom: 10px;
+                }}
+                
+                .table th {{
+                    padding: 8px 4px !important;
+                    font-size: 0.7rem !important;
+                    min-width: 80px;
+                }}
+                
+                .table td {{
+                    padding: 5px 3px !important;
+                    font-size: 0.7rem !important;
+                }}
+                
+                .nav-pills .nav-link {{ 
+                    padding: 5px 10px; 
+                    font-size: 0.75rem; 
+                    margin-right: 2px;
+                }}
+            }}
+            
             @media (max-width: 768px) {{
                 .theme-toggle {{
                     top: 10px;
@@ -2105,24 +2413,59 @@ class LiveloAnalytics:
                     padding: 5px 8px; 
                 }}
                 
-                .metric-value {{ 
-                    font-size: 1.4rem; 
-                }}
-                
-                .metric-label {{
-                    font-size: 0.65rem;
-                }}
-                
-                .alert-compact {{
+                /* HEADER RESPONSIVO */
+                .text-center h1 {{
+                    font-size: 1.3rem !important;
                     margin-bottom: 8px;
                 }}
                 
+                .text-center small {{
+                    font-size: 0.7rem !important;
+                }}
+                
+                /* MÉTRICAS EM DUAS COLUNAS */
+                .metric-value {{ 
+                    font-size: 1.2rem; 
+                }}
+                
+                .metric-label {{
+                    font-size: 0.6rem;
+                    line-height: 1.2;
+                }}
+                
+                .metric-change {{
+                    font-size: 0.55rem;
+                }}
+                
+                .metric-card {{
+                    padding: 8px;
+                    margin-bottom: 8px;
+                }}
+                
+                /* ALERTAS COMPACTOS */
+                .alert-compact {{
+                    margin-bottom: 6px;
+                }}
+                
                 .alert-header {{
-                    padding: 10px 12px;
+                    padding: 8px 10px;
+                }}
+                
+                .alert-title {{
+                    font-size: 0.8rem;
+                }}
+                
+                .alert-title strong {{
+                    margin-right: 6px;
                 }}
                 
                 .alert-preview {{
-                    padding: 0 12px 10px 12px;
+                    padding: 0 10px 8px 10px;
+                    font-size: 0.75rem;
+                }}
+                
+                .alert-content {{
+                    padding: 10px;
                 }}
                 
                 .partners-grid {{
@@ -2130,91 +2473,368 @@ class LiveloAnalytics:
                 }}
                 
                 .partner-tag, .lost-tag {{
-                    font-size: 0.65rem;
-                    padding: 2px 6px;
+                    font-size: 0.6rem;
+                    padding: 2px 5px;
                 }}
                 
-                .table {{ 
-                    font-size: 0.7rem; 
-                }}
-                
-                .table th {{
-                    padding: 8px 4px !important;
-                    font-size: 0.7rem !important;
-                    min-width: 80px;
-                }}
-                
-                .table td {{
-                    padding: 6px 4px !important;
-                    font-size: 0.7rem !important;
+                /* NAVEGAÇÃO RESPONSIVA */
+                .nav-pills {{
+                    justify-content: center;
+                    flex-wrap: wrap;
                 }}
                 
                 .nav-pills .nav-link {{ 
-                    padding: 6px 10px; 
-                    font-size: 0.75rem; 
+                    padding: 4px 8px; 
+                    font-size: 0.7rem; 
                     margin-right: 2px;
+                    margin-bottom: 4px;
+                    border-radius: 12px;
                 }}
                 
+                /* TABELAS MOBILE-FIRST */
+                .table-container {{
+                    max-height: 50vh;
+                    border-radius: 8px;
+                }}
+                
+                .table {{ 
+                    font-size: 0.65rem; 
+                }}
+                
+                .table th {{
+                    padding: 6px 3px !important;
+                    font-size: 0.65rem !important;
+                    min-width: 70px;
+                }}
+                
+                .table td {{
+                    padding: 4px 2px !important;
+                    font-size: 0.65rem !important;
+                }}
+                
+                .table td:first-child {{
+                    max-width: 100px;
+                    font-size: 0.6rem !important;
+                }}
+                
+                .table td:nth-child(2) {{
+                    width: 35px !important;
+                    min-width: 35px !important;
+                    max-width: 35px !important;
+                    padding: 3px 1px !important;
+                }}
+                
+                .favorito-btn {{
+                    font-size: 0.8rem;
+                    min-width: 24px;
+                    min-height: 24px;
+                    padding: 2px 4px;
+                }}
+                
+                .badge-soft {{
+                    font-size: 0.6rem;
+                    padding: 2px 5px;
+                }}
+                
+                /* FORMULÁRIOS E FILTROS */
+                .search-input {{
+                    padding: 5px 10px;
+                    font-size: 0.8rem;
+                    margin-bottom: 8px;
+                }}
+                
+                .form-select {{
+                    padding: 3px 6px;
+                    font-size: 0.75rem;
+                }}
+                
+                .form-label {{
+                    font-size: 0.75rem !important;
+                    margin-bottom: 3px;
+                }}
+                
+                /* BOTÕES */
+                .btn-download {{
+                    font-size: 0.75rem;
+                    padding: 5px 12px;
+                    border-radius: 12px;
+                }}
+                
+                .btn-sm {{
+                    font-size: 0.7rem;
+                    padding: 4px 8px;
+                }}
+                
+                /* CARDS E ESPAÇAMENTOS */
                 .card {{
-                    margin-bottom: 10px;
+                    margin-bottom: 8px;
+                    border-radius: 8px;
+                }}
+                
+                .card-header {{
+                    padding: 8px 10px;
+                }}
+                
+                .card-header h6 {{
+                    font-size: 0.8rem;
+                    margin: 0;
+                }}
+                
+                .card-body {{
+                    padding: 8px;
                 }}
                 
                 .individual-analysis {{
-                    padding: 15px;
+                    padding: 10px;
+                    margin-bottom: 10px;
                 }}
                 
-                .btn-download {{
+                /* CARTEIRA RESPONSIVA */
+                .carteira-vazia {{
+                    padding: 20px 10px;
+                }}
+                
+                .carteira-vazia i {{
+                    font-size: 2.5rem !important;
+                }}
+                
+                .carteira-vazia h6 {{
+                    font-size: 0.9rem;
+                }}
+                
+                .carteira-item {{
+                    padding: 8px 10px;
+                    margin-bottom: 6px;
+                }}
+                
+                .carteira-nome {{
                     font-size: 0.8rem;
-                    padding: 6px 15px;
                 }}
                 
+                .carteira-info {{
+                    font-size: 0.7rem;
+                }}
+                
+                .carteira-pontos {{
+                    font-size: 0.8rem;
+                }}
+                
+                /* LOGO RESPONSIVO */
+                .logo-parceiro {{
+                    max-width: 50px;
+                    max-height: 35px;
+                    margin-right: 8px;
+                }}
+                
+                /* MARGENS E GAPS */
                 .row.g-2 {{
-                    margin: 0 -2px;
+                    margin: 0 -3px;
                 }}
                 
                 .row.g-2 > * {{
-                    padding-right: 2px;
-                    padding-left: 2px;
+                    padding-right: 3px;
+                    padding-left: 3px;
+                    margin-bottom: 6px;
                 }}
                 
-                .table-container {{
-                    max-height: 60vh;
+                .row.g-3 {{
+                    margin: 0 -4px;
                 }}
                 
-                .metric-card {{
-                    padding: 10px;
-                }}
-                
-                .logo-parceiro {{
-                    max-width: 60px;
-                    max-height: 40px;
-                    margin-right: 10px;
+                .row.g-3 > * {{
+                    padding-right: 4px;
+                    padding-left: 4px;
+                    margin-bottom: 8px;
                 }}
             }}
             
             @media (max-width: 576px) {{
-                .table th {{
-                    min-width: 70px;
-                    padding: 6px 3px !important;
+                /* EXTRA SMALL DEVICES */
+                .container-fluid {{ 
+                    padding: 4px 6px; 
+                }}
+                
+                .theme-toggle {{
+                    top: 8px;
+                    right: 8px;
+                    width: 35px;
+                    height: 35px;
+                }}
+                
+                .theme-toggle i {{
+                    font-size: 0.9rem;
+                }}
+                
+                /* HEADER ULTRA COMPACTO */
+                .text-center h1 {{
+                    font-size: 1.1rem !important;
+                    margin-bottom: 6px;
+                }}
+                
+                .text-center small {{
                     font-size: 0.65rem !important;
+                    display: block;
+                    margin-bottom: 2px;
+                }}
+                
+                /* MÉTRICAS EM 3 COLUNAS */
+                .metric-value {{ 
+                    font-size: 1rem; 
+                }}
+                
+                .metric-label {{
+                    font-size: 0.55rem;
+                    line-height: 1.1;
+                }}
+                
+                .metric-change {{
+                    font-size: 0.5rem;
+                }}
+                
+                .metric-card {{
+                    padding: 6px;
+                }}
+                
+                /* NAVEGAÇÃO ULTRA COMPACTA */
+                .nav-pills .nav-link {{
+                    font-size: 0.65rem;
+                    padding: 3px 6px;
+                    margin-right: 1px;
+                    margin-bottom: 3px;
+                }}
+                
+                /* TABELA ULTRA RESPONSIVA */
+                .table th {{
+                    min-width: 60px;
+                    padding: 4px 2px !important;
+                    font-size: 0.6rem !important;
                 }}
                 
                 .table td {{
-                    padding: 5px 3px !important;
-                    font-size: 0.65rem !important;
+                    padding: 3px 1px !important;
+                    font-size: 0.6rem !important;
                 }}
                 
-                .nav-pills .nav-link {{
+                .table td:first-child {{
+                    max-width: 80px;
+                    font-size: 0.55rem !important;
+                }}
+                
+                .table td:nth-child(2) {{
+                    width: 30px !important;
+                    min-width: 30px !important;
+                    max-width: 30px !important;
+                }}
+                
+                .favorito-btn {{
                     font-size: 0.7rem;
-                    padding: 5px 8px;
+                    min-width: 20px;
+                    min-height: 20px;
+                    padding: 1px 3px;
                 }}
                 
-                .metric-value {{
-                    font-size: 1.2rem;
+                /* FORMULÁRIOS ULTRA COMPACTOS */
+                .search-input {{
+                    padding: 4px 8px;
+                    font-size: 0.75rem;
+                }}
+                
+                .form-select {{
+                    padding: 2px 4px;
+                    font-size: 0.7rem;
+                }}
+                
+                .form-label {{
+                    font-size: 0.7rem !important;
+                    margin-bottom: 2px;
+                }}
+                
+                /* BOTÕES COMPACTOS */
+                .btn-download {{
+                    font-size: 0.7rem;
+                    padding: 4px 10px;
+                }}
+                
+                /* CARDS COMPACTOS */
+                .card-header {{
+                    padding: 6px 8px;
                 }}
                 
                 .card-header h6 {{
-                    font-size: 0.9rem;
+                    font-size: 0.75rem;
+                }}
+                
+                .card-body {{
+                    padding: 6px;
+                }}
+                
+                /* ALERTAS ULTRA COMPACTOS */
+                .alert-header {{
+                    padding: 6px 8px;
+                }}
+                
+                .alert-title {{
+                    font-size: 0.75rem;
+                }}
+                
+                .alert-preview {{
+                    padding: 0 8px 6px 8px;
+                    font-size: 0.7rem;
+                }}
+                
+                /* CARTEIRA COMPACTA */
+                .carteira-item {{
+                    padding: 6px 8px;
+                }}
+                
+                .carteira-nome {{
+                    font-size: 0.75rem;
+                }}
+                
+                .carteira-info {{
+                    font-size: 0.65rem;
+                }}
+                
+                .carteira-pontos {{
+                    font-size: 0.75rem;
+                }}
+            }}
+            
+            @media (max-width: 400px) {{
+                /* DISPOSITIVOS MUITO PEQUENOS */
+                .container-fluid {{ 
+                    padding: 3px 5px; 
+                }}
+                
+                .metric-value {{ 
+                    font-size: 0.9rem; 
+                }}
+                
+                .metric-label {{
+                    font-size: 0.5rem;
+                }}
+                
+                .metric-card {{
+                    padding: 5px;
+                }}
+                
+                .nav-pills .nav-link {{
+                    font-size: 0.6rem;
+                    padding: 2px 5px;
+                }}
+                
+                .table th {{
+                    min-width: 50px;
+                    font-size: 0.55rem !important;
+                }}
+                
+                .table td {{
+                    font-size: 0.55rem !important;
+                }}
+                
+                .table td:first-child {{
+                    max-width: 70px;
+                    font-size: 0.5rem !important;
                 }}
             }}
             
@@ -2225,22 +2845,52 @@ class LiveloAnalytics:
             }}
             
             .table-container::-webkit-scrollbar {{
-                width: 6px;
-                height: 6px;
+                width: 4px;
+                height: 4px;
             }}
             
             .table-container::-webkit-scrollbar-track {{
                 background: var(--bg-primary);
-                border-radius: 3px;
+                border-radius: 2px;
             }}
             
             .table-container::-webkit-scrollbar-thumb {{
                 background: var(--livelo-azul-claro);
-                border-radius: 3px;
+                border-radius: 2px;
             }}
             
             .table-container::-webkit-scrollbar-thumb:hover {{
                 background: var(--livelo-azul);
+            }}
+            
+            /* EVITAR ZOOM EM INPUTS NO iOS */
+            @media screen and (max-device-width: 480px) {{
+                select, input[type="text"], input[type="search"], textarea {{
+                    font-size: 16px !important;
+                }}
+            }}
+            
+            /* MELHORAR TOUCH TARGETS */
+            @media (pointer: coarse) {{
+                .nav-pills .nav-link {{
+                    min-height: 44px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }}
+                
+                .btn {{
+                    min-height: 44px;
+                }}
+                
+                .table th {{
+                    min-height: 44px;
+                }}
+                
+                .favorito-btn {{
+                    min-width: 44px;
+                    min-height: 44px;
+                }}
             }}
         </style>
     </head>
@@ -2249,6 +2899,9 @@ class LiveloAnalytics:
         <div class="theme-toggle" onclick="toggleTheme()" title="Alternar tema claro/escuro">
             <i class="bi bi-sun-fill" id="theme-icon"></i>
         </div>
+        
+        <!-- Toast Container -->
+        <div class="toast-container" id="toastContainer"></div>
         
         <div class="container-fluid">
             <!-- Header -->
@@ -2268,7 +2921,11 @@ class LiveloAnalytics:
                 <div class="col-lg-2 col-md-4 col-6">
                     <div class="metric-card text-center">
                         <div class="metric-value">{metricas['total_parceiros']}</div>
-                        <div class="metric-label">Parceiros Hoje</div>
+                        <div class="metric-label tooltip-container">
+                            Parceiros Hoje
+                            <i class="bi bi-info-circle help-icon" data-tooltip="parceiros-hoje"></i>
+                            <div class="custom-tooltip">Total de parceiros com dados coletados hoje no site da Livelo</div>
+                        </div>
                         <div class="metric-change" style="color: {'green' if metricas['variacao_parceiros'] >= 0 else 'red'};">
                             {'+' if metricas['variacao_parceiros'] > 0 else ''}{metricas['variacao_parceiros']} vs ontem
                         </div>
@@ -2277,7 +2934,11 @@ class LiveloAnalytics:
                 <div class="col-lg-2 col-md-4 col-6">
                     <div class="metric-card text-center">
                         <div class="metric-value">{metricas['total_com_oferta']}</div>
-                        <div class="metric-label">Com Oferta</div>
+                        <div class="metric-label tooltip-container">
+                            Com Oferta
+                            <i class="bi bi-info-circle help-icon" data-tooltip="com-oferta"></i>
+                            <div class="custom-tooltip">Parceiros que estão oferecendo pontos extras ou promoções especiais hoje</div>
+                        </div>
                         <div class="metric-change" style="color: {'green' if metricas['variacao_ofertas'] >= 0 else 'red'};">
                             {'+' if metricas['variacao_ofertas'] > 0 else ''}{metricas['variacao_ofertas']} vs ontem
                         </div>
@@ -2286,7 +2947,11 @@ class LiveloAnalytics:
                 <div class="col-lg-2 col-md-4 col-6">
                     <div class="metric-card text-center">
                         <div class="metric-value">{metricas['percentual_ofertas_hoje']:.1f}%</div>
-                        <div class="metric-label">% Ofertas</div>
+                        <div class="metric-label tooltip-container">
+                            % Ofertas
+                            <i class="bi bi-info-circle help-icon" data-tooltip="percentual-ofertas"></i>
+                            <div class="custom-tooltip">Percentual de parceiros que estão com ofertas ativas em relação ao total</div>
+                        </div>
                         <div class="metric-change">
                             {metricas['percentual_ofertas_ontem']:.1f}% ontem
                         </div>
@@ -2295,7 +2960,11 @@ class LiveloAnalytics:
                 <div class="col-lg-2 col-md-4 col-6">
                     <div class="metric-card text-center">
                         <div class="metric-value">{metricas['compre_agora']}</div>
-                        <div class="metric-label">Compre Agora!</div>
+                        <div class="metric-label tooltip-container">
+                            Compre Agora!
+                            <i class="bi bi-info-circle help-icon" data-tooltip="compre-agora"></i>
+                            <div class="custom-tooltip">Parceiros com baixa frequência de ofertas que estão em promoção hoje - aproveite!</div>
+                        </div>
                         <div class="metric-change text-success">
                             Oportunidades hoje
                         </div>
@@ -2304,7 +2973,11 @@ class LiveloAnalytics:
                 <div class="col-lg-2 col-md-4 col-6">
                     <div class="metric-card text-center">
                         <div class="metric-value">{metricas['oportunidades_raras']}</div>
-                        <div class="metric-label">Oport. Raras</div>
+                        <div class="metric-label tooltip-container">
+                            Oport. Raras
+                            <i class="bi bi-info-circle help-icon" data-tooltip="oportunidades-raras"></i>
+                            <div class="custom-tooltip">Parceiros que raramente fazem ofertas (menos de 20% do tempo) mas têm pontuação alta</div>
+                        </div>
                         <div class="metric-change text-warning">
                             Baixa frequência
                         </div>
@@ -2313,7 +2986,11 @@ class LiveloAnalytics:
                 <div class="col-lg-2 col-md-4 col-6">
                     <div class="metric-card text-center">
                         <div class="metric-value">{metricas['sempre_oferta']}</div>
-                        <div class="metric-label">Sempre Oferta</div>
+                        <div class="metric-label tooltip-container">
+                            Sempre Oferta
+                            <i class="bi bi-info-circle help-icon" data-tooltip="sempre-oferta"></i>
+                            <div class="custom-tooltip">Parceiros que fazem ofertas com alta frequência (mais de 80% do tempo) - confiáveis para pontuação</div>
+                        </div>
                         <div class="metric-change text-info">
                             Qualquer hora
                         </div>
@@ -2421,8 +3098,8 @@ class LiveloAnalytics:
                     {filtros_html}
                     
                     <div class="card">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h6 class="mb-0">Análise Completa - {metricas['total_parceiros']} Parceiros HOJE</h6>
+                        <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center">
+                            <h6 class="mb-2 mb-md-0">Análise Completa - {metricas['total_parceiros']} Parceiros HOJE</h6>
                             <button class="btn btn-download btn-sm" onclick="downloadAnaliseCompleta()">
                                 <i class="bi bi-download me-1"></i>Download Excel
                             </button>
@@ -2441,29 +3118,90 @@ class LiveloAnalytics:
                 <!-- MINHA CARTEIRA -->
                 <div class="tab-pane fade" id="carteira">
                     <div class="row">
-                        <div class="col-lg-8">
+                        <div class="col-lg-8 col-12 mb-3">
                             <div class="card">
-                                <div class="card-header d-flex justify-content-between align-items-center">
-                                    <h6 class="mb-0"><i class="bi bi-star-fill me-2" style="color: #ffc107;"></i>Minha Carteira - <span id="contadorFavoritos">0</span> Favoritos</h6>
-                                    <button class="btn btn-outline-danger btn-sm" onclick="limparCarteira()" title="Limpar todos os favoritos">
-                                        <i class="bi bi-trash me-1"></i>Limpar Carteira
-                                    </button>
+                                <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center">
+                                    <h6 class="mb-2 mb-md-0">
+                                        <i class="bi bi-star-fill me-2" style="color: #ffc107;"></i>
+                                        Minha Carteira - <span id="contadorFavoritos">0</span> Favoritos
+                                    </h6>
+                                    <div class="d-flex flex-column flex-sm-row gap-2">
+                                        <button class="btn btn-outline-primary btn-sm" 
+                                                onclick="carteiraManager.updateCarteira()" 
+                                                title="Atualizar carteira">
+                                            <i class="bi bi-arrow-clockwise me-1"></i>Atualizar
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm" 
+                                                onclick="carteiraManager.limparCarteira()" 
+                                                title="Limpar todos os favoritos">
+                                            <i class="bi bi-trash me-1"></i>Limpar Carteira
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="card-body">
                                     <div id="listaFavoritos">
-                                        <!-- Preenchido pelo JavaScript -->
+                                        <!-- Conteúdo será preenchido pelo JavaScript -->
+                                        <div class="text-center p-4">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">Carregando...</span>
+                                            </div>
+                                            <p class="mt-2 text-muted">Carregando favoritos...</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-4">
+                        <div class="col-lg-4 col-12 mb-3">
                             <div class="card">
                                 <div class="card-header">
-                                    <h6 class="mb-0">📊 Evolução da Carteira</h6>
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-graph-up me-2"></i>
+                                        Análise da Carteira
+                                    </h6>
                                 </div>
                                 <div class="card-body">
                                     <div id="graficoCarteira">
-                                        <!-- Gráfico da carteira -->
+                                        <!-- Gráfico será preenchido pelo JavaScript -->
+                                        <div class="text-center p-4">
+                                            <div class="spinner-border text-secondary" role="status">
+                                                <span class="visually-hidden">Carregando...</span>
+                                            </div>
+                                            <p class="mt-2 text-muted">Carregando análise...</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Dicas de Uso -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card bg-light border-0">
+                                <div class="card-body p-3">
+                                    <h6 class="mb-2">
+                                        <i class="bi bi-lightbulb me-2 text-warning"></i>
+                                        Dicas da Carteira
+                                    </h6>
+                                    <div class="row text-sm">
+                                        <div class="col-md-4 col-12 mb-2">
+                                            <small>
+                                                <i class="bi bi-star text-warning me-1"></i>
+                                                <strong>Adicionar:</strong> Clique na estrela ao lado do parceiro na tabela
+                                            </small>
+                                        </div>
+                                        <div class="col-md-4 col-12 mb-2">
+                                            <small>
+                                                <i class="bi bi-trash text-danger me-1"></i>
+                                                <strong>Remover:</strong> Use o botão da lixeira em cada favorito
+                                            </small>
+                                        </div>
+                                        <div class="col-md-4 col-12 mb-2">
+                                            <small>
+                                                <i class="bi bi-graph-up text-primary me-1"></i>
+                                                <strong>Análise:</strong> Veja ranking e status dos seus favoritos
+                                            </small>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -2474,15 +3212,15 @@ class LiveloAnalytics:
                 <!-- Análise Individual -->
                 <div class="tab-pane fade" id="individual">
                     <div class="individual-analysis">
-                        <div class="row align-items-center mb-3">
-                            <div class="col-md-6">
+                        <div class="row align-items-end mb-3">
+                            <div class="col-md-6 col-12 mb-2 mb-md-0">
                                 <label class="form-label fw-bold">Selecionar Parceiro:</label>
                                 <select class="form-select" id="parceiroSelect" onchange="carregarAnaliseIndividual()">
                                     {self._gerar_opcoes_parceiros(dados)}
                                 </select>
                             </div>
-                            <div class="col-md-6 text-end">
-                                <button class="btn btn-download" onclick="downloadAnaliseIndividual()">
+                            <div class="col-md-6 col-12 text-md-end">
+                                <button class="btn btn-download btn-sm" onclick="downloadAnaliseIndividual()">
                                     <i class="bi bi-download me-1"></i>Download Parceiro
                                 </button>
                             </div>
@@ -2499,6 +3237,21 @@ class LiveloAnalytics:
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Estatísticas do Parceiro -->
+                    <div class="card mt-3" id="estatisticasParceiro" style="display: none;">
+                        <div class="card-header">
+                            <h6 class="mb-0">
+                                <i class="bi bi-graph-up me-2"></i>
+                                Estatísticas do Parceiro
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="conteudoEstatisticas">
+                                <!-- Conteúdo será preenchido pelo JavaScript -->
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -2509,23 +3262,36 @@ class LiveloAnalytics:
         </div>
         
         <script>
-            // Dados para análise
+            // ========== VARIÁVEIS GLOBAIS ==========
             const todosOsDados = {dados_json};
             const dadosHistoricosCompletos = {dados_historicos_json};
             const dadosRawCompletos = {dados_raw_json};
             let parceiroSelecionado = null;
+            let carteiraManager = null;
             
-            // ========== SISTEMA MINHA CARTEIRA ==========
+            // Expor dados globalmente
+            window.todosOsDados = todosOsDados;
+            window.dadosHistoricosCompletos = dadosHistoricosCompletos;
+            window.dadosRawCompletos = dadosRawCompletos;
+            
+            // ========== CLASSE GERENCIADOR DA CARTEIRA - VERSÃO CORRIGIDA ==========
             class LiveloCarteiraManager {{
                 constructor() {{
                     this.favoritos = this.loadFavoritos();
                     this.maxFavoritos = 10;
                     this.observers = [];
+                    this.dadosDisponiveis = false;
+                    this.maxTentativas = 10; // LIMITE MÁXIMO DE TENTATIVAS
+                    this.tentativasAtuais = 0;
+                    console.log('[Carteira] Construtor executado, favoritos:', this.favoritos.length);
                 }}
 
                 loadFavoritos() {{
                     try {{
-                        return JSON.parse(localStorage.getItem('livelo-favoritos') || '[]');
+                        const saved = localStorage.getItem('livelo-favoritos') || '[]';
+                        const favoritos = JSON.parse(saved);
+                        console.log('[Carteira] Favoritos carregados do localStorage:', favoritos);
+                        return favoritos;
                     }} catch (error) {{
                         console.error('[Carteira] Erro ao carregar favoritos:', error);
                         return [];
@@ -2535,6 +3301,7 @@ class LiveloAnalytics:
                 saveFavoritos() {{
                     try {{
                         localStorage.setItem('livelo-favoritos', JSON.stringify(this.favoritos));
+                        console.log('[Carteira] Favoritos salvos no localStorage:', this.favoritos);
                         this.notifyObservers();
                     }} catch (error) {{
                         console.error('[Carteira] Erro ao salvar favoritos:', error);
@@ -2556,37 +3323,45 @@ class LiveloAnalytics:
                 }}
 
                 toggleFavorito(parceiro, moeda) {{
+                    console.log('[Carteira] Toggle favorito:', parceiro, moeda);
+                    
                     const chaveUnica = `${{parceiro}}|${{moeda}}`;
                     const index = this.favoritos.indexOf(chaveUnica);
                     
                     if (index === -1) {{
                         if (this.favoritos.length >= this.maxFavoritos) {{
-                            alert(`Máximo de ${{this.maxFavoritos}} favoritos! Remova algum para adicionar novo.`);
+                            showToast(`Máximo de ${{this.maxFavoritos}} favoritos! Remova algum para adicionar novo.`, 'error');
                             return false;
                         }}
                         
                         this.favoritos.push(chaveUnica);
+                        showToast(`${{parceiro}} adicionado aos favoritos`, 'success');
                         console.log('[Carteira] Favorito adicionado:', chaveUnica);
                     }} else {{
                         this.favoritos.splice(index, 1);
+                        showToast(`${{parceiro}} removido dos favoritos`, 'info');
                         console.log('[Carteira] Favorito removido:', chaveUnica);
                     }}
                     
                     this.saveFavoritos();
                     this.updateAllIcons();
-                    this.updateCarteira();
+                    
+                    // FORÇAR ATUALIZAÇÃO IMEDIATA DA CARTEIRA
+                    setTimeout(() => {{
+                        this.updateCarteira();
+                    }}, 100);
                     
                     return true;
                 }}
 
                 removerFavorito(chaveUnica) {{
+                    console.log('[Carteira] Removendo favorito:', chaveUnica);
                     const index = this.favoritos.indexOf(chaveUnica);
                     if (index !== -1) {{
                         this.favoritos.splice(index, 1);
                         this.saveFavoritos();
                         this.updateAllIcons();
                         this.updateCarteira();
-                        console.log('[Carteira] Favorito removido:', chaveUnica);
                     }}
                 }}
 
@@ -2608,6 +3383,7 @@ class LiveloAnalytics:
                 updateAllIcons() {{
                     requestAnimationFrame(() => {{
                         const botoes = document.querySelectorAll('.favorito-btn');
+                        console.log('[Carteira] Atualizando', botoes.length, 'ícones de favoritos');
                         
                         botoes.forEach(btn => {{
                             try {{
@@ -2615,22 +3391,23 @@ class LiveloAnalytics:
                                 const moeda = btn.dataset.moeda;
                                 
                                 if (!parceiro || !moeda) {{
+                                    console.warn('[Carteira] Botão sem dados:', btn);
                                     return;
                                 }}
                                 
                                 const isFav = this.isFavorito(parceiro, moeda);
                                 
+                                btn.classList.remove('ativo');
+                                
                                 if (isFav) {{
                                     btn.classList.add('ativo');
                                     btn.innerHTML = '<i class="bi bi-star-fill"></i>';
-                                    btn.style.color = '#ffc107';
                                     btn.title = 'Remover dos favoritos';
                                 }} else {{
-                                    btn.classList.remove('ativo');
                                     btn.innerHTML = '<i class="bi bi-star"></i>';
-                                    btn.style.color = '#ccc';
                                     btn.title = 'Adicionar aos favoritos';
                                 }}
+                                
                             }} catch (error) {{
                                 console.error('[Carteira] Erro ao atualizar ícone:', error);
                             }}
@@ -2638,7 +3415,10 @@ class LiveloAnalytics:
                     }});
                 }}
 
+                // FUNÇÃO PRINCIPAL CORRIGIDA COM LIMITE DE TENTATIVAS
                 updateCarteira() {{
+                    console.log('[Carteira] Iniciando atualização da carteira...');
+                    
                     const container = document.getElementById('listaFavoritos');
                     const contador = document.getElementById('contadorFavoritos');
                     
@@ -2646,9 +3426,13 @@ class LiveloAnalytics:
                         contador.textContent = this.favoritos.length;
                     }}
                     
-                    if (!container) return;
+                    if (!container) {{
+                        console.warn('[Carteira] Container listaFavoritos não encontrado');
+                        return;
+                    }}
                     
                     if (this.favoritos.length === 0) {{
+                        console.log('[Carteira] Nenhum favorito, exibindo mensagem vazia');
                         container.innerHTML = `
                             <div class="carteira-vazia">
                                 <i class="bi bi-star" style="font-size: 3rem; color: #ccc; margin-bottom: 15px; display: block;"></i>
@@ -2661,60 +3445,140 @@ class LiveloAnalytics:
                         return;
                     }}
                     
-                    const favoritosData = [];
+                    console.log('[Carteira] Processando', this.favoritos.length, 'favoritos');
                     
-                    this.favoritos.forEach(chaveUnica => {{
-                        try {{
-                            const [parceiro, moeda] = chaveUnica.split('|');
+                    // RESETAR CONTADOR DE TENTATIVAS
+                    this.tentativasAtuais = 0;
+                    
+                    // AGUARDAR DADOS ESTAREM DISPONÍVEIS COM LIMITE
+                    const processarFavoritos = () => {{
+                        this.tentativasAtuais++;
+                        
+                        // VERIFICAR MÚLTIPLAS FONTES DE DADOS
+                        const dadosDisponivel1 = window.todosOsDados && Array.isArray(window.todosOsDados) && window.todosOsDados.length > 0;
+                        const dadosDisponivel2 = window.dados && Array.isArray(window.dados) && window.dados.length > 0;
+                        const dadosDisponivel3 = typeof todosOsDados !== 'undefined' && Array.isArray(todosOsDados) && todosOsDados.length > 0;
+                        
+                        let dadosParaUsar = null;
+                        
+                        if (dadosDisponivel1) {{
+                            dadosParaUsar = window.todosOsDados;
+                            console.log('[Carteira] Usando window.todosOsDados');
+                        }} else if (dadosDisponivel2) {{
+                            dadosParaUsar = window.dados;
+                            console.log('[Carteira] Usando window.dados');
+                        }} else if (dadosDisponivel3) {{
+                            dadosParaUsar = todosOsDados;
+                            console.log('[Carteira] Usando todosOsDados');
+                        }}
+                        
+                        if (!dadosParaUsar) {{
+                            if (this.tentativasAtuais >= this.maxTentativas) {{
+                                console.error('[Carteira] ERRO: Máximo de tentativas atingido. Dados não encontrados!');
+                                container.innerHTML = `
+                                    <div class="carteira-vazia">
+                                        <i class="bi bi-exclamation-triangle-fill" style="font-size: 3rem; color: #dc3545; margin-bottom: 15px; display: block;"></i>
+                                        <h6>Erro: Dados não disponíveis</h6>
+                                        <p class="text-muted">Os dados não foram carregados corretamente. Recarregue a página.</p>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="location.reload()">
+                                            <i class="bi bi-arrow-clockwise"></i> Recarregar Página
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-info ms-2" onclick="carteiraManager.debugInfo()">
+                                            <i class="bi bi-bug"></i> Debug Info
+                                        </button>
+                                    </div>
+                                `;
+                                return;
+                            }}
                             
-                            if (window.todosOsDados) {{
-                                const dados = window.todosOsDados.find(item => 
+                            console.warn(`[Carteira] Tentativa ${{this.tentativasAtuais}}/${{this.maxTentativas}} - Dados não disponíveis ainda, tentando novamente em 500ms...`);
+                            setTimeout(processarFavoritos, 500);
+                            return;
+                        }}
+                        
+                        console.log('[Carteira] Dados disponíveis! Total:', dadosParaUsar.length);
+                        
+                        const favoritosData = [];
+                        
+                        this.favoritos.forEach(chaveUnica => {{
+                            try {{
+                                const [parceiro, moeda] = chaveUnica.split('|');
+                                console.log('[Carteira] Buscando dados para:', parceiro, moeda);
+                                
+                                const dados = dadosParaUsar.find(item => 
                                     item.Parceiro === parceiro && item.Moeda === moeda
                                 );
                                 
                                 if (dados) {{
+                                    console.log('[Carteira] ✓ Dados encontrados para:', parceiro);
                                     favoritosData.push(dados);
                                 }} else {{
-                                    console.warn('[Carteira] Dados não encontrados para:', chaveUnica);
+                                    console.warn('[Carteira] ✗ Dados não encontrados para:', chaveUnica);
                                 }}
+                            }} catch (error) {{
+                                console.error('[Carteira] Erro ao processar favorito:', chaveUnica, error);
                             }}
-                        }} catch (error) {{
-                            console.error('[Carteira] Erro ao processar favorito:', chaveUnica, error);
-                        }}
-                    }});
-                    
-                    let html = '';
-                    
-                    favoritosData.forEach(dados => {{
-                        const temOferta = dados.Tem_Oferta_Hoje;
-                        const statusClass = temOferta ? 'text-success' : 'text-muted';
-                        const statusIcon = temOferta ? 'bi-check-circle-fill' : 'bi-circle';
-                        const chaveUnica = `${{dados.Parceiro}}|${{dados.Moeda}}`;
+                        }});
                         
-                        html += `
-                            <div class="carteira-item" data-chave="${{chaveUnica}}">
-                                <div class="flex-grow-1">
-                                    <div class="carteira-nome">${{dados.Parceiro}} (${{dados.Moeda}})</div>
-                                    <div class="carteira-info">
-                                        <i class="bi ${{statusIcon}} ${{statusClass}} me-1"></i>
-                                        ${{temOferta ? 'Com oferta hoje' : 'Sem oferta hoje'}} • 
-                                        ${{dados.Categoria_Dimensao || 'N/A'}} • Tier ${{dados.Tier || 'N/A'}}
-                                    </div>
-                                </div>
-                                <div class="text-end">
-                                    <div class="carteira-pontos">${{(dados.Pontos_por_Moeda_Atual || 0).toFixed(1)}} pts</div>
-                                    <button class="btn btn-sm btn-outline-danger mt-1" 
-                                            onclick="carteiraManager.removerFavorito('${{chaveUnica}}')" 
-                                            title="Remover dos favoritos">
-                                        <i class="bi bi-x"></i>
+                        console.log('[Carteira] Dados processados:', favoritosData.length, 'de', this.favoritos.length);
+                        
+                        if (favoritosData.length === 0 && this.favoritos.length > 0) {{
+                            container.innerHTML = `
+                                <div class="carteira-vazia">
+                                    <i class="bi bi-exclamation-triangle" style="font-size: 3rem; color: #ffc107; margin-bottom: 15px; display: block;"></i>
+                                    <h6>Favoritos não encontrados</h6>
+                                    <p class="text-muted">Os dados dos favoritos não foram encontrados. Isso pode acontecer se os parceiros não estão mais disponíveis hoje.</p>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="carteiraManager.debugInfo()">
+                                        <i class="bi bi-bug"></i> Debug Info
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger ms-2" onclick="carteiraManager.limparCarteira()">
+                                        <i class="bi bi-trash"></i> Limpar Carteira
                                     </button>
                                 </div>
-                            </div>
-                        `;
-                    }});
+                            `;
+                            this.updateGraficoCarteira([]);
+                            return;
+                        }}
+                        
+                        let html = '';
+                        
+                        favoritosData.forEach(dados => {{
+                            const temOferta = dados.Tem_Oferta_Hoje;
+                            const statusClass = temOferta ? 'text-success' : 'text-muted';
+                            const statusIcon = temOferta ? 'bi-check-circle-fill' : 'bi-circle';
+                            const chaveUnica = `${{dados.Parceiro}}|${{dados.Moeda}}`;
+                            const pontosFormatados = (dados.Pontos_por_Moeda_Atual || 0).toFixed(1);
+                            
+                            html += `
+                                <div class="carteira-item" data-chave="${{chaveUnica}}">
+                                    <div class="flex-grow-1">
+                                        <div class="carteira-nome">${{dados.Parceiro}} (${{dados.Moeda}})</div>
+                                        <div class="carteira-info">
+                                            <i class="bi ${{statusIcon}} ${{statusClass}} me-1"></i>
+                                            ${{temOferta ? 'Com oferta hoje' : 'Sem oferta hoje'}} • 
+                                            ${{dados.Categoria_Dimensao || 'N/A'}} • Tier ${{dados.Tier || 'N/A'}}
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="carteira-pontos">${{pontosFormatados}} pts</div>
+                                        <button class="btn btn-sm btn-outline-danger mt-1" 
+                                                onclick="carteiraManager.removerFavorito('${{chaveUnica}}')" 
+                                                title="Remover dos favoritos">
+                                            <i class="bi bi-x"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        }});
+                        
+                        container.innerHTML = html;
+                        this.updateGraficoCarteira(favoritosData);
+                        this.dadosDisponiveis = true;
+                        
+                        console.log('[Carteira] ✅ Interface atualizada com sucesso! Favoritos:', favoritosData.length);
+                    }};
                     
-                    container.innerHTML = html;
-                    this.updateGraficoCarteira(favoritosData);
+                    processarFavoritos();
                 }}
 
                 updateGraficoCarteira(favoritosData) {{
@@ -2732,9 +3596,9 @@ class LiveloAnalytics:
                     
                     const maxPontos = dadosOrdenados[0]?.Pontos_por_Moeda_Atual || 1;
                     
-                    let html = '<div class="mb-3"><strong>Pontos por Moeda Atual:</strong></div>';
+                    let html = '<div class="mb-3"><strong>Ranking dos Favoritos:</strong></div>';
                     
-                    dadosOrdenados.forEach(dados => {{
+                    dadosOrdenados.forEach((dados, index) => {{
                         const pontos = dados.Pontos_por_Moeda_Atual || 0;
                         const largura = (pontos / maxPontos) * 100;
                         const cor = dados.Tem_Oferta_Hoje ? '#28a745' : '#6c757d';
@@ -2742,7 +3606,7 @@ class LiveloAnalytics:
                         html += `
                             <div class="mb-2">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <small class="fw-bold">${{dados.Parceiro}}</small>
+                                    <small class="fw-bold">${{index + 1}}º ${{dados.Parceiro}}</small>
                                     <small class="text-muted">${{pontos.toFixed(1)}} pts</small>
                                 </div>
                                 <div class="progress" style="height: 8px;">
@@ -2758,9 +3622,94 @@ class LiveloAnalytics:
                     container.innerHTML = html;
                 }}
 
-                init() {{
-                    console.log('[Carteira] Inicializando sistema de favoritos...');
+                // FUNÇÃO DE DEBUG MELHORADA
+                debugInfo() {{
+                    console.log('=== DEBUG CARTEIRA DETALHADO ===');
+                    console.log('📊 Estado da Carteira:');
+                    console.log('  - Favoritos salvos:', this.favoritos);
+                    console.log('  - Total de favoritos:', this.favoritos.length);
+                    console.log('  - Max favoritos:', this.maxFavoritos);
+                    console.log('  - Tentativas atuais:', this.tentativasAtuais);
+                    console.log('  - Max tentativas:', this.maxTentativas);
                     
+                    console.log('\\n🗂️ Verificação de Dados:');
+                    console.log('  - window.todosOsDados existe:', !!window.todosOsDados);
+                    console.log('  - window.todosOsDados é array:', Array.isArray(window.todosOsDados));
+                    console.log('  - window.todosOsDados tamanho:', window.todosOsDados ? window.todosOsDados.length : 0);
+                    console.log('  - window.dados existe:', !!window.dados);
+                    console.log('  - todosOsDados (local) existe:', typeof todosOsDados !== 'undefined');
+                    
+                    if (window.todosOsDados && window.todosOsDados.length > 0) {{
+                        console.log('\\n📋 Primeiros 5 parceiros disponíveis:');
+                        window.todosOsDados.slice(0, 5).forEach((item, index) => {{
+                            console.log(`  ${{index + 1}}. ${{item.Parceiro}} (${{item.Moeda}})`);
+                        }});
+                    }}
+                    
+                    console.log('\\n🏠 Containers DOM:');
+                    console.log('  - listaFavoritos:', !!document.getElementById('listaFavoritos'));
+                    console.log('  - contadorFavoritos:', !!document.getElementById('contadorFavoritos'));
+                    console.log('  - graficoCarteira:', !!document.getElementById('graficoCarteira'));
+                    
+                    console.log('\\n🔍 Verificação de Favoritos nos Dados:');
+                    if (this.favoritos.length === 0) {{
+                        console.log('  - Nenhum favorito para verificar');
+                    }} else {{
+                        this.favoritos.forEach(chaveUnica => {{
+                            const [parceiro, moeda] = chaveUnica.split('|');
+                            const existe = window.todosOsDados ? window.todosOsDados.find(item => 
+                                item.Parceiro === parceiro && item.Moeda === moeda
+                            ) : null;
+                            console.log(`  - ${{chaveUnica}}: ${{existe ? '✅ ENCONTRADO' : '❌ NÃO ENCONTRADO'}}`);
+                        }});
+                    }}
+                    
+                    console.log('\\n🔧 LocalStorage:');
+                    try {{
+                        const saved = localStorage.getItem('livelo-favoritos');
+                        console.log('  - Conteúdo salvo:', saved);
+                        console.log('  - Parse válido:', !!JSON.parse(saved || '[]'));
+                    }} catch (e) {{
+                        console.log('  - ERRO no localStorage:', e.message);
+                    }}
+                    
+                    console.log('\\n🎯 Próximas Ações:');
+                    if (!window.todosOsDados || !Array.isArray(window.todosOsDados)) {{
+                        console.log('  - PROBLEMA: Dados não disponíveis');
+                        console.log('  - SOLUÇÃO: Recarregar página ou verificar carregamento dos dados');
+                    }} else if (this.favoritos.length === 0) {{
+                        console.log('  - INFO: Nenhum favorito adicionado ainda');
+                    }} else {{
+                        console.log('  - INFO: Tentando forçar atualização da carteira...');
+                        setTimeout(() => {{
+                            this.updateCarteira();
+                        }}, 100);
+                    }}
+                    
+                    console.log('================================');
+                }}
+
+                init() {{
+                    console.log('[Carteira] Inicializando sistema...');
+                    
+                    // Aguardar um pouco para os dados estarem prontos
+                    setTimeout(() => {{
+                        this.updateCarteira();
+                        this.setupEventListeners();
+                        
+                        // Aguardar mais um pouco para os ícones estarem no DOM
+                        setTimeout(() => {{
+                            this.updateAllIcons();
+                        }}, 500);
+                    }}, 1000);
+                    
+                    console.log('[Carteira] Sistema inicializado com', this.favoritos.length, 'favoritos');
+                }}
+                
+                setupEventListeners() {{
+                    console.log('[Carteira] Configurando event listeners...');
+                    
+                    // Event delegation para botões de favoritos
                     document.addEventListener('click', (e) => {{
                         const btn = e.target.closest('.favorito-btn');
                         if (btn) {{
@@ -2770,6 +3719,8 @@ class LiveloAnalytics:
                             const parceiro = btn.dataset.parceiro;
                             const moeda = btn.dataset.moeda;
                             
+                            console.log('[Carteira] Click no favorito:', parceiro, moeda);
+                            
                             if (parceiro && moeda) {{
                                 this.toggleFavorito(parceiro, moeda);
                             }} else {{
@@ -2778,37 +3729,222 @@ class LiveloAnalytics:
                         }}
                     }});
                     
-                    this.updateCarteira();
-                    
-                    // Event listeners para abas
-                    const tabLinks = document.querySelectorAll('[data-bs-toggle="pill"]');
-                    tabLinks.forEach(tabLink => {{
-                        tabLink.addEventListener('shown.bs.tab', () => {{
-                            setTimeout(() => this.updateAllIcons(), 200);
+                    // Listeners para mudanças de aba
+                    document.querySelectorAll('[data-bs-toggle="pill"]').forEach(tab => {{
+                        tab.addEventListener('shown.bs.tab', (e) => {{
+                            console.log('[Carteira] Aba mudou para:', e.target.getAttribute('data-bs-target'));
+                            setTimeout(() => {{
+                                this.updateAllIcons();
+                                // Se mudou para aba da carteira, atualizar
+                                if (e.target.getAttribute('data-bs-target') === '#carteira') {{
+                                    this.updateCarteira();
+                                }}
+                            }}, 200);
                         }});
                     }});
                     
-                    console.log('[Carteira] Sistema inicializado com', this.favoritos.length, 'favoritos');
+                    console.log('[Carteira] Event listeners configurados');
                 }}
             }}
-
-            const carteiraManager = new LiveloCarteiraManager();
-            window.carteiraManager = carteiraManager;
             
-            // Funções globais para compatibilidade
-            function toggleFavorito(parceiro, moeda) {{ 
-                return carteiraManager.toggleFavorito(parceiro, moeda);
+            // ========== FUNÇÃO DE DEBUG GLOBAL ==========
+            function debugCarteira() {{
+                console.log('=== DEBUG CARTEIRA GLOBAL ===');
+                if (window.carteiraManager) {{
+                    window.carteiraManager.debugInfo();
+                }} else {{
+                    console.log('carteiraManager não está disponível!');
+                    console.log('Variáveis globais disponíveis:');
+                    console.log('- todosOsDados:', !!window.todosOsDados);
+                    console.log('- dadosHistoricosCompletos:', !!window.dadosHistoricosCompletos);
+                }}
+                console.log('===============================');
             }}
             
-            function removerFavorito(chaveUnica) {{ 
-                return carteiraManager.removerFavorito(chaveUnica);
+            // Expor função de debug globalmente
+            window.debugCarteira = debugCarteira;
+            
+            // ========== SISTEMA DE TOOLTIPS HÍBRIDOS ==========
+            let tooltipAtivo = null;
+            let tooltipTimer = null;
+            
+            function initTooltips() {{
+                console.log('[Tooltips] Inicializando sistema de tooltips...');
+                
+                // Aguardar um pouco para elementos estarem no DOM
+                setTimeout(() => {{
+                    const helpIcons = document.querySelectorAll('.help-icon');
+                    console.log('[Tooltips] Encontrados', helpIcons.length, 'ícones de ajuda');
+                    
+                    if (helpIcons.length === 0) {{
+                        console.warn('[Tooltips] Nenhum ícone de tooltip encontrado!');
+                        return;
+                    }}
+                    
+                    helpIcons.forEach((icon, index) => {{
+                        console.log('[Tooltips] Configurando ícone', index + 1);
+                        
+                        const tooltip = icon.nextElementSibling;
+                        if (!tooltip || !tooltip.classList.contains('custom-tooltip')) {{
+                            console.warn('[Tooltips] Tooltip não encontrado para ícone', index + 1);
+                            return;
+                        }}
+                        
+                        // Mobile: tap para mostrar/esconder
+                        icon.addEventListener('click', (e) => {{
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('[Tooltips] Click no ícone', index + 1);
+                            
+                            // Se já tem tooltip ativo, esconder
+                            if (tooltipAtivo && tooltipAtivo !== tooltip) {{
+                                hideTooltip(tooltipAtivo);
+                            }}
+                            
+                            if (tooltip.classList.contains('show')) {{
+                                hideTooltip(tooltip);
+                            }} else {{
+                                showTooltip(tooltip);
+                            }}
+                        }});
+                        
+                        // Desktop: hover (só em dispositivos com hover)
+                        if (window.matchMedia('(hover: hover)').matches) {{
+                            icon.addEventListener('mouseenter', () => {{
+                                clearTimeout(tooltipTimer);
+                                if (tooltipAtivo && tooltipAtivo !== tooltip) {{
+                                    hideTooltip(tooltipAtivo);
+                                }}
+                                showTooltip(tooltip);
+                            }});
+                            
+                            icon.addEventListener('mouseleave', () => {{
+                                tooltipTimer = setTimeout(() => {{
+                                    if (tooltipAtivo === tooltip) {{
+                                        hideTooltip(tooltip);
+                                    }}
+                                }}, 300);
+                            }});
+                        }}
+                    }});
+                    
+                    // Esconder tooltip ao clicar fora
+                    document.addEventListener('click', (e) => {{
+                        if (tooltipAtivo && !e.target.closest('.tooltip-container')) {{
+                            hideTooltip(tooltipAtivo);
+                        }}
+                    }});
+                    
+                    // Esconder tooltip ao fazer scroll
+                    document.addEventListener('scroll', () => {{
+                        if (tooltipAtivo) {{
+                            hideTooltip(tooltipAtivo);
+                        }}
+                    }});
+                    
+                    console.log('[Tooltips] Sistema configurado com sucesso!');
+                }}, 500);
             }}
             
-            function limparCarteira() {{ 
-                return carteiraManager.limparCarteira();
+            function showTooltip(tooltip) {{
+                if (tooltipAtivo) {{
+                    hideTooltip(tooltipAtivo);
+                }}
+                
+                tooltip.classList.add('show');
+                tooltipAtivo = tooltip;
+                console.log('[Tooltips] Tooltip exibido');
+                
+                // Auto-hide em mobile após 4 segundos
+                if (!window.matchMedia('(hover: hover)').matches) {{
+                    tooltipTimer = setTimeout(() => {{
+                        hideTooltip(tooltip);
+                    }}, 4000);
+                }}
             }}
             
-            // GERENCIAMENTO DE TEMA
+            function hideTooltip(tooltip) {{
+                if (tooltip) {{
+                    tooltip.classList.remove('show');
+                    if (tooltipAtivo === tooltip) {{
+                        tooltipAtivo = null;
+                    }}
+                    console.log('[Tooltips] Tooltip ocultado');
+                }}
+                clearTimeout(tooltipTimer);
+            }}
+            
+            // Função de debug para tooltips
+            function debugTooltips() {{
+                console.log('=== DEBUG TOOLTIPS ===');
+                const containers = document.querySelectorAll('.tooltip-container');
+                const icons = document.querySelectorAll('.help-icon');
+                const tooltips = document.querySelectorAll('.custom-tooltip');
+                
+                console.log('Containers encontrados:', containers.length);
+                console.log('Ícones encontrados:', icons.length);
+                console.log('Tooltips encontrados:', tooltips.length);
+                
+                containers.forEach((container, i) => {{
+                    const icon = container.querySelector('.help-icon');
+                    const tooltip = container.querySelector('.custom-tooltip');
+                    console.log(`Container ${{i + 1}}:`, {{
+                        hasIcon: !!icon,
+                        hasTooltip: !!tooltip,
+                        iconVisible: icon ? getComputedStyle(icon).display !== 'none' : false,
+                        tooltipText: tooltip ? tooltip.textContent.substring(0, 50) + '...' : 'N/A'
+                    }});
+                }});
+                
+                console.log('===================');
+            }}
+            
+            // Expor função de debug globalmente
+            window.debugTooltips = debugTooltips;
+            
+            // ========== SISTEMA DE TOAST NOTIFICATIONS ==========
+            function showToast(message, type = 'info', duration = 2000) {{
+                const container = document.getElementById('toastContainer');
+                if (!container) return;
+                
+                const toastId = 'toast-' + Date.now();
+                const icons = {{
+                    success: 'bi-check-circle-fill',
+                    error: 'bi-x-circle-fill',
+                    info: 'bi-info-circle-fill'
+                }};
+                
+                const toast = document.createElement('div');
+                toast.className = `custom-toast toast-${{type}}`;
+                toast.id = toastId;
+                toast.innerHTML = `
+                    <div class="toast-header">
+                        <i class="bi ${{icons[type] || icons.info}} me-2"></i>
+                        <strong class="me-auto">${{type === 'success' ? 'Sucesso' : type === 'error' ? 'Erro' : 'Informação'}}</strong>
+                    </div>
+                    <div class="toast-body">${{message}}</div>
+                `;
+                
+                container.appendChild(toast);
+                
+                // Animar entrada
+                setTimeout(() => {{
+                    toast.classList.add('show');
+                }}, 10);
+                
+                // Remover após duração especificada
+                setTimeout(() => {{
+                    toast.classList.remove('show');
+                    toast.classList.add('hide');
+                    setTimeout(() => {{
+                        if (toast.parentNode) {{
+                            toast.parentNode.removeChild(toast);
+                        }}
+                    }}, 300);
+                }}, duration);
+            }}
+            
+            // ========== FUNÇÕES DE TEMA ==========
             function initTheme() {{
                 const savedTheme = localStorage.getItem('livelo-theme') || 'light';
                 document.documentElement.setAttribute('data-theme', savedTheme);
@@ -2825,61 +3961,62 @@ class LiveloAnalytics:
             
             function updateThemeIcon(theme) {{
                 const icon = document.getElementById('theme-icon');
-                if (theme === 'dark') {{
-                    icon.className = 'bi bi-moon-fill';
-                }} else {{
-                    icon.className = 'bi bi-sun-fill';
+                if (icon) {{
+                    if (theme === 'dark') {{
+                        icon.className = 'bi bi-moon-fill';
+                    }} else {{
+                        icon.className = 'bi bi-sun-fill';
+                    }}
                 }}
             }}
             
-            // GERENCIAMENTO DE ALERTAS
+            // ========== FUNÇÕES DE ALERTAS ==========
             function toggleAlert(alertId) {{
+                console.log('[Alertas] Toggle alerta:', alertId);
                 const alert = document.querySelector(`[data-alert-id="${{alertId}}"]`);
-                if (!alert) return;
+                if (!alert) {{
+                    console.warn('[Alertas] Alerta não encontrado:', alertId);
+                    return;
+                }}
                 
                 const details = alert.querySelector('.alert-details');
                 const chevron = alert.querySelector('.alert-chevron');
                 
+                if (!details) {{
+                    console.warn('[Alertas] Details não encontrado para:', alertId);
+                    return;
+                }}
+                
                 if (details.style.display === 'none' || details.style.display === '') {{
                     details.style.display = 'block';
                     alert.classList.add('expanded');
+                    console.log('[Alertas] Alerta expandido:', alertId);
                 }} else {{
                     details.style.display = 'none';
                     alert.classList.remove('expanded');
+                    console.log('[Alertas] Alerta recolhido:', alertId);
                 }}
             }}
             
             function closeAlert(alertId, event) {{
-                event.stopPropagation();
+                console.log('[Alertas] Fechando alerta:', alertId);
+                if (event) {{
+                    event.stopPropagation();
+                    event.preventDefault();
+                }}
+                
                 const alert = document.querySelector(`[data-alert-id="${{alertId}}"]`);
                 if (alert) {{
                     alert.style.animation = 'slideUp 0.3s ease';
                     setTimeout(() => {{
-                        alert.remove();
+                        if (alert.parentNode) {{
+                            alert.parentNode.removeChild(alert);
+                        }}
                     }}, 300);
                 }}
             }}
             
-            // Animação de slide up para fechar alertas
-            const slideUpKeyframes = `
-                @keyframes slideUp {{
-                    from {{
-                        opacity: 1;
-                        max-height: 200px;
-                        transform: translateY(0);
-                    }}
-                    to {{
-                        opacity: 0;
-                        max-height: 0;
-                        transform: translateY(-10px);
-                    }}
-                }}
-            `;
-            const style = document.createElement('style');
-            style.textContent = slideUpKeyframes;
-            document.head.appendChild(style);
-            
-            // FUNÇÃO AUXILIAR MELHORADA PARA PARSE DE DATAS EM PT-BR
+            // ========== FUNÇÃO AUXILIAR PARA PARSE DE DATAS ==========
             function parseDataBR(dataString) {{
                 if (!dataString || dataString === '-' || dataString === 'Nunca') {{
                     return new Date(1900, 0, 1);
@@ -2914,24 +4051,24 @@ class LiveloAnalytics:
                 return new Date(year, month, day, hour, minute, second);
             }}
             
-            // FILTROS AVANÇADOS ATUALIZADOS
+            // ========== FILTROS AVANÇADOS ==========
             function aplicarFiltros() {{
-                const filtroCategoria = document.getElementById('filtroCategoriaComplex').value;
-                const filtroTier = document.getElementById('filtroTier').value;
-                const filtroOferta = document.getElementById('filtroOferta').value;
-                const filtroExperiencia = document.getElementById('filtroExperiencia').value;
-                const filtroFrequencia = document.getElementById('filtroFrequencia').value;
-                const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+                const filtroCategoria = document.getElementById('filtroCategoriaComplex')?.value || '';
+                const filtroTier = document.getElementById('filtroTier')?.value || '';
+                const filtroOferta = document.getElementById('filtroOferta')?.value || '';
+                const filtroExperiencia = document.getElementById('filtroExperiencia')?.value || '';
+                const filtroFrequencia = document.getElementById('filtroFrequencia')?.value || '';
+                const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
                 
                 const rows = document.querySelectorAll('#tabelaAnalise tbody tr');
                 
                 rows.forEach(row => {{
-                    const parceiro = row.cells[0].textContent.toLowerCase();
-                    const categoria = row.cells[2].textContent.trim(); // Agora na posição 2 por causa da coluna de favoritos
-                    const tier = row.cells[3].textContent.trim();
-                    const oferta = row.cells[4].textContent.trim();
-                    const experiencia = row.cells[5].textContent.trim();
-                    const frequencia = row.cells[6].textContent.trim();
+                    const parceiro = row.cells[0]?.textContent.toLowerCase() || '';
+                    const categoria = row.cells[2]?.textContent.trim() || '';
+                    const tier = row.cells[3]?.textContent.trim() || '';
+                    const oferta = row.cells[4]?.textContent.trim() || '';
+                    const experiencia = row.cells[5]?.textContent.trim() || '';
+                    const frequencia = row.cells[6]?.textContent.trim() || '';
                     
                     const matchParceiro = !searchTerm || parceiro.includes(searchTerm);
                     const matchCategoria = !filtroCategoria || categoria === filtroCategoria;
@@ -2944,10 +4081,7 @@ class LiveloAnalytics:
                 }});
             }}
             
-            // Busca na tabela
-            document.getElementById('searchInput').addEventListener('input', aplicarFiltros);
-            
-            // Ordenação da tabela principal
+            // ========== ORDENAÇÃO DE TABELAS ==========
             let estadoOrdenacao = {{}};
             
             function ordenarTabela(indiceColuna, tipoColuna) {{
@@ -2972,18 +4106,36 @@ class LiveloAnalytics:
                 
                 const headerAtual = tabela.querySelectorAll('th')[indiceColuna];
                 const indicatorAtual = headerAtual.querySelector('.sort-indicator');
-                indicatorAtual.className = `bi bi-arrow-${{novaOrdem === 'asc' ? 'up' : 'down'}} sort-indicator active`;
+                if (indicatorAtual) {{
+                    indicatorAtual.className = `bi bi-arrow-${{novaOrdem === 'asc' ? 'up' : 'down'}} sort-indicator active`;
+                }}
                 
                 linhas.sort((linhaA, linhaB) => {{
-                    let textoA = linhaA.cells[indiceColuna].textContent.trim();
-                    let textoB = linhaB.cells[indiceColuna].textContent.trim();
+                    let resultado = 0;
                     
-                    const badgeA = linhaA.cells[indiceColuna].querySelector('.badge');
-                    const badgeB = linhaB.cells[indiceColuna].querySelector('.badge');
+                    // COLUNA ESPECIAL: FAVORITOS (índice 1)
+                    if (indiceColuna === 1) {{
+                        const btnA = linhaA.cells[1]?.querySelector('.favorito-btn');
+                        const btnB = linhaB.cells[1]?.querySelector('.favorito-btn');
+                        
+                        const favoritoA = btnA ? btnA.classList.contains('ativo') : false;
+                        const favoritoB = btnB ? btnB.classList.contains('ativo') : false;
+                        
+                        if (favoritoA && !favoritoB) resultado = -1;
+                        else if (!favoritoA && favoritoB) resultado = 1;
+                        else resultado = 0;
+                        
+                        return novaOrdem === 'asc' ? resultado : -resultado;
+                    }}
+                    
+                    // OUTRAS COLUNAS (lógica original)
+                    let textoA = linhaA.cells[indiceColuna]?.textContent.trim() || '';
+                    let textoB = linhaB.cells[indiceColuna]?.textContent.trim() || '';
+                    
+                    const badgeA = linhaA.cells[indiceColuna]?.querySelector('.badge');
+                    const badgeB = linhaB.cells[indiceColuna]?.querySelector('.badge');
                     if (badgeA) textoA = badgeA.textContent.trim();
                     if (badgeB) textoB = badgeB.textContent.trim();
-                    
-                    let resultado = 0;
                     
                     if (tipoColuna === 'numero') {{
                         let numA = parseFloat(textoA.replace(/[^\\d.-]/g, '')) || 0;
@@ -3011,10 +4163,14 @@ class LiveloAnalytics:
                 linhas.forEach(linha => tbody.appendChild(linha));
                 
                 // Atualizar ícones de favoritos após reordenação
-                setTimeout(() => {{ carteiraManager.updateAllIcons(); }}, 100);
+                setTimeout(() => {{ 
+                    if (carteiraManager) {{
+                        carteiraManager.updateAllIcons(); 
+                    }}
+                }}, 100);
             }}
             
-            // ORDENAÇÃO DA TABELA INDIVIDUAL
+            // ========== ORDENAÇÃO DA TABELA INDIVIDUAL ==========
             let estadoOrdenacaoIndividual = {{}};
             
             function ordenarTabelaIndividual(indiceColuna, tipoColuna) {{
@@ -3044,11 +4200,11 @@ class LiveloAnalytics:
                 }}
                 
                 linhas.sort((linhaA, linhaB) => {{
-                    let textoA = linhaA.cells[indiceColuna].textContent.trim();
-                    let textoB = linhaB.cells[indiceColuna].textContent.trim();
+                    let textoA = linhaA.cells[indiceColuna]?.textContent.trim() || '';
+                    let textoB = linhaB.cells[indiceColuna]?.textContent.trim() || '';
                     
-                    const badgeA = linhaA.cells[indiceColuna].querySelector('.badge');
-                    const badgeB = linhaB.cells[indiceColuna].querySelector('.badge');
+                    const badgeA = linhaA.cells[indiceColuna]?.querySelector('.badge');
+                    const badgeB = linhaB.cells[indiceColuna]?.querySelector('.badge');
                     if (badgeA) textoA = badgeA.textContent.trim();
                     if (badgeB) textoB = badgeB.textContent.trim();
                     
@@ -3073,15 +4229,14 @@ class LiveloAnalytics:
                 linhas.forEach(linha => tbody.appendChild(linha));
             }}
             
-            // Download Excel - Análise Completa (COM DADOS DAS DIMENSÕES)
+            // ========== FUNÇÕES DE DOWNLOAD ==========
             function downloadAnaliseCompleta() {{
-                // Obter dados filtrados
                 const rows = document.querySelectorAll('#tabelaAnalise tbody tr');
                 const dadosVisiveis = [];
                 
                 rows.forEach(row => {{
                     if (row.style.display !== 'none') {{
-                        const parceiroNome = row.cells[0].textContent.trim();
+                        const parceiroNome = row.cells[0]?.textContent.trim();
                         const dadoCompleto = todosOsDados.find(item => item.Parceiro === parceiroNome);
                         if (dadoCompleto) {{
                             dadosVisiveis.push(dadoCompleto);
@@ -3095,10 +4250,13 @@ class LiveloAnalytics:
                 XLSX.writeFile(wb, "livelo_analise_completa_{metricas['ultima_atualizacao'].replace('/', '_')}.xlsx");
             }}
             
-            // CARREGAR ANÁLISE INDIVIDUAL COM LOGO E NOMES CORRIGIDOS
+            // ========== ANÁLISE INDIVIDUAL ==========
             function carregarAnaliseIndividual() {{
-                const chaveUnica = document.getElementById('parceiroSelect').value;
-                if (!chaveUnica) return;
+                const chaveUnica = document.getElementById('parceiroSelect')?.value;
+                if (!chaveUnica) {{
+                    document.getElementById('estatisticasParceiro').style.display = 'none';
+                    return;
+                }}
                 
                 estadoOrdenacaoIndividual = {{}};
                 
@@ -3117,12 +4275,35 @@ class LiveloAnalytics:
                 const logoUrl = dadosResumo.length > 0 ? dadosResumo[0].Logo_Link : '';
                 const logoHtml = logoUrl ? `<img src="${{logoUrl}}" class="logo-parceiro" alt="Logo ${{parceiro}}" onerror="this.style.display='none'">` : '';
                 
-                document.getElementById('tituloAnaliseIndividual').innerHTML = 
-                    `<div class="d-flex align-items-center">${{logoHtml}}<span>Histórico Detalhado - ${{parceiro}} (${{moeda}}) - ${{historicoCompleto.length}} registros</span></div>`;
+                // Obter URL do parceiro para botão
+                const urlParceiro = dadosResumo.length > 0 ? dadosResumo[0].URL_Parceiro : '';
+                const botaoSite = urlParceiro ? `
+                    <a href="${{urlParceiro}}" target="_blank" class="btn btn-outline-primary btn-sm ms-2">
+                        <i class="bi bi-external-link me-1"></i>Visitar Site
+                    </a>
+                ` : '';
+                
+                const titulo = document.getElementById('tituloAnaliseIndividual');
+                if (titulo) {{
+                    titulo.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-center flex-wrap">
+                            <div class="d-flex align-items-center">
+                                ${{logoHtml}}
+                                <span>Histórico Detalhado - ${{parceiro}} (${{moeda}}) - ${{historicoCompleto.length}} registros</span>
+                            </div>
+                            <div class="mt-2 mt-md-0">
+                                ${{botaoSite}}
+                            </div>
+                        </div>
+                    `;
+                }}
                 
                 if (historicoCompleto.length === 0) {{
-                    document.getElementById('tabelaIndividual').innerHTML = 
-                        '<div class="p-3 text-center text-muted">Nenhum dado encontrado para este parceiro.</div>';
+                    const container = document.getElementById('tabelaIndividual');
+                    if (container) {{
+                        container.innerHTML = '<div class="p-3 text-center text-muted">Nenhum dado encontrado para este parceiro.</div>';
+                    }}
+                    document.getElementById('estatisticasParceiro').style.display = 'none';
                     return;
                 }}
                 
@@ -3176,12 +4357,160 @@ class LiveloAnalytics:
                 
                 html += '</tbody></table>';
                 
-                document.getElementById('tabelaIndividual').innerHTML = html;
+                const container = document.getElementById('tabelaIndividual');
+                if (container) {{
+                    container.innerHTML = html;
+                }}
+                
+                // Gerar estatísticas do parceiro
+                gerarEstatisticasParceiro(dadosResumo[0], historicoCompleto, parceiro, moeda);
             }}
             
-            // Download Excel - Individual
+            function gerarEstatisticasParceiro(dadosAtuais, historicoCompleto, parceiro, moeda) {{
+                const container = document.getElementById('conteudoEstatisticas');
+                const cardContainer = document.getElementById('estatisticasParceiro');
+                
+                if (!dadosAtuais || !container) {{
+                    cardContainer.style.display = 'none';
+                    return;
+                }}
+                
+                // Calcular estatísticas
+                const totalRegistros = historicoCompleto.length;
+                const ofertas = historicoCompleto.filter(item => item.Oferta === 'Sim');
+                const totalOfertas = ofertas.length;
+                const frequenciaOfertas = (totalOfertas / totalRegistros * 100).toFixed(1);
+                
+                const primeiroRegistro = new Date(historicoCompleto[historicoCompleto.length - 1].Timestamp);
+                const ultimoRegistro = new Date(historicoCompleto[0].Timestamp);
+                const diasNoSite = Math.ceil((ultimoRegistro - primeiroRegistro) / (1000 * 60 * 60 * 24)) + 1;
+                
+                const pontosUnicos = [...new Set(historicoCompleto.map(item => item.Pontos))];
+                const valoresUnicos = [...new Set(historicoCompleto.map(item => item.Valor))];
+                
+                const mediaPontos = ofertas.length > 0 ? (ofertas.reduce((sum, item) => sum + item.Pontos, 0) / ofertas.length).toFixed(1) : '0';
+                const maiorPontuacao = Math.max(...historicoCompleto.map(item => item.Pontos));
+                const menorPontuacao = Math.min(...historicoCompleto.map(item => item.Pontos));
+                
+                const categoria = dadosAtuais.Categoria_Dimensao || 'Não categorizado';
+                const tier = dadosAtuais.Tier || 'N/A';
+                
+                let html = `
+                    <div class="row g-3">
+                        <!-- Informações Básicas -->
+                        <div class="col-md-6">
+                            <div class="border rounded p-3" style="background: var(--bg-primary);">
+                                <h6 class="text-primary mb-3">
+                                    <i class="bi bi-info-circle me-2"></i>Informações Básicas
+                                </h6>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <small class="text-muted">Categoria:</small>
+                                        <div class="fw-bold">${{categoria}}</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Tier:</small>
+                                        <div class="fw-bold">${{tier}}</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Dias no site:</small>
+                                        <div class="fw-bold">${{diasNoSite}} dias</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Total registros:</small>
+                                        <div class="fw-bold">${{totalRegistros}}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Estatísticas de Ofertas -->
+                        <div class="col-md-6">
+                            <div class="border rounded p-3" style="background: var(--bg-primary);">
+                                <h6 class="text-success mb-3">
+                                    <i class="bi bi-graph-up me-2"></i>Análise de Ofertas
+                                </h6>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <small class="text-muted">Total ofertas:</small>
+                                        <div class="fw-bold text-success">${{totalOfertas}}</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Frequência:</small>
+                                        <div class="fw-bold">${{frequenciaOfertas}}%</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Média pontos:</small>
+                                        <div class="fw-bold">${{mediaPontos}} pts</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Status atual:</small>
+                                        <div class="fw-bold ${{dadosAtuais.Tem_Oferta_Hoje ? 'text-success' : 'text-muted'}}">
+                                            ${{dadosAtuais.Tem_Oferta_Hoje ? 'Com oferta' : 'Sem oferta'}}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Pontuação -->
+                        <div class="col-md-6">
+                            <div class="border rounded p-3" style="background: var(--bg-primary);">
+                                <h6 class="text-warning mb-3">
+                                    <i class="bi bi-star me-2"></i>Análise de Pontuação
+                                </h6>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <small class="text-muted">Atual:</small>
+                                        <div class="fw-bold text-primary">${{dadosAtuais.Pontos_Atual}} pts</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Por moeda:</small>
+                                        <div class="fw-bold">${{dadosAtuais.Pontos_por_Moeda_Atual.toFixed(2)}}</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Maior:</small>
+                                        <div class="fw-bold text-success">${{maiorPontuacao}} pts</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Menor:</small>
+                                        <div class="fw-bold text-danger">${{menorPontuacao}} pts</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Variabilidade -->
+                        <div class="col-md-6">
+                            <div class="border rounded p-3" style="background: var(--bg-primary);">
+                                <h6 class="text-info mb-3">
+                                    <i class="bi bi-activity me-2"></i>Variabilidade
+                                </h6>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <small class="text-muted">Pontos únicos:</small>
+                                        <div class="fw-bold">${{pontosUnicos.length}}</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Valores únicos:</small>
+                                        <div class="fw-bold">${{valoresUnicos.length}}</div>
+                                    </div>
+                                    <div class="col-12">
+                                        <small class="text-muted">Categoria estratégica:</small>
+                                        <div class="fw-bold">${{dadosAtuais.Categoria_Estrategica}}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                container.innerHTML = html;
+                cardContainer.style.display = 'block';
+            }}
+            
             function downloadAnaliseIndividual() {{
-                const chaveUnica = document.getElementById('parceiroSelect').value;
+                const chaveUnica = document.getElementById('parceiroSelect')?.value;
                 if (!chaveUnica) {{
                     alert('Selecione um parceiro primeiro');
                     return;
@@ -3212,7 +4541,6 @@ class LiveloAnalytics:
                 XLSX.writeFile(wb, nomeArquivo);
             }}
             
-            // Download dados RAW (COM DADOS DAS DIMENSÕES)
             function downloadDadosRaw() {{
                 const wb = XLSX.utils.book_new();
                 const ws = XLSX.utils.json_to_sheet(dadosRawCompletos);
@@ -3222,54 +4550,89 @@ class LiveloAnalytics:
                 XLSX.writeFile(wb, `livelo_dados_raw_${{dataAtual}}.xlsx`);
             }}
             
-            // Auto-carregar primeiro parceiro quando entrar na aba
-            document.querySelector('[data-bs-target="#individual"]').addEventListener('click', function() {{
-                setTimeout(() => {{
-                    const select = document.getElementById('parceiroSelect');
-                    if (select && select.selectedIndex === 0 && select.options.length > 1) {{
-                        select.selectedIndex = 1;
-                        carregarAnaliseIndividual();
-                    }}
-                }}, 200);
-            }});
+            // ========== FUNÇÕES GLOBAIS PARA COMPATIBILIDADE ==========
+            function toggleFavorito(parceiro, moeda) {{ 
+                if (carteiraManager) {{
+                    return carteiraManager.toggleFavorito(parceiro, moeda);
+                }}
+                return false;
+            }}
             
-            // INICIALIZAÇÃO PRINCIPAL
+            function removerFavorito(chaveUnica) {{ 
+                if (carteiraManager) {{
+                    return carteiraManager.removerFavorito(chaveUnica);
+                }}
+            }}
+            
+            function limparCarteira() {{ 
+                if (carteiraManager) {{
+                    return carteiraManager.limparCarteira();
+                }}
+            }}
+            
+            // ========== INICIALIZAÇÃO PRINCIPAL ==========
             document.addEventListener('DOMContentLoaded', function() {{
-                console.log('[App] Inicializando Livelo Analytics...');
+                console.log('[App] DOM carregado, inicializando...');
                 
-                // 1. Inicializar tema
-                initTheme();
-                
-                // 2. Inicializar sistema de carteira
-                carteiraManager.init();
-                
-                // 3. Configurar filtros e event listeners
-                setTimeout(() => {{
-                    // Event listeners para filtros
-                    const filtros = [
-                        'filtroCategoriaComplex', 'filtroTier', 'filtroOferta', 
-                        'filtroExperiencia', 'filtroFrequencia'
-                    ];
+                try {{
+                    // 1. Inicializar tema
+                    initTheme();
+                    console.log('[App] Tema inicializado');
                     
-                    filtros.forEach(filtroId => {{
-                        const elemento = document.getElementById(filtroId);
-                        if (elemento) {{
-                            elemento.addEventListener('change', aplicarFiltros);
+                    // 2. Criar e inicializar gerenciador da carteira
+                    carteiraManager = new LiveloCarteiraManager();
+                    window.carteiraManager = carteiraManager; // Expor globalmente
+                    carteiraManager.init();
+                    console.log('[App] Carteira inicializada');
+                    
+                    // 4. Inicializar tooltips
+                    initTooltips();
+                    console.log('[App] Tooltips inicializados');
+                    
+                    // 5. Configurar filtros após um delay para garantir que os elementos existam
+                    setTimeout(() => {{
+                        // Event listeners para busca
+                        const searchInput = document.getElementById('searchInput');
+                        if (searchInput) {{
+                            searchInput.addEventListener('input', aplicarFiltros);
+                            console.log('[App] Busca configurada');
                         }}
-                    }});
-                    
-                    // Atualizar ícones de favoritos nas abas
-                    document.querySelectorAll('[data-bs-toggle="pill"]').forEach(tab => {{
-                        tab.addEventListener('shown.bs.tab', function() {{
-                            setTimeout(() => {{
-                                carteiraManager.updateAllIcons();
-                            }}, 200);
+                        
+                        // Event listeners para filtros
+                        const filtros = [
+                            'filtroCategoriaComplex', 'filtroTier', 'filtroOferta', 
+                            'filtroExperiencia', 'filtroFrequencia'
+                        ];
+                        
+                        filtros.forEach(filtroId => {{
+                            const elemento = document.getElementById(filtroId);
+                            if (elemento) {{
+                                elemento.addEventListener('change', aplicarFiltros);
+                            }}
                         }});
-                    }});
+                        console.log('[App] Filtros configurados');
+                        
+                        // Auto-carregar primeiro parceiro na análise individual
+                        const selectParceiroTab = document.querySelector('[data-bs-target="#individual"]');
+                        if (selectParceiroTab) {{
+                            selectParceiroTab.addEventListener('click', function() {{
+                                setTimeout(() => {{
+                                    const select = document.getElementById('parceiroSelect');
+                                    if (select && select.selectedIndex === 0 && select.options.length > 1) {{
+                                        select.selectedIndex = 1;
+                                        carregarAnaliseIndividual();
+                                    }}
+                                }}, 200);
+                            }});
+                        }}
+                        
+                    }}, 1000);
                     
-                }}, 500);
-                
-                console.log('[App] Inicialização completa');
+                    console.log('[App] Inicialização completa!');
+                    
+                }} catch (error) {{
+                    console.error('[App] Erro na inicialização:', error);
+                }}
             }});
         </script>
     </body>
@@ -3324,6 +4687,9 @@ class LiveloAnalytics:
             return False
 
 def main():
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(script_dir)
+
     arquivo_entrada = sys.argv[1] if len(sys.argv) > 1 else "livelo_parceiros.xlsx"
     
     analytics = LiveloAnalytics(arquivo_entrada)
