@@ -1,8 +1,8 @@
-name: Livelo Partners Scraper
+name: Livelo Analytics | Firebase Integrado
 on:
   schedule:
-    - cron: '0 12 * * *'  # Executa todos os dias às 12:00 UTC
-  workflow_dispatch:  # Permite execução manual
+    - cron: '0 10 * * *'  # 7h Brasil = 10h UTC
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -10,9 +10,12 @@ permissions:
   id-token: write
 
 jobs:
-  scrape:
+  # JOB 1: PIPELINE PRINCIPAL (Scraping + Análise + GitHub Pages)
+  pipeline_principal:
     runs-on: ubuntu-latest
-    timeout-minutes: 45  # Timeout de 45 minutos
+    timeout-minutes: 45
+    outputs:
+      pipeline_success: ${{ steps.validation.outputs.success }}
     steps:
       - name: Checkout do repositório
         uses: actions/checkout@v4
@@ -25,7 +28,7 @@ jobs:
       - name: Configurar Chrome
         uses: browser-actions/setup-chrome@latest
         
-      - name: Instalar dependências
+      - name: Instalar dependências principais
         run: |
           pip install selenium webdriver-manager pandas openpyxl selenium-stealth plotly numpy requests
           python -c "import selenium; print(f'Selenium version: {selenium.__version__}')"
@@ -35,25 +38,26 @@ jobs:
         run: |
           mkdir -p logs
           mkdir -p relatorios
+          mkdir -p public
           
-      - name: Executar pipeline principal
+      - name: Executar pipeline principal (main.py)
         run: |
           echo "🚀 Iniciando pipeline Livelo Analytics..."
           python main.py 2>&1 | tee pipeline.log
           echo "PIPELINE_STATUS=$?" >> $GITHUB_ENV
         continue-on-error: true
           
-      - name: Verificar resultados do pipeline
+      - name: Validação rigorosa dos resultados
+        id: validation
         run: |
-          echo "📊 Verificando resultados do pipeline..."
+          echo "📊 Validando resultados do pipeline..."
           
           if [ "$PIPELINE_STATUS" = "0" ]; then
             echo "✅ Pipeline executado com sucesso"
             echo "PIPELINE_OK=true" >> $GITHUB_ENV
           else
-            echo "❌ Pipeline com problemas"
+            echo "❌ Pipeline falhou - saindo imediatamente"
             echo "PIPELINE_OK=false" >> $GITHUB_ENV
-            # FALHA EXPLÍCITA - main.py já fez todas as validações
             exit 1
           fi
           
@@ -68,14 +72,15 @@ jobs:
             exit 1
           fi
           
-          # Verificar tamanho do HTML (verificação rápida adicional)
+          # Verificar tamanho do HTML
           if [ -f "relatorio_livelo.html" ]; then
             size=$(stat -f%z "relatorio_livelo.html" 2>/dev/null || stat -c%s "relatorio_livelo.html" 2>/dev/null || echo "0")
             if [ "$size" -gt 50000 ]; then
               echo "✅ HTML válido: $size bytes"
+              echo "success=true" >> $GITHUB_OUTPUT
             else
               echo "❌ HTML muito pequeno: $size bytes"
-              echo "FILES_OK=false" >> $GITHUB_ENV
+              echo "success=false" >> $GITHUB_OUTPUT
               exit 1
             fi
           fi
@@ -87,56 +92,47 @@ jobs:
           # Criar estrutura para GitHub Pages
           mkdir -p _site
           
-          # Copiar arquivos para _site (estrutura do GitHub Pages)
+          # Copiar arquivos para _site
           cp relatorio_livelo.html _site/index.html
           cp livelo_parceiros.xlsx _site/
           
-          # Criar também a pasta relatorios se necessário
+          # Criar também a pasta relatorios
           mkdir -p _site/relatorios
           cp relatorio_livelo.html _site/relatorios/livelo_analytics.html
           
           echo "✅ Arquivos preparados para GitHub Pages"
-          echo "📂 Estrutura do _site:"
           ls -la _site/
-          ls -la _site/relatorios/ 2>/dev/null || echo "Pasta relatorios criada"
           
-      # Upload dos arquivos como artifact
       - name: Upload páginas como artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: _site
           
-      - name: Configurar Git para commit
+      - name: Configurar Git e fazer commit
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
           
-      - name: Commit e push dos arquivos atualizados
-        run: |
-          echo "💾 Fazendo commit dos arquivos atualizados..."
-          
           timestamp=$(date +"%d/%m/%Y %H:%M")
           
-          # Adicionar arquivos (manter estrutura original também)
           git add -f relatorio_livelo.html
           git add -f livelo_parceiros.xlsx
           git add -f *.log 2>/dev/null || true
           
-          # Verificar se há mudanças para comitar
           if git diff --staged --quiet; then
             echo "ℹ️ Nenhuma mudança detectada para commit"
           else
-            echo "📝 Mudanças detectadas, fazendo commit..."
+            echo "📝 Fazendo commit das mudanças..."
             
             git commit -m "📊 Atualização Livelo Analytics - $timestamp
 
             ✅ Pipeline: Sucesso com validação rigorosa
             📄 Arquivos: Validados (min 50 parceiros)
             📁 Preparado para GitHub Pages
+            🔥 Firebase: Será processado no próximo job
             ⏰ Executado: $timestamp"
             
             # Push com retry
-            echo "🚀 Fazendo push das mudanças..."
             for i in {1..3}; do
               if git push; then
                 echo "✅ Push realizado com sucesso (tentativa $i)"
@@ -152,33 +148,12 @@ jobs:
             done
           fi
 
-      - name: Firebase opcional (sem erro se falhar)
-        if: env.FIREBASE_PROJECT_ID != ''
-        run: |
-          echo "🔥 Tentando Firebase (opcional)..."
-          
-          if [ -n "${{ secrets.FIREBASE_PROJECT_ID }}" ]; then
-            echo "Firebase Project ID detectado"
-            
-            if [ -f "notification_sender.py" ]; then
-              echo "📱 Executando notificações..."
-              timeout 300 python notification_sender.py || echo "⚠️ Notificações falharam (não crítico)"
-            fi
-          else
-            echo "ℹ️ Firebase não configurado (normal)"
-          fi
-        env:
-          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          FIREBASE_VAPID_KEY: ${{ secrets.FIREBASE_VAPID_KEY }}
-        continue-on-error: true
-
-  # Deploy no GitHub Pages
-  deploy:
-    needs: scrape
+  # JOB 2: DEPLOY GITHUB PAGES
+  deploy_github_pages:
+    needs: pipeline_principal
     runs-on: ubuntu-latest
-    timeout-minutes: 10  # Timeout de 10 minutos para deploy
-    if: needs.scrape.result == 'success'
+    timeout-minutes: 10
+    if: needs.pipeline_principal.outputs.pipeline_success == 'true'
     
     environment:
       name: github-pages
@@ -188,12 +163,239 @@ jobs:
       - name: Deploy para GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-        
-  # Job de resumo final
-  summary:
-    needs: [scrape, deploy]
+
+  # JOB 3: FIREBASE INTEGRATION
+  firebase_integration:
+    needs: [pipeline_principal, deploy_github_pages]
     runs-on: ubuntu-latest
-    timeout-minutes: 5  # Timeout de 5 minutos para summary
+    timeout-minutes: 15
+    if: always() && needs.pipeline_principal.outputs.pipeline_success == 'true'
+    
+    steps:
+      - name: Checkout para Firebase
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js para Firebase
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Setup Python para notificações
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          
+      - name: Instalar dependências Firebase
+        run: |
+          npm install
+          npm install -g firebase-tools
+          pip install firebase-admin pandas openpyxl
+          
+      - name: Verificar configuração Firebase
+        run: |
+          echo "🔍 Verificando configuração Firebase..."
+          
+          if [ -n "${{ secrets.FIREBASE_PROJECT_ID }}" ]; then
+            echo "✅ FIREBASE_PROJECT_ID configurado"
+            echo "FIREBASE_CONFIGURED=true" >> $GITHUB_ENV
+          else
+            echo "ℹ️ FIREBASE_PROJECT_ID não configurado"
+            echo "FIREBASE_CONFIGURED=false" >> $GITHUB_ENV
+          fi
+          
+          if [ -n "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" ]; then
+            echo "✅ FIREBASE_SERVICE_ACCOUNT configurado"
+          else
+            echo "ℹ️ FIREBASE_SERVICE_ACCOUNT não configurado"
+            echo "FIREBASE_CONFIGURED=false" >> $GITHUB_ENV
+          fi
+          
+          if [ -n "${{ secrets.FIREBASE_TOKEN }}" ]; then
+            echo "✅ FIREBASE_TOKEN configurado"
+          else
+            echo "ℹ️ FIREBASE_TOKEN não configurado"
+          fi
+          
+      - name: Criar configuração Firebase dinâmica
+        if: env.FIREBASE_CONFIGURED == 'true'
+        run: |
+          echo "🔧 Criando configuração Firebase dinâmica..."
+          
+          # Criar firebase-config.js com valores reais
+          mkdir -p sender
+          cat > sender/firebase-config.js << 'EOF'
+          import { initializeApp } from 'firebase/app';
+          import { getMessaging } from 'firebase/messaging';
+          import { getFirestore } from 'firebase/firestore';
+
+          const firebaseConfig = {
+            apiKey: "${{ secrets.FIREBASE_API_KEY }}",
+            authDomain: "${{ secrets.FIREBASE_AUTH_DOMAIN }}",
+            projectId: "${{ secrets.FIREBASE_PROJECT_ID }}",
+            storageBucket: "${{ secrets.FIREBASE_STORAGE_BUCKET }}",
+            messagingSenderId: "${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}",
+            appId: "${{ secrets.FIREBASE_APP_ID }}",
+            measurementId: "${{ secrets.FIREBASE_MEASUREMENT_ID }}"
+          };
+
+          const app = initializeApp(firebaseConfig);
+          const messaging = getMessaging(app);
+          const db = getFirestore(app);
+
+          export { messaging, db };
+          EOF
+          
+          # Criar Service Worker com valores reais
+          cat > public/firebase-messaging-sw.js << 'EOF'
+          importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
+          importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
+
+          const firebaseConfig = {
+            apiKey: "${{ secrets.FIREBASE_API_KEY }}",
+            authDomain: "${{ secrets.FIREBASE_AUTH_DOMAIN }}",
+            projectId: "${{ secrets.FIREBASE_PROJECT_ID }}",
+            storageBucket: "${{ secrets.FIREBASE_STORAGE_BUCKET }}",
+            messagingSenderId: "${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}",
+            appId: "${{ secrets.FIREBASE_APP_ID }}",
+            measurementId: "${{ secrets.FIREBASE_MEASUREMENT_ID }}"
+          };
+
+          firebase.initializeApp(firebaseConfig);
+          const messaging = firebase.messaging();
+
+          messaging.onBackgroundMessage((payload) => {
+            const notificationTitle = payload.notification?.title || 'Livelo Analytics';
+            const notificationOptions = {
+              body: payload.notification?.body || 'Novas atualizações disponíveis',
+              icon: '/icon-192.png',
+              tag: 'livelo-update'
+            };
+            self.registration.showNotification(notificationTitle, notificationOptions);
+          });
+          EOF
+          
+          # Criar arquivo HTML principal com configuração injetada
+          if [ -f "relatorio_livelo.html" ]; then
+            echo "📝 Injetando configuração Firebase no HTML..."
+            
+            # Backup do original
+            cp relatorio_livelo.html relatorio_livelo_original.html
+            
+            # Criar script de configuração
+            cat > firebase_config_inject.js << 'EOF'
+          window.FIREBASE_CONFIG = {
+            apiKey: "${{ secrets.FIREBASE_API_KEY }}",
+            authDomain: "${{ secrets.FIREBASE_AUTH_DOMAIN }}",
+            projectId: "${{ secrets.FIREBASE_PROJECT_ID }}",
+            storageBucket: "${{ secrets.FIREBASE_STORAGE_BUCKET }}",
+            messagingSenderId: "${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}",
+            appId: "${{ secrets.FIREBASE_APP_ID }}",
+            measurementId: "${{ secrets.FIREBASE_MEASUREMENT_ID }}"
+          };
+          window.FIREBASE_VAPID_KEY = "${{ secrets.FIREBASE_VAPID_KEY }}";
+          console.log('🔥 Configuração Firebase injetada com sucesso');
+          EOF
+            
+            # Injetar no head do HTML
+            sed -i '/<head>/a\    <script src="firebase_config_inject.js"></script>' relatorio_livelo.html
+            
+            echo "✅ Configuração Firebase injetada no HTML"
+          fi
+          
+          echo "✅ Configuração Firebase dinâmica criada"
+          
+      - name: Baixar arquivos do pipeline principal
+        run: |
+          echo "📥 Sincronizando arquivos do pipeline..."
+          
+          # Os arquivos já estão no repositório após o commit do job anterior
+          git pull origin main || echo "Nenhuma mudança para sincronizar"
+          
+          if [ -f "relatorio_livelo.html" ] && [ -f "livelo_parceiros.xlsx" ]; then
+            echo "✅ Arquivos encontrados localmente"
+            ls -la *.html *.xlsx
+          else
+            echo "❌ Arquivos não encontrados após sincronização"
+            exit 1
+          fi
+          
+      - name: Preparar deploy Firebase Hosting
+        if: env.FIREBASE_CONFIGURED == 'true'
+        run: |
+          echo "📁 Preparando deploy Firebase Hosting..."
+          
+          # Copiar arquivos para public/
+          cp relatorio_livelo.html public/index.html
+          cp livelo_parceiros.xlsx public/
+          
+          # Copiar arquivo de configuração
+          if [ -f "firebase_config_inject.js" ]; then
+            cp firebase_config_inject.js public/
+          fi
+          
+          # Verificar estrutura
+          echo "📂 Estrutura do public/:"
+          ls -la public/
+          
+      - name: Deploy Firebase Hosting
+        if: env.FIREBASE_CONFIGURED == 'true'
+        run: |
+          echo "🚀 Fazendo deploy Firebase Hosting..."
+          
+          # Deploy usando token Firebase CLI
+          if [ -n "${{ secrets.FIREBASE_TOKEN }}" ]; then
+            echo "🔑 Usando FIREBASE_TOKEN para deploy"
+            firebase deploy --only hosting --token "${{ secrets.FIREBASE_TOKEN }}" --project "${{ secrets.FIREBASE_PROJECT_ID }}" --non-interactive
+          else
+            echo "⚠️ FIREBASE_TOKEN não configurado - tentando service account"
+            
+            # Usar service account para autenticação
+            echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > firebase-service-account.json
+            export GOOGLE_APPLICATION_CREDENTIALS="firebase-service-account.json"
+            
+            firebase deploy --only hosting --project "${{ secrets.FIREBASE_PROJECT_ID }}" --non-interactive
+          fi
+          
+          echo "✅ Deploy Firebase Hosting concluído"
+          echo "🌐 Acesse: https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app/"
+        continue-on-error: true
+        env:
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          
+      - name: Executar notificações Firebase
+        if: env.FIREBASE_CONFIGURED == 'true'
+        run: |
+          echo "📱 Executando sistema de notificações..."
+          
+          # Verificar se arquivo de notificações existe
+          if [ -f "notification_sender.py" ]; then
+            echo "🔔 Executando notification_sender.py..."
+            timeout 300 python notification_sender.py || echo "⚠️ Notificações concluídas ou timeout (não crítico)"
+          else
+            echo "ℹ️ notification_sender.py não encontrado"
+          fi
+          
+          echo "✅ Sistema de notificações processado"
+        env:
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FIREBASE_VAPID_KEY: ${{ secrets.FIREBASE_VAPID_KEY }}
+        continue-on-error: true
+        
+      - name: Limpar arquivos temporários
+        if: always()
+        run: |
+          rm -f firebase-service-account.json 2>/dev/null || true
+          rm -f firebase_config_inject.js 2>/dev/null || true
+          echo "🧹 Arquivos temporários removidos"
+
+  # JOB 4: RESUMO FINAL
+  summary:
+    needs: [pipeline_principal, deploy_github_pages, firebase_integration]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
     if: always()
     
     steps:
@@ -204,37 +406,47 @@ jobs:
           echo "====================================="
           echo "⏰ Concluído: $(date +'%d/%m/%Y %H:%M:%S')"
           echo ""
-          echo "📊 STATUS:"
-          echo "Pipeline: ${{ needs.scrape.result == 'success' && '✅ Sucesso' || '❌ FALHOU - Email de notificação enviado' }}"
-          echo "Deploy: ${{ needs.deploy.result == 'success' && '✅ Realizado' || '❌ Não realizado devido a falha anterior' }}"
+          echo "📊 STATUS DOS JOBS:"
+          echo "├─ Pipeline Principal: ${{ needs.pipeline_principal.result == 'success' && '✅ SUCESSO' || '❌ FALHOU' }}"
+          echo "├─ GitHub Pages: ${{ needs.deploy_github_pages.result == 'success' && '✅ SUCESSO' || '❌ FALHOU' }}"
+          echo "└─ Firebase: ${{ needs.firebase_integration.result == 'success' && '✅ SUCESSO' || '⚪ OPCIONAL' }}"
           echo ""
           
-          if [ "${{ needs.scrape.result }}" = "success" ]; then
-            echo "🌐 ACESSO:"
-            echo "📱 GitHub Pages: https://gcaressato.github.io/livelo_scraper/"
+          if [ "${{ needs.pipeline_principal.result }}" = "success" ]; then
+            echo "🌐 SISTEMA ONLINE:"
+            echo "├─ GitHub Pages: https://gcaressato.github.io/livelo_scraper/"
+            
+            if [ "${{ needs.firebase_integration.result }}" = "success" ]; then
+              echo "├─ Firebase Hosting: https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app/"
+              echo "└─ Notificações Push: ✅ Ativas"
+            else
+              echo "└─ Firebase: ⚪ Não configurado (opcional)"
+            fi
+            
             echo ""
-            echo "📁 ESTRUTURA:"
-            echo "✅ index.html (página principal)"
-            echo "✅ livelo_parceiros.xlsx (dados validados)"
-            echo "✅ relatorios/livelo_analytics.html (relatório)"
+            echo "🎯 FUNCIONALIDADES ATIVAS:"
+            echo "├─ ✅ Scraping automático"
+            echo "├─ ✅ Análises e relatórios"
+            echo "├─ ✅ Sistema de favoritos"
+            echo "├─ ✅ Deploy automático"
+            
+            if [ "${{ needs.firebase_integration.result }}" = "success" ]; then
+              echo "└─ ✅ Notificações push"
+            else
+              echo "└─ ⚪ Notificações push (desabilitadas)"
+            fi
+            
             echo ""
-            echo "🔍 VALIDAÇÃO RIGOROSA:"
-            echo "✅ Mínimo 50 parceiros coletados"
-            echo "✅ Arquivos com tamanho adequado"
-            echo "✅ Conteúdo HTML bem formado"
-            echo "✅ Dados Excel estruturados"
-            echo ""
-            echo "✅ Deploy realizado com sucesso!"
-            echo "::notice::Sistema Livelo Analytics online - Dados validados com sucesso"
+            echo "✅ SISTEMA FUNCIONANDO NORMALMENTE!"
+            echo "::notice::Livelo Analytics online - Todos os dados atualizados"
           else
-            echo "❌ FALHA DETECTADA NO SCRAPING!"
-            echo "🚨 Possíveis causas:"
-            echo "   • Poucos dados coletados (< 50 parceiros)"
-            echo "   • Mudanças na estrutura do site"
-            echo "   • Problemas de conectividade"
-            echo "   • Bloqueio por anti-bot"
-            echo "   • Erro no script de scraping"
-            echo "   • Arquivos com tamanho insuficiente"
+            echo "❌ FALHA NO PIPELINE PRINCIPAL!"
             echo ""
-            echo "::error::Scraping falhou - Verificar logs detalhados para causa específica"
+            echo "🚨 AÇÕES NECESSÁRIAS:"
+            echo "├─ Verificar logs detalhados do job 'pipeline_principal'"
+            echo "├─ Analisar possíveis mudanças no site da Livelo"
+            echo "├─ Verificar conectividade e dependências"
+            echo "└─ Corrigir problemas antes da próxima execução"
+            echo ""
+            echo "::error::Sistema principal falhou - Verificar logs para diagnóstico"
           fi
