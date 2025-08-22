@@ -179,7 +179,7 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-          cache: 'npm'
+          # REMOVIDO: cache: 'npm'
           
       - name: Setup Python para notificações
         uses: actions/setup-python@v4
@@ -188,8 +188,20 @@ jobs:
           
       - name: Instalar dependências Firebase
         run: |
-          npm install
+          # Verificar se package.json existe antes de instalar
+          if [ -f "package.json" ]; then
+            echo "📦 Instalando dependências do package.json..."
+            npm install
+          else
+            echo "📦 package.json não encontrado, criando dependências mínimas..."
+            npm init -y
+            npm install firebase@^9.0.0
+          fi
+          
+          # Instalar Firebase CLI globalmente
           npm install -g firebase-tools
+          
+          # Instalar dependências Python
           pip install firebase-admin pandas openpyxl
           
       - name: Verificar configuração Firebase
@@ -217,13 +229,58 @@ jobs:
             echo "ℹ️ FIREBASE_TOKEN não configurado"
           fi
           
+      - name: Criar estrutura Firebase mínima
+        if: env.FIREBASE_CONFIGURED == 'true'
+        run: |
+          echo "🔧 Criando estrutura Firebase..."
+          
+          # Criar firebase.json se não existir
+          if [ ! -f "firebase.json" ]; then
+            echo "📝 Criando firebase.json..."
+            cat > firebase.json << 'EOF'
+          {
+            "hosting": {
+              "public": "public",
+              "ignore": [
+                "firebase.json",
+                "**/.*",
+                "**/node_modules/**"
+              ],
+              "rewrites": [
+                {
+                  "source": "**",
+                  "destination": "/index.html"
+                }
+              ]
+            }
+          }
+          EOF
+          fi
+          
+          # Criar diretório public
+          mkdir -p public
+          
+          # Criar .firebaserc se não existir
+          if [ ! -f ".firebaserc" ]; then
+            echo "📝 Criando .firebaserc..."
+            cat > .firebaserc << EOF
+          {
+            "projects": {
+              "default": "${{ secrets.FIREBASE_PROJECT_ID }}"
+            }
+          }
+          EOF
+          fi
+          
       - name: Criar configuração Firebase dinâmica
         if: env.FIREBASE_CONFIGURED == 'true'
         run: |
           echo "🔧 Criando configuração Firebase dinâmica..."
           
-          # Criar firebase-config.js com valores reais
+          # Criar pasta sender se não existir
           mkdir -p sender
+          
+          # Criar firebase-config.js com valores reais
           cat > sender/firebase-config.js << 'EOF'
           import { initializeApp } from 'firebase/app';
           import { getMessaging } from 'firebase/messaging';
@@ -273,66 +330,42 @@ jobs:
             };
             self.registration.showNotification(notificationTitle, notificationOptions);
           });
+
+          self.addEventListener('notificationclick', (event) => {
+            event.notification.close();
+            if (event.action === 'view') {
+              event.waitUntil(clients.openWindow('https://gcaressato.github.io/livelo_scraper/'));
+            }
+          });
           EOF
-          
-          # Criar arquivo HTML principal com configuração injetada
-          if [ -f "relatorio_livelo.html" ]; then
-            echo "📝 Injetando configuração Firebase no HTML..."
-            
-            # Backup do original
-            cp relatorio_livelo.html relatorio_livelo_original.html
-            
-            # Criar script de configuração
-            cat > firebase_config_inject.js << 'EOF'
-          window.FIREBASE_CONFIG = {
-            apiKey: "${{ secrets.FIREBASE_API_KEY }}",
-            authDomain: "${{ secrets.FIREBASE_AUTH_DOMAIN }}",
-            projectId: "${{ secrets.FIREBASE_PROJECT_ID }}",
-            storageBucket: "${{ secrets.FIREBASE_STORAGE_BUCKET }}",
-            messagingSenderId: "${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}",
-            appId: "${{ secrets.FIREBASE_APP_ID }}",
-            measurementId: "${{ secrets.FIREBASE_MEASUREMENT_ID }}"
-          };
-          window.FIREBASE_VAPID_KEY = "${{ secrets.FIREBASE_VAPID_KEY }}";
-          console.log('🔥 Configuração Firebase injetada com sucesso');
-          EOF
-            
-            # Injetar no head do HTML
-            sed -i '/<head>/a\    <script src="firebase_config_inject.js"></script>' relatorio_livelo.html
-            
-            echo "✅ Configuração Firebase injetada no HTML"
-          fi
           
           echo "✅ Configuração Firebase dinâmica criada"
           
-      - name: Baixar arquivos do pipeline principal
+      - name: Sincronizar arquivos do pipeline
         run: |
           echo "📥 Sincronizando arquivos do pipeline..."
           
-          # Os arquivos já estão no repositório após o commit do job anterior
+          # Pull das mudanças do job anterior
           git pull origin main || echo "Nenhuma mudança para sincronizar"
           
           if [ -f "relatorio_livelo.html" ] && [ -f "livelo_parceiros.xlsx" ]; then
-            echo "✅ Arquivos encontrados localmente"
+            echo "✅ Arquivos encontrados"
             ls -la *.html *.xlsx
           else
             echo "❌ Arquivos não encontrados após sincronização"
+            echo "📁 Arquivos disponíveis:"
+            ls -la
             exit 1
           fi
           
-      - name: Preparar deploy Firebase Hosting
+      - name: Preparar deploy Firebase
         if: env.FIREBASE_CONFIGURED == 'true'
         run: |
-          echo "📁 Preparando deploy Firebase Hosting..."
+          echo "📁 Preparando deploy Firebase..."
           
           # Copiar arquivos para public/
           cp relatorio_livelo.html public/index.html
           cp livelo_parceiros.xlsx public/
-          
-          # Copiar arquivo de configuração
-          if [ -f "firebase_config_inject.js" ]; then
-            cp firebase_config_inject.js public/
-          fi
           
           # Verificar estrutura
           echo "📂 Estrutura do public/:"
@@ -341,43 +374,32 @@ jobs:
       - name: Deploy Firebase Hosting
         if: env.FIREBASE_CONFIGURED == 'true'
         run: |
-          echo "🚀 Fazendo deploy Firebase Hosting..."
+          echo "🚀 Fazendo deploy Firebase..."
           
-          # Deploy usando token Firebase CLI
+          # Usar token Firebase CLI se disponível
           if [ -n "${{ secrets.FIREBASE_TOKEN }}" ]; then
-            echo "🔑 Usando FIREBASE_TOKEN para deploy"
+            echo "🔑 Usando FIREBASE_TOKEN"
             firebase deploy --only hosting --token "${{ secrets.FIREBASE_TOKEN }}" --project "${{ secrets.FIREBASE_PROJECT_ID }}" --non-interactive
           else
-            echo "⚠️ FIREBASE_TOKEN não configurado - tentando service account"
-            
-            # Usar service account para autenticação
-            echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > firebase-service-account.json
-            export GOOGLE_APPLICATION_CREDENTIALS="firebase-service-account.json"
-            
-            firebase deploy --only hosting --project "${{ secrets.FIREBASE_PROJECT_ID }}" --non-interactive
+            echo "⚠️ FIREBASE_TOKEN não encontrado"
+            echo "ℹ️ Configure FIREBASE_TOKEN nos secrets para deploy automático"
+            exit 0
           fi
           
-          echo "✅ Deploy Firebase Hosting concluído"
-          echo "🌐 Acesse: https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app/"
+          echo "✅ Deploy Firebase concluído"
+          echo "🌐 URL: https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app/"
         continue-on-error: true
-        env:
-          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          
-      - name: Executar notificações Firebase
+        
+      - name: Executar notificações
         if: env.FIREBASE_CONFIGURED == 'true'
         run: |
-          echo "📱 Executando sistema de notificações..."
+          echo "📱 Executando notificações..."
           
-          # Verificar se arquivo de notificações existe
           if [ -f "notification_sender.py" ]; then
-            echo "🔔 Executando notification_sender.py..."
-            timeout 300 python notification_sender.py || echo "⚠️ Notificações concluídas ou timeout (não crítico)"
+            timeout 300 python notification_sender.py || echo "Notificações concluídas"
           else
-            echo "ℹ️ notification_sender.py não encontrado"
+            echo "notification_sender.py não encontrado"
           fi
-          
-          echo "✅ Sistema de notificações processado"
         env:
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
