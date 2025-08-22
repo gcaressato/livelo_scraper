@@ -18,3 +18,4 @@ const messaging = getMessaging(app);
 const db = getFirestore(app);
 
 export { messaging, db };
+export const db = getFirestore(app);
