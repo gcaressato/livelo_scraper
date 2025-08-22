@@ -1,0 +1,22 @@
+{
+  "name": "firebase-sender",
+  "version": "1.0.0",
+  "description": "Sistema de notificações Firebase para app de parceiros",
+  "main": "sender/sender-main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "firebase serve --only hosting",
+    "build": "echo 'Build completed'",
+    "deploy": "firebase deploy",
+    "test": "echo 'Testing sender system'"
+  },
+  "dependencies": {
+    "firebase": "^9.0.0"
+  },
+  "devDependencies": {
+    "firebase-tools": "^12.0.0"
+  },
+  "keywords": ["firebase", "notifications", "pwa", "parceiros"],
+  "author": "Seu Nome",
+  "license": "MIT"
+}
