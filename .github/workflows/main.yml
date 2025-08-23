@@ -8,6 +8,8 @@ permissions:
   contents: write
   pages: write
   id-token: write
+  actions: read
+  deployments: write
 
 jobs:
   # JOB 1: PIPELINE PRINCIPAL (Scraping + Análise + GitHub Pages)
@@ -119,6 +121,25 @@ jobs:
         with:
           path: _site
           
+      - name: Debug artifact content
+        run: |
+          echo "📋 Conteúdo detalhado do artifact (_site):"
+          find _site -type f -name "*.html" -exec sh -c 'echo "📄 {}: $(wc -c < "{}" | tr -d " ") bytes"' \;
+          
+          echo ""
+          echo "📋 Estrutura completa:"
+          find _site -type f | head -20
+          
+          echo ""
+          echo "🔍 Verificando se index.html tem conteúdo válido:"
+          if [ -f "_site/index.html" ]; then
+            head -10 _site/index.html
+            echo "..."
+            echo "Total de linhas: $(wc -l < _site/index.html)"
+          else
+            echo "❌ _site/index.html não encontrado!"
+          fi
+          
       - name: Configurar Git e fazer commit
         run: |
           git config --local user.email "actions@github.com"
@@ -167,7 +188,7 @@ jobs:
   deploy_github_pages:
     needs: pipeline_principal
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     if: needs.pipeline_principal.outputs.pipeline_success == 'true'
     
     environment:
@@ -175,9 +196,90 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
       
     steps:
-      - name: Deploy para GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Verificar artifact antes do deploy
+        run: |
+          echo "🔍 Verificando artifacts disponíveis..."
+          # GitHub Actions disponibiliza info sobre artifacts via API
+          echo "Workflow Run ID: ${{ github.run_id }}"
+          
+      - name: Verificar e ativar GitHub Pages
+        run: |
+          echo "🔍 Verificando status do GitHub Pages..."
+          
+          # Tentar obter informações do Pages
+          pages_status=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/pages" \
+            -w "%{http_code}" -o pages_response.json)
+          
+          echo "Status da API Pages: $pages_status"
+          
+          if [ "$pages_status" = "404" ]; then
+            echo "📝 GitHub Pages não está ativo. Tentando ativar..."
+            
+            # Tentar criar/ativar o GitHub Pages
+            activate_result=$(curl -s -X POST \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              -H "Content-Type: application/json" \
+              "https://api.github.com/repos/${{ github.repository }}/pages" \
+              -d '{"source":{"branch":"gh-pages","path":"/"}}' \
+              -w "%{http_code}" -o activate_response.json)
+            
+            echo "Resultado da ativação: $activate_result"
+            
+            if [ "$activate_result" = "201" ] || [ "$activate_result" = "200" ]; then
+              echo "✅ GitHub Pages ativado com sucesso!"
+            else
+              echo "⚠️ Não foi possível ativar automaticamente"
+              echo "📋 Resposta da API:"
+              cat activate_response.json 2>/dev/null || echo "Sem resposta"
+            fi
+            
+          elif [ "$pages_status" = "200" ]; then
+            echo "✅ GitHub Pages já está ativo"
+            cat pages_response.json 2>/dev/null || echo "Status obtido com sucesso"
+          else
+            echo "⚠️ Status inesperado: $pages_status"
+            cat pages_response.json 2>/dev/null || echo "Resposta não disponível"
+          fi
+          
+          # Limpeza
+          rm -f pages_response.json activate_response.json
+        
+      - name: Verificar deploy e aguardar propagação
+        run: |
+          echo "🚀 Deploy concluído!"
+          echo "🌐 URL: ${{ steps.deployment.outputs.page_url }}"
+          echo "📋 Deploy ID: ${{ github.sha }}"
+          
+          # Aguardar alguns segundos para propagação
+          echo "⏳ Aguardando propagação (30 segundos)..."
+          sleep 30
+          
+          # Tentar fazer uma requisição para verificar se está online
+          echo "🔍 Testando se o site está respondendo..."
+          
+          MAX_ATTEMPTS=5
+          ATTEMPT=1
+          
+          while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+            echo "Tentativa $ATTEMPT de $MAX_ATTEMPTS..."
+            
+            if curl -s -f "${{ steps.deployment.outputs.page_url }}" > /dev/null; then
+              echo "✅ Site está respondendo!"
+              break
+            else
+              echo "⏳ Site ainda não está respondendo, aguardando..."
+              sleep 15
+              ATTEMPT=$((ATTEMPT + 1))
+            fi
+          done
+          
+          if [ $ATTEMPT -gt $MAX_ATTEMPTS ]; then
+            echo "⚠️ Site pode levar mais alguns minutos para ficar disponível"
+            echo "💡 Isso é normal com GitHub Pages - aguarde 5-10 minutos"
+          fi
 
   # JOB 3: FIREBASE INTEGRATION
   firebase_integration:
@@ -448,6 +550,7 @@ jobs:
           echo "🎉 RESUMO DA EXECUÇÃO LIVELO ANALYTICS"
           echo "====================================="
           echo "⏰ Concluído: $(date +'%d/%m/%Y %H:%M:%S')"
+          echo "🔗 Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           echo ""
           echo "📊 STATUS DOS JOBS:"
           echo "├─ Pipeline Principal: ${{ needs.pipeline_principal.result == 'success' && '✅ SUCESSO' || '❌ FALHOU' }}"
@@ -458,6 +561,13 @@ jobs:
           if [ "${{ needs.pipeline_principal.result }}" = "success" ]; then
             echo "🌐 SISTEMA ONLINE:"
             echo "├─ GitHub Pages: https://gcaressato.github.io/livelo_scraper/"
+            
+            # Adicionar informação sobre cache
+            if [ "${{ needs.deploy_github_pages.result }}" = "success" ]; then
+              echo "├─ 🕐 Deploy concluído - aguarde 2-5 min para propagação"
+              echo "├─ 💡 Use Ctrl+F5 para forçar atualização do cache"
+              echo "├─ 🔍 Teste em modo anônimo se necessário"
+            fi
             
             if [ "${{ needs.firebase_integration.result }}" = "success" ]; then
               echo "├─ Firebase Hosting: https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app/"
@@ -478,6 +588,13 @@ jobs:
             else
               echo "└─ ⚪ Notificações push (desabilitadas)"
             fi
+            
+            echo ""
+            echo "🔍 DEBUG INFO:"
+            echo "├─ Commit SHA: ${{ github.sha }}"
+            echo "├─ Repository: ${{ github.repository }}"
+            echo "├─ Workflow: ${{ github.workflow }}"
+            echo "└─ Run ID: ${{ github.run_id }}"
             
             echo ""
             echo "✅ SISTEMA FUNCIONANDO NORMALMENTE!"
