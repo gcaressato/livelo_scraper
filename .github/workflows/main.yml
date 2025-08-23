@@ -37,7 +37,6 @@ jobs:
       - name: Criar diretórios necessários
         run: |
           mkdir -p logs
-          mkdir -p relatorios
           mkdir -p public
           
       - name: Executar pipeline principal (main.py)
@@ -62,9 +61,9 @@ jobs:
           fi
           
           # Verificar arquivos críticos
-          if [ -f "relatorio_livelo.html" ] && [ -f "livelo_parceiros.xlsx" ]; then
+          if [ -f "public/index.html" ] && [ -f "livelo_parceiros.xlsx" ]; then
             echo "✅ Arquivos principais encontrados"
-            ls -la *.html *.xlsx
+            ls -la public/index.html *.xlsx
             echo "FILES_OK=true" >> $GITHUB_ENV
           else
             echo "❌ Arquivos principais ausentes"
@@ -73,8 +72,8 @@ jobs:
           fi
           
           # Verificar tamanho do HTML
-          if [ -f "relatorio_livelo.html" ]; then
-            size=$(stat -f%z "relatorio_livelo.html" 2>/dev/null || stat -c%s "relatorio_livelo.html" 2>/dev/null || echo "0")
+          if [ -f "public/index.html" ]; then
+            size=$(stat -f%z "public/index.html" 2>/dev/null || stat -c%s "public/index.html" 2>/dev/null || echo "0")
             if [ "$size" -gt 50000 ]; then
               echo "✅ HTML válido: $size bytes"
               echo "success=true" >> $GITHUB_OUTPUT
@@ -85,28 +84,10 @@ jobs:
             fi
           fi
         
-      - name: Preparar arquivos para GitHub Pages
-        run: |
-          echo "📁 Preparando arquivos para GitHub Pages..."
-          
-          # Criar estrutura para GitHub Pages
-          mkdir -p _site
-          
-          # Copiar arquivos para _site
-          cp relatorio_livelo.html _site/index.html
-          cp livelo_parceiros.xlsx _site/
-          
-          # Criar também a pasta relatorios
-          mkdir -p _site/relatorios
-          cp relatorio_livelo.html _site/relatorios/livelo_analytics.html
-          
-          echo "✅ Arquivos preparados para GitHub Pages"
-          ls -la _site/
-          
       - name: Upload páginas como artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: _site
+          path: public
           
       - name: Configurar Git e fazer commit
         run: |
@@ -115,7 +96,7 @@ jobs:
           
           timestamp=$(date +"%d/%m/%Y %H:%M")
           
-          git add -f relatorio_livelo.html
+          git add -f public/index.html
           git add -f livelo_parceiros.xlsx
           git add -f *.log 2>/dev/null || true
           
@@ -348,28 +329,15 @@ jobs:
           # Pull das mudanças do job anterior
           git pull origin main || echo "Nenhuma mudança para sincronizar"
           
-          if [ -f "relatorio_livelo.html" ] && [ -f "livelo_parceiros.xlsx" ]; then
+          if [ -f "public/index.html" ] && [ -f "livelo_parceiros.xlsx" ]; then
             echo "✅ Arquivos encontrados"
-            ls -la *.html *.xlsx
+            ls -la public/index.html *.xlsx
           else
             echo "❌ Arquivos não encontrados após sincronização"
             echo "📁 Arquivos disponíveis:"
             ls -la
             exit 1
           fi
-          
-      - name: Preparar deploy Firebase
-        if: env.FIREBASE_CONFIGURED == 'true'
-        run: |
-          echo "📁 Preparando deploy Firebase..."
-          
-          # Copiar arquivos para public/
-          cp relatorio_livelo.html public/index.html
-          cp livelo_parceiros.xlsx public/
-          
-          # Verificar estrutura
-          echo "📂 Estrutura do public/:"
-          ls -la public/
           
       - name: Deploy Firebase Hosting
         if: env.FIREBASE_CONFIGURED == 'true'
