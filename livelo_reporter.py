@@ -1275,11 +1275,17 @@ class LiveloAnalytics:
         return html
     
     def gerar_html_completo(self):
-        """Gera HTML completo com todas as funcionalidades e responsividade móvel aprimorada"""
+        """Gera HTML completo com sistema de notificações integrado"""
         dados = self.analytics['dados_completos']
         metricas = self.analytics['metricas']
         graficos = self.analytics['graficos']
         mudancas = self.analytics['mudancas_ofertas']
+        
+        # Constantes de cores (assumindo que estão definidas no self ou como constantes)
+        LIVELO_ROSA = getattr(self, 'LIVELO_ROSA', '#FF0A8C')
+        LIVELO_AZUL = getattr(self, 'LIVELO_AZUL', '#1E40AF') 
+        LIVELO_ROSA_CLARO = getattr(self, 'LIVELO_ROSA_CLARO', '#FFB3E6')
+        LIVELO_AZUL_CLARO = getattr(self, 'LIVELO_AZUL_CLARO', '#60A5FA')
         
         # Converter gráficos para HTML
         graficos_html = {}
@@ -1298,6 +1304,22 @@ class LiveloAnalytics:
         
         # Gerar filtros avançados
         filtros_html = self._gerar_filtros_avancados(dados)
+        
+        # Configurações do Firebase (usando variáveis de ambiente)
+        firebase_api_key = os.getenv('FIREBASE_API_KEY', 'placeholder-will-be-replaced')
+        firebase_auth_domain = os.getenv('FIREBASE_AUTH_DOMAIN', 'placeholder-will-be-replaced')
+        firebase_project_id = os.getenv('FIREBASE_PROJECT_ID', 'placeholder-will-be-replaced')
+        firebase_storage_bucket = os.getenv('FIREBASE_STORAGE_BUCKET', 'placeholder-will-be-replaced')
+        firebase_messaging_sender_id = os.getenv('FIREBASE_MESSAGING_SENDER_ID', 'placeholder-will-be-replaced')
+        firebase_app_id = os.getenv('FIREBASE_APP_ID', 'placeholder-will-be-replaced')
+        firebase_measurement_id = os.getenv('FIREBASE_MEASUREMENT_ID', 'placeholder-will-be-replaced')
+        firebase_vapid_key = os.getenv('FIREBASE_VAPID_KEY', 'placeholder-will-be-replaced')
+        
+        # Formatação de métricas
+        variacao_parceiros_sinal = '+' if metricas['variacao_parceiros'] > 0 else ''
+        variacao_ofertas_sinal = '+' if metricas['variacao_ofertas'] > 0 else ''
+        cor_variacao_parceiros = 'green' if metricas['variacao_parceiros'] >= 0 else 'red'
+        cor_variacao_ofertas = 'green' if metricas['variacao_ofertas'] >= 0 else 'red'
         
         html = f"""
     <!DOCTYPE html>
@@ -1341,6 +1363,155 @@ class LiveloAnalytics:
                 --border-color: #6b7280;
                 --shadow: rgba(0,0,0,0.4);
                 --shadow-hover: rgba(0,0,0,0.6);
+            }}
+            
+            /* SISTEMA DE NOTIFICAÇÕES */
+            .notification-settings {{
+                position: fixed;
+                top: 15px;
+                left: 15px;
+                z-index: 1050;
+                background: var(--bg-card);
+                border: 2px solid var(--border-color);
+                border-radius: 10px;
+                box-shadow: 0 4px 15px var(--shadow-hover);
+                transition: all 0.3s ease;
+                max-width: 350px;
+                display: none;
+            }}
+            
+            .notification-settings.show {{
+                display: block;
+                animation: slideInFromLeft 0.3s ease;
+            }}
+            
+            .notification-trigger {{
+                position: fixed;
+                top: 15px;
+                left: 15px;
+                z-index: 1049;
+                background: var(--bg-card);
+                border: 2px solid var(--border-color);
+                border-radius: 25px;
+                width: 45px;
+                height: 45px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 10px var(--shadow);
+            }}
+            
+            .notification-trigger:hover {{
+                transform: scale(1.05);
+                box-shadow: 0 4px 15px var(--shadow-hover);
+                border-color: var(--livelo-rosa);
+            }}
+            
+            .notification-trigger i {{
+                font-size: 1.1rem;
+                color: var(--text-primary);
+                transition: all 0.3s ease;
+            }}
+            
+            .notification-trigger:hover i {{
+                color: var(--livelo-rosa);
+            }}
+            
+            .notification-trigger.active {{
+                border-color: var(--livelo-rosa);
+                background: var(--livelo-rosa);
+            }}
+            
+            .notification-trigger.active i {{
+                color: white;
+            }}
+            
+            .notification-header {{
+                background: var(--livelo-rosa);
+                color: white;
+                padding: 12px 15px;
+                border-radius: 8px 8px 0 0;
+                display: flex;
+                justify-content: between;
+                align-items: center;
+            }}
+            
+            .notification-body {{
+                padding: 15px;
+            }}
+            
+            .notification-status {{
+                display: flex;
+                align-items: center;
+                margin-bottom: 15px;
+                padding: 10px;
+                border-radius: 8px;
+                font-size: 0.9rem;
+            }}
+            
+            .notification-status.enabled {{
+                background: #d4edda;
+                color: #155724;
+                border: 1px solid #c3e6cb;
+            }}
+            
+            .notification-status.disabled {{
+                background: #f8d7da;
+                color: #721c24;
+                border: 1px solid #f5c6cb;
+            }}
+            
+            .notification-controls {{
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }}
+            
+            .notification-controls .btn {{
+                font-size: 0.85rem;
+                padding: 8px 15px;
+            }}
+            
+            .token-display {{
+                background: var(--bg-secondary);
+                padding: 8px 10px;
+                border-radius: 6px;
+                font-family: monospace;
+                font-size: 0.7rem;
+                word-break: break-all;
+                margin: 8px 0;
+                color: var(--text-secondary);
+            }}
+            
+            .notification-config {{
+                margin-top: 15px;
+                padding-top: 15px;
+                border-top: 1px solid var(--border-color);
+            }}
+            
+            .notification-config label {{
+                display: flex;
+                align-items: center;
+                font-size: 0.8rem;
+                margin-bottom: 8px;
+                cursor: pointer;
+            }}
+            
+            .notification-config input[type="checkbox"] {{
+                margin-right: 8px;
+            }}
+            
+            @keyframes slideInFromLeft {{
+                from {{
+                    opacity: 0;
+                    transform: translateX(-100%);
+                }}
+                to {{
+                    opacity: 1;
+                    transform: translateX(0);
+                }}
             }}
             
             /* TOOLTIPS HÍBRIDOS */
@@ -1425,6 +1596,20 @@ class LiveloAnalytics:
                     font-size: 0.8rem;
                     padding: 4px;
                     margin-left: 2px;
+                }}
+                
+                .notification-settings {{
+                    top: 10px;
+                    left: 10px;
+                    right: 10px;
+                    max-width: none;
+                }}
+                
+                .notification-trigger {{
+                    top: 10px;
+                    left: 10px;
+                    width: 40px;
+                    height: 40px;
                 }}
             }}
             
@@ -1519,6 +1704,7 @@ class LiveloAnalytics:
                     margin-bottom: 8px;
                 }}
             }}
+            
             .favorito-btn {{
                 background: none;
                 border: none;
@@ -1615,7 +1801,7 @@ class LiveloAnalytics:
                 padding: 8px 12px; 
             }}
             
-            /* THEME TOGGLE - RESPONSIVO MELHORADO */
+            /* THEME TOGGLE - AJUSTADO PARA NÃO CONFLITAR */
             .theme-toggle {{
                 position: fixed;
                 top: 15px;
@@ -2312,6 +2498,46 @@ class LiveloAnalytics:
                 border-color: var(--livelo-rosa) !important;
             }}
             
+            [data-theme="dark"] .notification-settings {{
+                background: #374151 !important;
+                border-color: #6b7280 !important;
+                color: #f9fafb !important;
+            }}
+            
+            [data-theme="dark"] .notification-trigger {{
+                background: #374151 !important;
+                border-color: #6b7280 !important;
+            }}
+            
+            [data-theme="dark"] .notification-trigger:hover {{
+                border-color: var(--livelo-rosa) !important;
+            }}
+            
+            [data-theme="dark"] .notification-trigger.active {{
+                background: var(--livelo-rosa) !important;
+            }}
+            
+            [data-theme="dark"] .notification-status.enabled {{
+                background: #065f46;
+                color: #d1fae5;
+                border-color: #10b981;
+            }}
+            
+            [data-theme="dark"] .notification-status.disabled {{
+                background: #7f1d1d;
+                color: #fecaca;
+                border-color: #dc2626;
+            }}
+            
+            [data-theme="dark"] .token-display {{
+                background: #4b5563 !important;
+                color: #d1d5db !important;
+            }}
+            
+            [data-theme="dark"] .notification-config {{
+                border-top-color: #6b7280 !important;
+            }}
+            
             .footer {{
                 text-align: center;
                 margin-top: 30px;
@@ -2359,6 +2585,13 @@ class LiveloAnalytics:
                     height: 42px;
                 }}
                 
+                .notification-trigger {{
+                    top: 12px;
+                    left: 12px;
+                    width: 42px;
+                    height: 42px;
+                }}
+                
                 .container-fluid {{ 
                     padding: 6px 10px; 
                 }}
@@ -2369,6 +2602,10 @@ class LiveloAnalytics:
                 
                 .metric-label {{
                     font-size: 0.65rem;
+                }}
+                
+                .metric-change {{
+                    font-size: 0.6rem;
                 }}
                 
                 .metric-card {{
@@ -2405,7 +2642,18 @@ class LiveloAnalytics:
                     height: 40px;
                 }}
                 
+                .notification-trigger {{
+                    top: 10px;
+                    left: 10px;
+                    width: 40px;
+                    height: 40px;
+                }}
+                
                 .theme-toggle i {{
+                    font-size: 1rem;
+                }}
+                
+                .notification-trigger i {{
                     font-size: 1rem;
                 }}
                 
@@ -2626,6 +2874,30 @@ class LiveloAnalytics:
                     margin-right: 8px;
                 }}
                 
+                /* NOTIFICAÇÕES RESPONSIVAS */
+                .notification-settings {{
+                    max-width: calc(100vw - 20px);
+                    font-size: 0.85rem;
+                }}
+                
+                .notification-header {{
+                    padding: 10px 12px;
+                }}
+                
+                .notification-body {{
+                    padding: 12px;
+                }}
+                
+                .notification-controls .btn {{
+                    font-size: 0.8rem;
+                    padding: 6px 12px;
+                }}
+                
+                .token-display {{
+                    font-size: 0.65rem;
+                    padding: 6px 8px;
+                }}
+                
                 /* MARGENS E GAPS */
                 .row.g-2 {{
                     margin: 0 -3px;
@@ -2661,7 +2933,14 @@ class LiveloAnalytics:
                     height: 35px;
                 }}
                 
-                .theme-toggle i {{
+                .notification-trigger {{
+                    top: 8px;
+                    left: 8px;
+                    width: 35px;
+                    height: 35px;
+                }}
+                
+                .theme-toggle i, .notification-trigger i {{
                     font-size: 0.9rem;
                 }}
                 
@@ -2798,6 +3077,20 @@ class LiveloAnalytics:
                 .carteira-pontos {{
                     font-size: 0.75rem;
                 }}
+                
+                /* NOTIFICAÇÕES ULTRA COMPACTAS */
+                .notification-settings {{
+                    font-size: 0.8rem;
+                }}
+                
+                .notification-header {{
+                    padding: 8px 10px;
+                    font-size: 0.85rem;
+                }}
+                
+                .notification-body {{
+                    padding: 10px;
+                }}
             }}
             
             @media (max-width: 400px) {{
@@ -2895,6 +3188,67 @@ class LiveloAnalytics:
         </style>
     </head>
     <body>
+        <!-- Botão de Notificações (Engrenagem) -->
+        <div class="notification-trigger" onclick="toggleNotificationSettings()" title="Configurações de Notificações">
+            <i class="bi bi-gear-fill" id="notification-icon"></i>
+        </div>
+        
+        <!-- Painel de Configurações de Notificações -->
+        <div class="notification-settings" id="notificationSettings">
+            <div class="notification-header">
+                <div style="display: flex; justify-content: between; align-items: center;">
+                    <div>
+                        <i class="bi bi-bell-fill me-2"></i>
+                        <strong>Sistema de Notificações</strong>
+                    </div>
+                    <button onclick="toggleNotificationSettings()" style="background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer;">×</button>
+                </div>
+            </div>
+            
+            <div class="notification-body">
+                <div class="notification-status disabled" id="notificationStatus">
+                    <i class="bi bi-bell-slash me-2"></i>
+                    <span id="statusText">Notificações desativadas</span>
+                </div>
+                
+                <div class="notification-controls">
+                    <button class="btn btn-primary" id="enableNotificationsBtn" onclick="enableNotifications()">
+                        <i class="bi bi-bell me-2"></i>
+                        Ativar Notificações
+                    </button>
+                    
+                    <button class="btn btn-danger" id="disableNotificationsBtn" onclick="disableNotifications()" style="display: none;">
+                        <i class="bi bi-bell-slash me-2"></i>
+                        Desativar Notificações
+                    </button>
+                </div>
+                
+                <div class="notification-config" id="notificationConfig" style="display: none;">
+                    <h6 style="font-size: 0.9rem; margin-bottom: 10px;">Configurações:</h6>
+                    <label>
+                        <input type="checkbox" id="notifyOffers" checked>
+                        Notificar sobre ofertas especiais
+                    </label>
+                    <label>
+                        <input type="checkbox" id="notifyChanges" checked>
+                        Notificar sobre mudanças de pontos
+                    </label>
+                    <label>
+                        <input type="checkbox" id="onlyFavorites" checked>
+                        Apenas parceiros favoritos
+                    </label>
+                    
+                    <div style="margin-top: 12px;">
+                        <small style="color: var(--text-secondary);">Token FCM:</small>
+                        <div class="token-display" id="tokenDisplay">Ative as notificações para gerar token</div>
+                        <button class="btn btn-sm btn-outline-primary" id="copyTokenBtn" onclick="copyToken()" style="display: none;">
+                            <i class="bi bi-copy me-1"></i>Copiar Token
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <!-- Theme Toggle -->
         <div class="theme-toggle" onclick="toggleTheme()" title="Alternar tema claro/escuro">
             <i class="bi bi-sun-fill" id="theme-icon"></i>
@@ -2926,8 +3280,8 @@ class LiveloAnalytics:
                             <i class="bi bi-info-circle help-icon" data-tooltip="parceiros-hoje"></i>
                             <div class="custom-tooltip">Total de parceiros com dados coletados hoje no site da Livelo</div>
                         </div>
-                        <div class="metric-change" style="color: {'green' if metricas['variacao_parceiros'] >= 0 else 'red'};">
-                            {'+' if metricas['variacao_parceiros'] > 0 else ''}{metricas['variacao_parceiros']} vs ontem
+                        <div class="metric-change" style="color: {cor_variacao_parceiros};">
+                            {variacao_parceiros_sinal}{metricas['variacao_parceiros']} vs ontem
                         </div>
                     </div>
                 </div>
@@ -2939,8 +3293,8 @@ class LiveloAnalytics:
                             <i class="bi bi-info-circle help-icon" data-tooltip="com-oferta"></i>
                             <div class="custom-tooltip">Parceiros que estão oferecendo pontos extras ou promoções especiais hoje</div>
                         </div>
-                        <div class="metric-change" style="color: {'green' if metricas['variacao_ofertas'] >= 0 else 'red'};">
-                            {'+' if metricas['variacao_ofertas'] > 0 else ''}{metricas['variacao_ofertas']} vs ontem
+                        <div class="metric-change" style="color: {cor_variacao_ofertas};">
+                            {variacao_ofertas_sinal}{metricas['variacao_ofertas']} vs ontem
                         </div>
                     </div>
                 </div>
@@ -3261,19 +3615,369 @@ class LiveloAnalytics:
             </div>
         </div>
         
-        <script>
+        <script type="module">
+            // ========== IMPORTS E CONFIGURAÇÃO FIREBASE ==========
+            import {{ initializeApp }} from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js';
+            import {{ getMessaging, getToken, onMessage }} from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging.js';
+            import {{ 
+                getFirestore, 
+                collection, 
+                doc, 
+                setDoc, 
+                getDoc, 
+                updateDoc,
+                onSnapshot,
+                serverTimestamp 
+            }} from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js';
+
+            // CONFIGURAÇÃO DO FIREBASE - SERÁ INJETADA PELO GITHUB ACTIONS
+            const firebaseConfig = {{
+                apiKey: "{firebase_api_key}",
+                authDomain: "{firebase_auth_domain}",
+                projectId: "{firebase_project_id}",
+                storageBucket: "{firebase_storage_bucket}",
+                messagingSenderId: "{firebase_messaging_sender_id}",
+                appId: "{firebase_app_id}",
+                measurementId: "{firebase_measurement_id}"
+            }};
+
+            // VAPID KEY
+            const vapidKey = "{firebase_vapid_key}";
+
+            // INICIALIZAR FIREBASE
+            const app = initializeApp(firebaseConfig);
+            const messaging = getMessaging(app);
+            const db = getFirestore(app);
+
             // ========== VARIÁVEIS GLOBAIS ==========
             const todosOsDados = {dados_json};
             const dadosHistoricosCompletos = {dados_historicos_json};
             const dadosRawCompletos = {dados_raw_json};
             let parceiroSelecionado = null;
             let carteiraManager = null;
+            let notificationSystem = null;
             
             // Expor dados globalmente
             window.todosOsDados = todosOsDados;
             window.dadosHistoricosCompletos = dadosHistoricosCompletos;
             window.dadosRawCompletos = dadosRawCompletos;
+            window.db = db;
+            window.messaging = messaging;
             
+            // ========== SISTEMA DE NOTIFICAÇÕES COM FIRESTORE ==========
+            class FirebaseNotificationSystem {{
+                constructor() {{
+                    this.isEnabled = false;
+                    this.token = null;
+                    this.userId = null;
+                    this.messaging = messaging;
+                    this.db = db;
+                    this.vapidKey = vapidKey;
+                    this.maxRetries = 3;
+                    this.currentRetries = 0;
+                }}
+
+                async initialize() {{
+                    console.log('[Notifications] Inicializando sistema...');
+                    
+                    // Gerar ou recuperar userId
+                    this.userId = localStorage.getItem('livelo-user-id') || this.generateUserId();
+                    localStorage.setItem('livelo-user-id', this.userId);
+                    
+                    // Verificar se já tem token salvo
+                    this.token = localStorage.getItem('fcm-token');
+                    
+                    if (this.token) {{
+                        this.isEnabled = true;
+                        this.updateUI();
+                    }}
+                    
+                    // Configurar listener para mensagens em foreground
+                    onMessage(this.messaging, (payload) => {{
+                        console.log('[Notifications] Mensagem recebida em foreground:', payload);
+                        this.showNotification(payload);
+                    }});
+                    
+                    console.log('[Notifications] Sistema inicializado');
+                }}
+
+                generateUserId() {{
+                    return 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                }}
+
+                async requestPermission() {{
+                    console.log('[Notifications] Solicitando permissão...');
+                    
+                    try {{
+                        const permission = await Notification.requestPermission();
+                        
+                        if (permission === 'granted') {{
+                            console.log('[Notifications] Permissão concedida');
+                            return await this.getToken();
+                        }} else {{
+                            console.log('[Notifications] Permissão negada');
+                            throw new Error('Permissão para notificações negada');
+                        }}
+                    }} catch (error) {{
+                        console.error('[Notifications] Erro ao solicitar permissão:', error);
+                        throw error;
+                    }}
+                }}
+
+                async getToken() {{
+                    try {{
+                        const token = await getToken(this.messaging, {{ 
+                            vapidKey: this.vapidKey 
+                        }});
+                        
+                        if (token) {{
+                            this.token = token;
+                            console.log('[Notifications] Token FCM obtido:', token.substring(0, 20) + '...');
+                            return token;
+                        }} else {{
+                            throw new Error('Não foi possível obter o token FCM');
+                        }}
+                    }} catch (error) {{
+                        console.error('[Notifications] Erro ao obter token:', error);
+                        throw error;
+                    }}
+                }}
+
+                async saveToFirestore(config = {{}}) {{
+                    if (!this.token || !this.userId) {{
+                        console.warn('[Notifications] Token ou userId não disponível para salvar no Firestore');
+                        return false;
+                    }}
+
+                    try {{
+                        const userData = {{
+                            user_id: this.userId,
+                            fcm_token: this.token,
+                            favoritos: JSON.parse(localStorage.getItem('livelo-favoritos') || '[]'),
+                            configuracoes: {{
+                                notificar_ofertas: config.notifyOffers !== undefined ? config.notifyOffers : true,
+                                notificar_mudancas: config.notifyChanges !== undefined ? config.notifyChanges : true,
+                                apenas_favoritos: config.onlyFavorites !== undefined ? config.onlyFavorites : true,
+                                ativo: true
+                            }},
+                            ativo: true,
+                            created_at: serverTimestamp(),
+                            updated_at: serverTimestamp()
+                        }};
+
+                        await setDoc(doc(this.db, 'usuarios', this.userId), userData, {{ merge: true }});
+                        console.log('[Notifications] Dados salvos no Firestore');
+                        return true;
+                    }} catch (error) {{
+                        console.error('[Notifications] Erro ao salvar no Firestore:', error);
+                        return false;
+                    }}
+                }}
+
+                async enable() {{
+                    this.currentRetries = 0;
+                    return await this.attemptEnable();
+                }}
+
+                async attemptEnable() {{
+                    try {{
+                        console.log(`[Notifications] Tentativa ${{this.currentRetries + 1}}/${{this.maxRetries}} de ativar notificações`);
+                        
+                        // 1. Solicitar permissão e obter token
+                        const token = await this.requestPermission();
+                        
+                        // 2. Salvar no localStorage
+                        localStorage.setItem('fcm-token', token);
+                        
+                        // 3. Obter configurações atuais
+                        const config = {{
+                            notifyOffers: document.getElementById('notifyOffers')?.checked ?? true,
+                            notifyChanges: document.getElementById('notifyChanges')?.checked ?? true,
+                            onlyFavorites: document.getElementById('onlyFavorites')?.checked ?? true
+                        }};
+                        
+                        // 4. Salvar no Firestore
+                        const firestoreSuccess = await this.saveToFirestore(config);
+                        
+                        // 5. Atualizar estado
+                        this.isEnabled = true;
+                        this.updateUI();
+                        
+                        showToast('Notificações ativadas com sucesso!', 'success');
+                        
+                        if (firestoreSuccess) {{
+                            console.log('[Notifications] ✅ Sistema completo ativado (FCM + Firestore)');
+                        }} else {{
+                            console.log('[Notifications] ⚠️ FCM ativado, Firestore com problemas');
+                        }}
+                        
+                        return true;
+                        
+                    }} catch (error) {{
+                        console.error(`[Notifications] Erro na tentativa ${{this.currentRetries + 1}}:`, error);
+                        
+                        if (this.currentRetries < this.maxRetries - 1) {{
+                            this.currentRetries++;
+                            showToast(`Tentativa ${{this.currentRetries}}/${{this.maxRetries}}... Tentando novamente`, 'info');
+                            
+                            // Aguardar um pouco antes da próxima tentativa
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                            return await this.attemptEnable();
+                        }} else {{
+                            showToast(`Erro ao ativar notificações: ${{error.message}}`, 'error');
+                            return false;
+                        }}
+                    }}
+                }}
+
+                async disable() {{
+                    try {{
+                        // 1. Remover do localStorage
+                        localStorage.removeItem('fcm-token');
+                        
+                        // 2. Desativar no Firestore (mas manter os dados)
+                        if (this.userId) {{
+                            try {{
+                                await updateDoc(doc(this.db, 'usuarios', this.userId), {{
+                                    ativo: false,
+                                    updated_at: serverTimestamp()
+                                }});
+                                console.log('[Notifications] Usuário desativado no Firestore');
+                            }} catch (error) {{
+                                console.warn('[Notifications] Erro ao desativar no Firestore:', error);
+                            }}
+                        }}
+                        
+                        // 3. Atualizar estado
+                        this.isEnabled = false;
+                        this.token = null;
+                        this.updateUI();
+                        
+                        showToast('Notificações desativadas', 'info');
+                        console.log('[Notifications] Sistema desativado');
+                        
+                    }} catch (error) {{
+                        console.error('[Notifications] Erro ao desativar:', error);
+                        showToast('Erro ao desativar notificações', 'error');
+                    }}
+                }}
+
+                async saveConfig() {{
+                    if (!this.isEnabled || !this.userId) return;
+
+                    try {{
+                        const config = {{
+                            notificar_ofertas: document.getElementById('notifyOffers')?.checked ?? true,
+                            notificar_mudancas: document.getElementById('notifyChanges')?.checked ?? true,
+                            apenas_favoritos: document.getElementById('onlyFavorites')?.checked ?? true,
+                            ativo: true
+                        }};
+
+                        await updateDoc(doc(this.db, 'usuarios', this.userId), {{
+                            configuracoes: config,
+                            updated_at: serverTimestamp()
+                        }});
+
+                        showToast('Configurações salvas!', 'success');
+                        console.log('[Notifications] Configurações atualizadas no Firestore');
+                    }} catch (error) {{
+                        console.error('[Notifications] Erro ao salvar configurações:', error);
+                        showToast('Erro ao salvar configurações', 'error');
+                    }}
+                }}
+
+                showNotification(payload) {{
+                    const {{ title, body, icon }} = payload.notification || {{}};
+                    
+                    if ('serviceWorker' in navigator) {{
+                        navigator.serviceWorker.ready.then((registration) => {{
+                            registration.showNotification(title || 'Livelo Analytics', {{
+                                body: body || 'Você tem atualizações sobre seus parceiros favoritos',
+                                icon: icon || '/icon-192.png',
+                                badge: '/badge-72.png',
+                                tag: 'livelo-update',
+                                requireInteraction: true,
+                                actions: [
+                                    {{
+                                        action: 'view',
+                                        title: 'Ver Ofertas'
+                                    }},
+                                    {{
+                                        action: 'dismiss',
+                                        title: 'Dispensar'
+                                    }}
+                                ]
+                            }});
+                        }});
+                    }}
+                }}
+
+                updateUI() {{
+                    const trigger = document.getElementById('notification-icon');
+                    const status = document.getElementById('notificationStatus');
+                    const statusText = document.getElementById('statusText');
+                    const enableBtn = document.getElementById('enableNotificationsBtn');
+                    const disableBtn = document.getElementById('disableNotificationsBtn');
+                    const config = document.getElementById('notificationConfig');
+                    const tokenDisplay = document.getElementById('tokenDisplay');
+                    const copyBtn = document.getElementById('copyTokenBtn');
+
+                    if (this.isEnabled) {{
+                        // UI para estado ATIVADO
+                        if (trigger) {{
+                            trigger.className = 'bi bi-gear-fill';
+                            trigger.closest('.notification-trigger').classList.add('active');
+                        }}
+                        
+                        if (status) {{
+                            status.className = 'notification-status enabled';
+                            status.innerHTML = '<i class="bi bi-bell-fill me-2"></i><span>Notificações ativadas</span>';
+                        }}
+                        
+                        if (enableBtn) enableBtn.style.display = 'none';
+                        if (disableBtn) disableBtn.style.display = 'block';
+                        if (config) config.style.display = 'block';
+                        
+                        if (tokenDisplay && this.token) {{
+                            tokenDisplay.textContent = this.token.substring(0, 30) + '...';
+                            if (copyBtn) copyBtn.style.display = 'inline-block';
+                        }}
+                    }} else {{
+                        // UI para estado DESATIVADO
+                        if (trigger) {{
+                            trigger.className = 'bi bi-gear';
+                            trigger.closest('.notification-trigger').classList.remove('active');
+                        }}
+                        
+                        if (status) {{
+                            status.className = 'notification-status disabled';
+                            status.innerHTML = '<i class="bi bi-bell-slash me-2"></i><span>Notificações desativadas</span>';
+                        }}
+                        
+                        if (enableBtn) enableBtn.style.display = 'block';
+                        if (disableBtn) disableBtn.style.display = 'none';
+                        if (config) config.style.display = 'none';
+                        
+                        if (tokenDisplay) {{
+                            tokenDisplay.textContent = 'Ative as notificações para gerar token';
+                            if (copyBtn) copyBtn.style.display = 'none';
+                        }}
+                    }}
+                }}
+
+                getDebugInfo() {{
+                    return {{
+                        isEnabled: this.isEnabled,
+                        hasToken: !!this.token,
+                        userId: this.userId,
+                        tokenPreview: this.token ? this.token.substring(0, 20) + '...' : null,
+                        permission: Notification.permission,
+                        serviceWorkerSupport: 'serviceWorker' in navigator,
+                        firebaseConfig: firebaseConfig.projectId !== 'placeholder-will-be-replaced'
+                    }};
+                }}
+            }}
+
             // ========== CLASSE GERENCIADOR DA CARTEIRA - VERSÃO CORRIGIDA ==========
             class LiveloCarteiraManager {{
                 constructor() {{
@@ -3281,7 +3985,7 @@ class LiveloAnalytics:
                     this.maxFavoritos = 10;
                     this.observers = [];
                     this.dadosDisponiveis = false;
-                    this.maxTentativas = 10; // LIMITE MÁXIMO DE TENTATIVAS
+                    this.maxTentativas = 10;
                     this.tentativasAtuais = 0;
                     console.log('[Carteira] Construtor executado, favoritos:', this.favoritos.length);
                 }}
@@ -3302,6 +4006,14 @@ class LiveloAnalytics:
                     try {{
                         localStorage.setItem('livelo-favoritos', JSON.stringify(this.favoritos));
                         console.log('[Carteira] Favoritos salvos no localStorage:', this.favoritos);
+                        
+                        // Também salvar no Firestore se o sistema de notificações estiver ativo
+                        if (notificationSystem && notificationSystem.isEnabled) {{
+                            notificationSystem.saveToFirestore().catch(error => {{
+                                console.warn('[Carteira] Erro ao sincronizar favoritos com Firestore:', error);
+                            }});
+                        }}
+                        
                         this.notifyObservers();
                     }} catch (error) {{
                         console.error('[Carteira] Erro ao salvar favoritos:', error);
@@ -3415,7 +4127,6 @@ class LiveloAnalytics:
                     }});
                 }}
 
-                // FUNÇÃO PRINCIPAL CORRIGIDA COM LIMITE DE TENTATIVAS
                 updateCarteira() {{
                     console.log('[Carteira] Iniciando atualização da carteira...');
                     
@@ -3447,14 +4158,11 @@ class LiveloAnalytics:
                     
                     console.log('[Carteira] Processando', this.favoritos.length, 'favoritos');
                     
-                    // RESETAR CONTADOR DE TENTATIVAS
                     this.tentativasAtuais = 0;
                     
-                    // AGUARDAR DADOS ESTAREM DISPONÍVEIS COM LIMITE
                     const processarFavoritos = () => {{
                         this.tentativasAtuais++;
                         
-                        // VERIFICAR MÚLTIPLAS FONTES DE DADOS
                         const dadosDisponivel1 = window.todosOsDados && Array.isArray(window.todosOsDados) && window.todosOsDados.length > 0;
                         const dadosDisponivel2 = window.dados && Array.isArray(window.dados) && window.dados.length > 0;
                         const dadosDisponivel3 = typeof todosOsDados !== 'undefined' && Array.isArray(todosOsDados) && todosOsDados.length > 0;
@@ -3482,9 +4190,6 @@ class LiveloAnalytics:
                                         <p class="text-muted">Os dados não foram carregados corretamente. Recarregue a página.</p>
                                         <button class="btn btn-sm btn-outline-primary" onclick="location.reload()">
                                             <i class="bi bi-arrow-clockwise"></i> Recarregar Página
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-info ms-2" onclick="carteiraManager.debugInfo()">
-                                            <i class="bi bi-bug"></i> Debug Info
                                         </button>
                                     </div>
                                 `;
@@ -3528,9 +4233,6 @@ class LiveloAnalytics:
                                     <i class="bi bi-exclamation-triangle" style="font-size: 3rem; color: #ffc107; margin-bottom: 15px; display: block;"></i>
                                     <h6>Favoritos não encontrados</h6>
                                     <p class="text-muted">Os dados dos favoritos não foram encontrados. Isso pode acontecer se os parceiros não estão mais disponíveis hoje.</p>
-                                    <button class="btn btn-sm btn-outline-primary" onclick="carteiraManager.debugInfo()">
-                                        <i class="bi bi-bug"></i> Debug Info
-                                    </button>
                                     <button class="btn btn-sm btn-outline-danger ms-2" onclick="carteiraManager.limparCarteira()">
                                         <i class="bi bi-trash"></i> Limpar Carteira
                                     </button>
@@ -3622,82 +4324,13 @@ class LiveloAnalytics:
                     container.innerHTML = html;
                 }}
 
-                // FUNÇÃO DE DEBUG MELHORADA
-                debugInfo() {{
-                    console.log('=== DEBUG CARTEIRA DETALHADO ===');
-                    console.log('📊 Estado da Carteira:');
-                    console.log('  - Favoritos salvos:', this.favoritos);
-                    console.log('  - Total de favoritos:', this.favoritos.length);
-                    console.log('  - Max favoritos:', this.maxFavoritos);
-                    console.log('  - Tentativas atuais:', this.tentativasAtuais);
-                    console.log('  - Max tentativas:', this.maxTentativas);
-                    
-                    console.log('\\n🗂️ Verificação de Dados:');
-                    console.log('  - window.todosOsDados existe:', !!window.todosOsDados);
-                    console.log('  - window.todosOsDados é array:', Array.isArray(window.todosOsDados));
-                    console.log('  - window.todosOsDados tamanho:', window.todosOsDados ? window.todosOsDados.length : 0);
-                    console.log('  - window.dados existe:', !!window.dados);
-                    console.log('  - todosOsDados (local) existe:', typeof todosOsDados !== 'undefined');
-                    
-                    if (window.todosOsDados && window.todosOsDados.length > 0) {{
-                        console.log('\\n📋 Primeiros 5 parceiros disponíveis:');
-                        window.todosOsDados.slice(0, 5).forEach((item, index) => {{
-                            console.log(`  ${{index + 1}}. ${{item.Parceiro}} (${{item.Moeda}})`);
-                        }});
-                    }}
-                    
-                    console.log('\\n🏠 Containers DOM:');
-                    console.log('  - listaFavoritos:', !!document.getElementById('listaFavoritos'));
-                    console.log('  - contadorFavoritos:', !!document.getElementById('contadorFavoritos'));
-                    console.log('  - graficoCarteira:', !!document.getElementById('graficoCarteira'));
-                    
-                    console.log('\\n🔍 Verificação de Favoritos nos Dados:');
-                    if (this.favoritos.length === 0) {{
-                        console.log('  - Nenhum favorito para verificar');
-                    }} else {{
-                        this.favoritos.forEach(chaveUnica => {{
-                            const [parceiro, moeda] = chaveUnica.split('|');
-                            const existe = window.todosOsDados ? window.todosOsDados.find(item => 
-                                item.Parceiro === parceiro && item.Moeda === moeda
-                            ) : null;
-                            console.log(`  - ${{chaveUnica}}: ${{existe ? '✅ ENCONTRADO' : '❌ NÃO ENCONTRADO'}}`);
-                        }});
-                    }}
-                    
-                    console.log('\\n🔧 LocalStorage:');
-                    try {{
-                        const saved = localStorage.getItem('livelo-favoritos');
-                        console.log('  - Conteúdo salvo:', saved);
-                        console.log('  - Parse válido:', !!JSON.parse(saved || '[]'));
-                    }} catch (e) {{
-                        console.log('  - ERRO no localStorage:', e.message);
-                    }}
-                    
-                    console.log('\\n🎯 Próximas Ações:');
-                    if (!window.todosOsDados || !Array.isArray(window.todosOsDados)) {{
-                        console.log('  - PROBLEMA: Dados não disponíveis');
-                        console.log('  - SOLUÇÃO: Recarregar página ou verificar carregamento dos dados');
-                    }} else if (this.favoritos.length === 0) {{
-                        console.log('  - INFO: Nenhum favorito adicionado ainda');
-                    }} else {{
-                        console.log('  - INFO: Tentando forçar atualização da carteira...');
-                        setTimeout(() => {{
-                            this.updateCarteira();
-                        }}, 100);
-                    }}
-                    
-                    console.log('================================');
-                }}
-
                 init() {{
                     console.log('[Carteira] Inicializando sistema...');
                     
-                    // Aguardar um pouco para os dados estarem prontos
                     setTimeout(() => {{
                         this.updateCarteira();
                         this.setupEventListeners();
                         
-                        // Aguardar mais um pouco para os ícones estarem no DOM
                         setTimeout(() => {{
                             this.updateAllIcons();
                         }}, 500);
@@ -3709,7 +4342,6 @@ class LiveloAnalytics:
                 setupEventListeners() {{
                     console.log('[Carteira] Configurando event listeners...');
                     
-                    // Event delegation para botões de favoritos
                     document.addEventListener('click', (e) => {{
                         const btn = e.target.closest('.favorito-btn');
                         if (btn) {{
@@ -3729,13 +4361,11 @@ class LiveloAnalytics:
                         }}
                     }});
                     
-                    // Listeners para mudanças de aba
                     document.querySelectorAll('[data-bs-toggle="pill"]').forEach(tab => {{
                         tab.addEventListener('shown.bs.tab', (e) => {{
                             console.log('[Carteira] Aba mudou para:', e.target.getAttribute('data-bs-target'));
                             setTimeout(() => {{
                                 this.updateAllIcons();
-                                // Se mudou para aba da carteira, atualizar
                                 if (e.target.getAttribute('data-bs-target') === '#carteira') {{
                                     this.updateCarteira();
                                 }}
@@ -3746,24 +4376,7 @@ class LiveloAnalytics:
                     console.log('[Carteira] Event listeners configurados');
                 }}
             }}
-            
-            // ========== FUNÇÃO DE DEBUG GLOBAL ==========
-            function debugCarteira() {{
-                console.log('=== DEBUG CARTEIRA GLOBAL ===');
-                if (window.carteiraManager) {{
-                    window.carteiraManager.debugInfo();
-                }} else {{
-                    console.log('carteiraManager não está disponível!');
-                    console.log('Variáveis globais disponíveis:');
-                    console.log('- todosOsDados:', !!window.todosOsDados);
-                    console.log('- dadosHistoricosCompletos:', !!window.dadosHistoricosCompletos);
-                }}
-                console.log('===============================');
-            }}
-            
-            // Expor função de debug globalmente
-            window.debugCarteira = debugCarteira;
-            
+
             // ========== SISTEMA DE TOOLTIPS HÍBRIDOS ==========
             let tooltipAtivo = null;
             let tooltipTimer = null;
@@ -3771,7 +4384,6 @@ class LiveloAnalytics:
             function initTooltips() {{
                 console.log('[Tooltips] Inicializando sistema de tooltips...');
                 
-                // Aguardar um pouco para elementos estarem no DOM
                 setTimeout(() => {{
                     const helpIcons = document.querySelectorAll('.help-icon');
                     console.log('[Tooltips] Encontrados', helpIcons.length, 'ícones de ajuda');
@@ -3790,13 +4402,11 @@ class LiveloAnalytics:
                             return;
                         }}
                         
-                        // Mobile: tap para mostrar/esconder
                         icon.addEventListener('click', (e) => {{
                             e.preventDefault();
                             e.stopPropagation();
                             console.log('[Tooltips] Click no ícone', index + 1);
                             
-                            // Se já tem tooltip ativo, esconder
                             if (tooltipAtivo && tooltipAtivo !== tooltip) {{
                                 hideTooltip(tooltipAtivo);
                             }}
@@ -3808,7 +4418,6 @@ class LiveloAnalytics:
                             }}
                         }});
                         
-                        // Desktop: hover (só em dispositivos com hover)
                         if (window.matchMedia('(hover: hover)').matches) {{
                             icon.addEventListener('mouseenter', () => {{
                                 clearTimeout(tooltipTimer);
@@ -3828,14 +4437,12 @@ class LiveloAnalytics:
                         }}
                     }});
                     
-                    // Esconder tooltip ao clicar fora
                     document.addEventListener('click', (e) => {{
                         if (tooltipAtivo && !e.target.closest('.tooltip-container')) {{
                             hideTooltip(tooltipAtivo);
                         }}
                     }});
                     
-                    // Esconder tooltip ao fazer scroll
                     document.addEventListener('scroll', () => {{
                         if (tooltipAtivo) {{
                             hideTooltip(tooltipAtivo);
@@ -3855,7 +4462,6 @@ class LiveloAnalytics:
                 tooltipAtivo = tooltip;
                 console.log('[Tooltips] Tooltip exibido');
                 
-                // Auto-hide em mobile após 4 segundos
                 if (!window.matchMedia('(hover: hover)').matches) {{
                     tooltipTimer = setTimeout(() => {{
                         hideTooltip(tooltip);
@@ -3873,35 +4479,7 @@ class LiveloAnalytics:
                 }}
                 clearTimeout(tooltipTimer);
             }}
-            
-            // Função de debug para tooltips
-            function debugTooltips() {{
-                console.log('=== DEBUG TOOLTIPS ===');
-                const containers = document.querySelectorAll('.tooltip-container');
-                const icons = document.querySelectorAll('.help-icon');
-                const tooltips = document.querySelectorAll('.custom-tooltip');
-                
-                console.log('Containers encontrados:', containers.length);
-                console.log('Ícones encontrados:', icons.length);
-                console.log('Tooltips encontrados:', tooltips.length);
-                
-                containers.forEach((container, i) => {{
-                    const icon = container.querySelector('.help-icon');
-                    const tooltip = container.querySelector('.custom-tooltip');
-                    console.log(`Container ${{i + 1}}:`, {{
-                        hasIcon: !!icon,
-                        hasTooltip: !!tooltip,
-                        iconVisible: icon ? getComputedStyle(icon).display !== 'none' : false,
-                        tooltipText: tooltip ? tooltip.textContent.substring(0, 50) + '...' : 'N/A'
-                    }});
-                }});
-                
-                console.log('===================');
-            }}
-            
-            // Expor função de debug globalmente
-            window.debugTooltips = debugTooltips;
-            
+
             // ========== SISTEMA DE TOAST NOTIFICATIONS ==========
             function showToast(message, type = 'info', duration = 2000) {{
                 const container = document.getElementById('toastContainer');
@@ -3927,12 +4505,10 @@ class LiveloAnalytics:
                 
                 container.appendChild(toast);
                 
-                // Animar entrada
                 setTimeout(() => {{
                     toast.classList.add('show');
                 }}, 10);
                 
-                // Remover após duração especificada
                 setTimeout(() => {{
                     toast.classList.remove('show');
                     toast.classList.add('hide');
@@ -3943,7 +4519,7 @@ class LiveloAnalytics:
                     }}, 300);
                 }}, duration);
             }}
-            
+
             // ========== FUNÇÕES DE TEMA ==========
             function initTheme() {{
                 const savedTheme = localStorage.getItem('livelo-theme') || 'light';
@@ -3969,7 +4545,60 @@ class LiveloAnalytics:
                     }}
                 }}
             }}
-            
+
+            // ========== FUNÇÕES DE NOTIFICAÇÕES GLOBAIS ==========
+            window.toggleNotificationSettings = function() {{
+                const panel = document.getElementById('notificationSettings');
+                if (panel) {{
+                    if (panel.classList.contains('show')) {{
+                        panel.classList.remove('show');
+                        console.log('[Notifications] Painel fechado');
+                    }} else {{
+                        panel.classList.add('show');
+                        console.log('[Notifications] Painel aberto');
+                    }}
+                }}
+            }};
+
+            window.enableNotifications = async function() {{
+                if (notificationSystem) {{
+                    const result = await notificationSystem.enable();
+                    if (result) {{
+                        console.log('[Notifications] ✅ Notificações ativadas com sucesso');
+                    }} else {{
+                        console.log('[Notifications] ❌ Falha ao ativar notificações');
+                    }}
+                }}
+            }};
+
+            window.disableNotifications = async function() {{
+                if (notificationSystem) {{
+                    await notificationSystem.disable();
+                    console.log('[Notifications] Notificações desativadas');
+                }}
+            }};
+
+            window.copyToken = function() {{
+                if (notificationSystem && notificationSystem.token) {{
+                    navigator.clipboard.writeText(notificationSystem.token).then(() => {{
+                        showToast('Token copiado para a área de transferência!', 'success');
+                        console.log('[Notifications] Token copiado');
+                    }}).catch(error => {{
+                        console.error('[Notifications] Erro ao copiar token:', error);
+                        showToast('Erro ao copiar token', 'error');
+                    }});
+                }}
+            }};
+
+            // Event listeners para configurações
+            document.addEventListener('change', (e) => {{
+                if (e.target.id === 'notifyOffers' || e.target.id === 'notifyChanges' || e.target.id === 'onlyFavorites') {{
+                    if (notificationSystem && notificationSystem.isEnabled) {{
+                        notificationSystem.saveConfig();
+                    }}
+                }}
+            }});
+
             // ========== FUNÇÕES DE ALERTAS ==========
             function toggleAlert(alertId) {{
                 console.log('[Alertas] Toggle alerta:', alertId);
@@ -4015,7 +4644,7 @@ class LiveloAnalytics:
                     }}, 300);
                 }}
             }}
-            
+
             // ========== FUNÇÃO AUXILIAR PARA PARSE DE DATAS ==========
             function parseDataBR(dataString) {{
                 if (!dataString || dataString === '-' || dataString === 'Nunca') {{
@@ -4050,7 +4679,7 @@ class LiveloAnalytics:
                 
                 return new Date(year, month, day, hour, minute, second);
             }}
-            
+
             // ========== FILTROS AVANÇADOS ==========
             function aplicarFiltros() {{
                 const filtroCategoria = document.getElementById('filtroCategoriaComplex')?.value || '';
@@ -4080,7 +4709,7 @@ class LiveloAnalytics:
                     row.style.display = (matchParceiro && matchCategoria && matchTier && matchOferta && matchExperiencia && matchFrequencia) ? '' : 'none';
                 }});
             }}
-            
+
             // ========== ORDENAÇÃO DE TABELAS ==========
             let estadoOrdenacao = {{}};
             
@@ -4113,7 +4742,6 @@ class LiveloAnalytics:
                 linhas.sort((linhaA, linhaB) => {{
                     let resultado = 0;
                     
-                    // COLUNA ESPECIAL: FAVORITOS (índice 1)
                     if (indiceColuna === 1) {{
                         const btnA = linhaA.cells[1]?.querySelector('.favorito-btn');
                         const btnB = linhaB.cells[1]?.querySelector('.favorito-btn');
@@ -4128,7 +4756,6 @@ class LiveloAnalytics:
                         return novaOrdem === 'asc' ? resultado : -resultado;
                     }}
                     
-                    // OUTRAS COLUNAS (lógica original)
                     let textoA = linhaA.cells[indiceColuna]?.textContent.trim() || '';
                     let textoB = linhaB.cells[indiceColuna]?.textContent.trim() || '';
                     
@@ -4162,14 +4789,13 @@ class LiveloAnalytics:
                 
                 linhas.forEach(linha => tbody.appendChild(linha));
                 
-                // Atualizar ícones de favoritos após reordenação
                 setTimeout(() => {{ 
                     if (carteiraManager) {{
                         carteiraManager.updateAllIcons(); 
                     }}
                 }}, 100);
             }}
-            
+
             // ========== ORDENAÇÃO DA TABELA INDIVIDUAL ==========
             let estadoOrdenacaoIndividual = {{}};
             
@@ -4228,7 +4854,7 @@ class LiveloAnalytics:
                 
                 linhas.forEach(linha => tbody.appendChild(linha));
             }}
-            
+
             // ========== FUNÇÕES DE DOWNLOAD ==========
             function downloadAnaliseCompleta() {{
                 const rows = document.querySelectorAll('#tabelaAnalise tbody tr');
@@ -4249,7 +4875,7 @@ class LiveloAnalytics:
                 XLSX.utils.book_append_sheet(wb, ws, "Análise Completa");
                 XLSX.writeFile(wb, "livelo_analise_completa_{metricas['ultima_atualizacao'].replace('/', '_')}.xlsx");
             }}
-            
+
             // ========== ANÁLISE INDIVIDUAL ==========
             function carregarAnaliseIndividual() {{
                 const chaveUnica = document.getElementById('parceiroSelect')?.value;
@@ -4271,11 +4897,9 @@ class LiveloAnalytics:
                     item.Parceiro === parceiro && item.Moeda === moeda
                 );
                 
-                // Obter logo do parceiro
                 const logoUrl = dadosResumo.length > 0 ? dadosResumo[0].Logo_Link : '';
                 const logoHtml = logoUrl ? `<img src="${{logoUrl}}" class="logo-parceiro" alt="Logo ${{parceiro}}" onerror="this.style.display='none'">` : '';
                 
-                // Obter URL do parceiro para botão
                 const urlParceiro = dadosResumo.length > 0 ? dadosResumo[0].URL_Parceiro : '';
                 const botaoSite = urlParceiro ? `
                     <a href="${{urlParceiro}}" target="_blank" class="btn btn-outline-primary btn-sm ms-2">
@@ -4307,7 +4931,6 @@ class LiveloAnalytics:
                     return;
                 }}
                 
-                // Montar tabela do histórico
                 let html = `
                     <table class="table table-hover table-sm">
                         <thead>
@@ -4362,7 +4985,6 @@ class LiveloAnalytics:
                     container.innerHTML = html;
                 }}
                 
-                // Gerar estatísticas do parceiro
                 gerarEstatisticasParceiro(dadosResumo[0], historicoCompleto, parceiro, moeda);
             }}
             
@@ -4375,7 +4997,6 @@ class LiveloAnalytics:
                     return;
                 }}
                 
-                // Calcular estatísticas
                 const totalRegistros = historicoCompleto.length;
                 const ofertas = historicoCompleto.filter(item => item.Oferta === 'Sim');
                 const totalOfertas = ofertas.length;
@@ -4397,7 +5018,6 @@ class LiveloAnalytics:
                 
                 let html = `
                     <div class="row g-3">
-                        <!-- Informações Básicas -->
                         <div class="col-md-6">
                             <div class="border rounded p-3" style="background: var(--bg-primary);">
                                 <h6 class="text-primary mb-3">
@@ -4424,7 +5044,6 @@ class LiveloAnalytics:
                             </div>
                         </div>
                         
-                        <!-- Estatísticas de Ofertas -->
                         <div class="col-md-6">
                             <div class="border rounded p-3" style="background: var(--bg-primary);">
                                 <h6 class="text-success mb-3">
@@ -4453,7 +5072,6 @@ class LiveloAnalytics:
                             </div>
                         </div>
                         
-                        <!-- Pontuação -->
                         <div class="col-md-6">
                             <div class="border rounded p-3" style="background: var(--bg-primary);">
                                 <h6 class="text-warning mb-3">
@@ -4480,7 +5098,6 @@ class LiveloAnalytics:
                             </div>
                         </div>
                         
-                        <!-- Variabilidade -->
                         <div class="col-md-6">
                             <div class="border rounded p-3" style="background: var(--bg-primary);">
                                 <h6 class="text-info mb-3">
@@ -4549,27 +5166,39 @@ class LiveloAnalytics:
                 const dataAtual = new Date().toISOString().slice(0, 10).replace(/-/g, '_');
                 XLSX.writeFile(wb, `livelo_dados_raw_${{dataAtual}}.xlsx`);
             }}
-            
+
             // ========== FUNÇÕES GLOBAIS PARA COMPATIBILIDADE ==========
-            function toggleFavorito(parceiro, moeda) {{ 
+            window.toggleFavorito = function(parceiro, moeda) {{ 
                 if (carteiraManager) {{
                     return carteiraManager.toggleFavorito(parceiro, moeda);
                 }}
                 return false;
-            }}
+            }};
             
-            function removerFavorito(chaveUnica) {{ 
+            window.removerFavorito = function(chaveUnica) {{ 
                 if (carteiraManager) {{
                     return carteiraManager.removerFavorito(chaveUnica);
                 }}
-            }}
+            }};
             
-            function limparCarteira() {{ 
+            window.limparCarteira = function() {{ 
                 if (carteiraManager) {{
                     return carteiraManager.limparCarteira();
                 }}
-            }}
-            
+            }};
+
+            // Expor funções globais necessárias
+            window.aplicarFiltros = aplicarFiltros;
+            window.ordenarTabela = ordenarTabela;
+            window.ordenarTabelaIndividual = ordenarTabelaIndividual;
+            window.downloadAnaliseCompleta = downloadAnaliseCompleta;
+            window.carregarAnaliseIndividual = carregarAnaliseIndividual;
+            window.downloadAnaliseIndividual = downloadAnaliseIndividual;
+            window.downloadDadosRaw = downloadDadosRaw;
+            window.toggleAlert = toggleAlert;
+            window.closeAlert = closeAlert;
+            window.toggleTheme = toggleTheme;
+
             // ========== INICIALIZAÇÃO PRINCIPAL ==========
             document.addEventListener('DOMContentLoaded', function() {{
                 console.log('[App] DOM carregado, inicializando...');
@@ -4579,9 +5208,15 @@ class LiveloAnalytics:
                     initTheme();
                     console.log('[App] Tema inicializado');
                     
-                    // 2. Criar e inicializar gerenciador da carteira
+                    // 2. Inicializar sistema de notificações
+                    notificationSystem = new FirebaseNotificationSystem();
+                    window.notificationSystem = notificationSystem;
+                    notificationSystem.initialize();
+                    console.log('[App] Sistema de notificações inicializado');
+                    
+                    // 3. Criar e inicializar gerenciador da carteira
                     carteiraManager = new LiveloCarteiraManager();
-                    window.carteiraManager = carteiraManager; // Expor globalmente
+                    window.carteiraManager = carteiraManager;
                     carteiraManager.init();
                     console.log('[App] Carteira inicializada');
                     
@@ -4591,14 +5226,12 @@ class LiveloAnalytics:
                     
                     // 5. Configurar filtros após um delay para garantir que os elementos existam
                     setTimeout(() => {{
-                        // Event listeners para busca
                         const searchInput = document.getElementById('searchInput');
                         if (searchInput) {{
                             searchInput.addEventListener('input', aplicarFiltros);
                             console.log('[App] Busca configurada');
                         }}
                         
-                        // Event listeners para filtros
                         const filtros = [
                             'filtroCategoriaComplex', 'filtroTier', 'filtroOferta', 
                             'filtroExperiencia', 'filtroFrequencia'
@@ -4612,7 +5245,6 @@ class LiveloAnalytics:
                         }});
                         console.log('[App] Filtros configurados');
                         
-                        // Auto-carregar primeiro parceiro na análise individual
                         const selectParceiroTab = document.querySelector('[data-bs-target="#individual"]');
                         if (selectParceiroTab) {{
                             selectParceiroTab.addEventListener('click', function() {{
@@ -4635,10 +5267,23 @@ class LiveloAnalytics:
                 }}
             }});
         </script>
+
+        <!-- Service Worker para notificações -->
+        <script>
+            if ('serviceWorker' in navigator) {{
+                navigator.serviceWorker.register('/firebase-messaging-sw.js')
+                    .then((registration) => {{
+                        console.log('[SW] Service Worker registrado:', registration);
+                    }})
+                    .catch((error) => {{
+                        console.error('[SW] Erro ao registrar Service Worker:', error);
+                    }});
+            }}
+        </script>
     </body>
     </html>
-            """
-            
+        """
+        
         return html
     
     def executar_analise_completa(self):
@@ -4660,20 +5305,17 @@ class LiveloAnalytics:
         html = self.gerar_html_completo()
         
         # Salvar
-        pasta_relatorios = "relatorios"
+        pasta_relatorios = "public"
         os.makedirs(pasta_relatorios, exist_ok=True)
         
-        arquivo_saida = os.path.join(pasta_relatorios, "livelo_analytics.html")
+        arquivo_saida = os.path.join(pasta_relatorios, "index.html")
         
         try:
             with open(arquivo_saida, 'w', encoding='utf-8') as f:
                 f.write(html)
             
-            with open("relatorio_livelo.html", 'w', encoding='utf-8') as f:
-                f.write(html)
-            
             print(f"✅ Relatório salvo: {arquivo_saida}")
-            print(f"✅ GitHub Pages: relatorio_livelo.html")
+            print(f"✅ Firebase Hosting: public/index.html")
             
             # Stats finais
             dados = self.analytics['dados_completos']
