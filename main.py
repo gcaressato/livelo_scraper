@@ -125,13 +125,13 @@ class LiveloOrchestrator:
             logger.error(f"Trace: {traceback.format_exc()}")
             return False
         
-   def validar_arquivos_gerados(self):
-        """Valida se os arquivos foram gerados corretamente com critérios RIGOROSOS"""
+    def validar_arquivos_gerados(self):
+        """Valida se os arquivos foram gerados corretamente - APENAS no public/"""
         logger.info("🔍 Validando arquivos gerados (RIGOROSO)...")
         
-        # ✅ CORREÇÃO: Validar arquivos onde realmente estão
+        # ✅ ARQUIVOS ONDE REALMENTE DEVEM ESTAR
         arquivos_criticos = {
-            'public/index.html': self.MIN_HTML_SIZE,  # HTML no public/
+            'public/index.html': self.MIN_HTML_SIZE,      # HTML direto no public/
             'livelo_parceiros.xlsx': self.MIN_EXCEL_SIZE  # Excel na raiz
         }
         
@@ -155,7 +155,7 @@ class LiveloOrchestrator:
             logger.error("❌ FALHA CRÍTICA: Validação de dados falhou")
             return False
         
-        # ✅ CORREÇÃO: Validar HTML onde realmente está
+        # VALIDAÇÃO 3: Conteúdo HTML específico (RIGOROSA)
         try:
             with open('public/index.html', 'r', encoding='utf-8') as f:
                 conteudo = f.read()
@@ -266,87 +266,95 @@ class LiveloOrchestrator:
             return False
     
     def executar_analise(self):
-            """Executa a análise e geração do relatório"""
-            logger.info("📊 Iniciando análise...")
+        """Executa a análise e geração do relatório"""
+        logger.info("📊 Iniciando análise...")
+        
+        try:
+            # Verificar se o arquivo de dados existe E é válido
+            if not os.path.exists('livelo_parceiros.xlsx'):
+                logger.error("❌ FALHA CRÍTICA: livelo_parceiros.xlsx não encontrado para análise")
+                return False
             
-            try:
-                # Verificar se o arquivo de dados existe E é válido
-                if not os.path.exists('livelo_parceiros.xlsx'):
-                    logger.error("❌ FALHA CRÍTICA: livelo_parceiros.xlsx não encontrado para análise")
+            # Validar dados antes da análise
+            if not self.validar_dados_excel():
+                logger.error("❌ FALHA CRÍTICA: Dados inválidos para análise")
+                return False
+            
+            # Verificar se o reporter existe
+            if not os.path.exists('livelo_reporter.py'):
+                logger.error("❌ FALHA CRÍTICA: livelo_reporter.py não encontrado")
+                return False
+            
+            logger.info("📈 Executando análise com reporter...")
+            resultado = subprocess.run([
+                sys.executable, 'livelo_reporter.py', 'livelo_parceiros.xlsx'
+            ], capture_output=True, text=True, timeout=600)  # 10 min
+            
+            if resultado.returncode == 0:
+                logger.info("✅ Reporter executado sem erros")
+                
+                # ✅ VERIFICAR APENAS public/index.html (onde deve estar)
+                if not os.path.exists('public/index.html'):
+                    logger.error("❌ FALHA CRÍTICA: Reporter não gerou public/index.html")
+                    logger.error("   O livelo_reporter.py deve salvar direto em public/index.html")
                     return False
                 
-                # Validar dados antes da análise
-                if not self.validar_dados_excel():
-                    logger.error("❌ FALHA CRÍTICA: Dados inválidos para análise")
-                    return False
+                size = os.path.getsize('public/index.html')
+                logger.info(f"📄 public/index.html: {size:,} bytes")
                 
-                # Verificar se o reporter existe
-                if not os.path.exists('livelo_reporter.py'):
-                    logger.error("❌ FALHA CRÍTICA: livelo_reporter.py não encontrado")
-                    return False
+                self.sucesso_etapas['analise'] = True
                 
-                logger.info("📈 Executando análise com reporter...")
-                resultado = subprocess.run([
-                    sys.executable, 'livelo_reporter.py', 'livelo_parceiros.xlsx'
-                ], capture_output=True, text=True, timeout=600)  # 10 min
-                
-                if resultado.returncode == 0:
-                    logger.info("✅ Reporter executado sem erros")
-                    
-                    # ✅ CORREÇÃO: Verificar arquivo onde realmente é gerado
-                    if not os.path.exists('public/index.html'):
-                        logger.error("❌ FALHA CRÍTICA: Reporter não gerou public/index.html")
-                        return False
-                    
-                    size = os.path.getsize('public/index.html')
-                    logger.info(f"📄 public/index.html: {size:,} bytes")
-                    
-                    self.sucesso_etapas['analise'] = True
-                    
-                    # Executar validação completa imediatamente
-                    if self.validar_arquivos_gerados():
-                        logger.info("✅ Análise concluída com arquivos válidos")
-                        return True
-                    else:
-                        logger.error("❌ FALHA CRÍTICA: Análise gerou arquivos inválidos")
-                        return False
-                    
+                # Executar validação completa imediatamente
+                if self.validar_arquivos_gerados():
+                    logger.info("✅ Análise concluída com arquivos válidos")
+                    return True
                 else:
-                    logger.error(f"❌ FALHA CRÍTICA: Reporter falhou (código {resultado.returncode})")
-                    if resultado.stderr:
-                        logger.error(f"Erro: {resultado.stderr[:500]}")
-                    if resultado.stdout:
-                        logger.info(f"Output: {resultado.stdout[-500:]}")
+                    logger.error("❌ FALHA CRÍTICA: Análise gerou arquivos inválidos")
                     return False
-                    
-            except subprocess.TimeoutExpired:
-                logger.error("❌ FALHA CRÍTICA: Timeout na análise (10 minutos)")
+                
+            else:
+                logger.error(f"❌ FALHA CRÍTICA: Reporter falhou (código {resultado.returncode})")
+                if resultado.stderr:
+                    logger.error(f"Erro: {resultado.stderr[:500]}")
+                if resultado.stdout:
+                    logger.info(f"Output: {resultado.stdout[-500:]}")
                 return False
-            except Exception as e:
-                logger.error(f"❌ FALHA CRÍTICA: Erro inesperado na análise: {e}")
-                logger.error(f"Trace: {traceback.format_exc()}")
-                return False
+                
+        except subprocess.TimeoutExpired:
+            logger.error("❌ FALHA CRÍTICA: Timeout na análise (10 minutos)")
+            return False
+        except Exception as e:
+            logger.error(f"❌ FALHA CRÍTICA: Erro inesperado na análise: {e}")
+            logger.error(f"Trace: {traceback.format_exc()}")
+            return False
     
     def preparar_deploy_github(self):
-        """Prepara arquivos para GitHub Pages - Arquivos já estão no local correto"""
+        """Prepara arquivos para GitHub Pages - HTML já está no local correto"""
         logger.info("🚀 Verificando arquivos para GitHub Pages...")
         
         try:
-            # Criar diretório public se não existir (mas já deve existir)
+            # Verificar se diretório public existe
             if not os.path.exists('public'):
                 logger.error("❌ FALHA CRÍTICA: Diretório public/ não existe")
+                logger.error("   O livelo_reporter.py deve criar o diretório public/")
                 return False
             
-            # ✅ CORREÇÃO: Apenas copiar o Excel para o public/
+            # ✅ HTML já deve estar no local correto - apenas verificar
+            if not os.path.exists('public/index.html'):
+                logger.error("❌ FALHA CRÍTICA: public/index.html não encontrado")
+                logger.error("   O livelo_reporter.py deve gerar direto em public/index.html")
+                return False
+            
+            # Copiar APENAS o Excel para o public/
             if os.path.exists('livelo_parceiros.xlsx'):
                 import shutil
                 shutil.copy2('livelo_parceiros.xlsx', 'public/livelo_parceiros.xlsx')
                 logger.info("📄 livelo_parceiros.xlsx → public/livelo_parceiros.xlsx")
             else:
-                logger.error("❌ FALHA CRÍTICA: livelo_parceiros.xlsx não encontrado")
+                logger.error("❌ FALHA CRÍTICA: livelo_parceiros.xlsx não encontrado para deploy")
                 return False
             
-            # Verificar se arquivos finais estão prontos para deploy
+            # ✅ VERIFICAÇÃO FINAL - TUDO NO PUBLIC/
             arquivos_verificar = [
                 ('public/index.html', self.MIN_HTML_SIZE),
                 ('public/livelo_parceiros.xlsx', self.MIN_EXCEL_SIZE)
@@ -360,8 +368,19 @@ class LiveloOrchestrator:
                         return False
                     logger.info(f"✅ {arquivo}: {size:,} bytes")
                 else:
-                    logger.error(f"❌ FALHA CRÍTICA: {arquivo} não foi preparado")
+                    logger.error(f"❌ FALHA CRÍTICA: {arquivo} não encontrado no public/")
                     return False
+            
+            # ✅ LOG DETALHADO DOS TIMESTAMPS
+            from datetime import datetime
+            timestamp_agora = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            logger.info(f"🕐 Verificação de deploy em: {timestamp_agora}")
+            
+            for arquivo, _ in arquivos_verificar:
+                if os.path.exists(arquivo):
+                    mtime = os.path.getmtime(arquivo)
+                    timestamp_arquivo = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M:%S')
+                    logger.info(f"📅 {arquivo} modificado em: {timestamp_arquivo}")
             
             logger.info("✅ Todos os arquivos prontos para deploy no public/")
             self.sucesso_etapas['deploy_preparacao'] = True
@@ -456,11 +475,10 @@ class LiveloOrchestrator:
         print("")
         print("📁 ARQUIVOS PRINCIPAIS:")
         
-        # Verificar arquivos críticos
+        # ✅ VERIFICAR APENAS ARQUIVOS NO PUBLIC/ 
         arquivos_criticos = [
-            'relatorio_livelo.html',
-            'livelo_parceiros.xlsx',
-            'public/index.html'
+            'public/index.html',
+            'public/livelo_parceiros.xlsx'
         ]
         
         for arquivo in arquivos_criticos:
@@ -484,7 +502,7 @@ class LiveloOrchestrator:
             print("✨ FUNCIONALIDADES ATIVAS:")
             print("   ✅ Dados coletados e processados")
             print("   ✅ Dashboard HTML responsivo")
-            print("   ✅ Arquivos preparados para deploy")
+            print("   ✅ Arquivos preparados para deploy no public/")
             print("   ✅ Sistema 100% funcional")
             
             if not self.firebase_opcional:
