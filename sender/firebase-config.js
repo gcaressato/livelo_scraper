@@ -15,7 +15,6 @@ const firebaseConfig = window.FIREBASE_CONFIG || {
 
 const app = initializeApp(firebaseConfig);
 const messaging = getMessaging(app);
-const db = getFirestore(app);
+const db = getFirestore(app); // ← Removida a duplicação
 
 export { messaging, db };
-export const db = getFirestore(app);
