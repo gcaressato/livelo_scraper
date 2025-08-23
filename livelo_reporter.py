@@ -1328,7 +1328,7 @@ class LiveloAnalytics:
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <title>Livelo Analytics Pro - {metricas['ultima_atualizacao']}</title>
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <base href="/livelo_scraper/"> <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -2631,6 +2631,8 @@ class LiveloAnalytics:
                     padding: 5px 10px; 
                     font-size: 0.75rem; 
                     margin-right: 2px;
+                    margin-bottom: 3px;
+                    border-radius: 15px;
                 }}
             }}
             
@@ -2923,7 +2925,7 @@ class LiveloAnalytics:
             @media (max-width: 576px) {{
                 /* EXTRA SMALL DEVICES */
                 .container-fluid {{ 
-                    padding: 4px 6px; 
+                    padding: 3px 5px; 
                 }}
                 
                 .theme-toggle {{
@@ -3010,6 +3012,11 @@ class LiveloAnalytics:
                     min-width: 20px;
                     min-height: 20px;
                     padding: 1px 3px;
+                }}
+                
+                .badge-soft {{
+                    font-size: 0.6rem;
+                    padding: 2px 5px;
                 }}
                 
                 /* FORMULÁRIOS ULTRA COMPACTOS */
@@ -3188,12 +3195,10 @@ class LiveloAnalytics:
         </style>
     </head>
     <body>
-        <!-- Botão de Notificações (Engrenagem) -->
         <div class="notification-trigger" onclick="toggleNotificationSettings()" title="Configurações de Notificações">
             <i class="bi bi-gear-fill" id="notification-icon"></i>
         </div>
         
-        <!-- Painel de Configurações de Notificações -->
         <div class="notification-settings" id="notificationSettings">
             <div class="notification-header">
                 <div style="display: flex; justify-content: between; align-items: center;">
@@ -3249,16 +3254,13 @@ class LiveloAnalytics:
             </div>
         </div>
         
-        <!-- Theme Toggle -->
         <div class="theme-toggle" onclick="toggleTheme()" title="Alternar tema claro/escuro">
             <i class="bi bi-sun-fill" id="theme-icon"></i>
         </div>
         
-        <!-- Toast Container -->
         <div class="toast-container" id="toastContainer"></div>
         
         <div class="container-fluid">
-            <!-- Header -->
             <div class="text-center mb-3">
                 <h1 class="h3 fw-bold mb-1" style="color: var(--livelo-azul);">
                     <i class="bi bi-graph-up me-2"></i>Livelo Analytics Pro
@@ -3267,10 +3269,8 @@ class LiveloAnalytics:
                 <small class="text-muted" style="font-size: 0.75rem;">Dados coletados em: {metricas['data_coleta_mais_recente']}</small>
             </div>
             
-            <!-- Alertas Dinâmicos Compactos -->
             {alertas_html}
             
-            <!-- Métricas Principais -->
             <div class="row g-2 mb-3">
                 <div class="col-lg-2 col-md-4 col-6">
                     <div class="metric-card text-center">
@@ -3352,7 +3352,6 @@ class LiveloAnalytics:
                 </div>
             </div>
             
-            <!-- Navegação -->
             <ul class="nav nav-pills justify-content-center mb-3" id="mainTabs" role="tablist">
                 <li class="nav-item">
                     <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#dashboard">
@@ -3377,9 +3376,7 @@ class LiveloAnalytics:
             </ul>
             
             <div class="tab-content">
-                <!-- Dashboard -->
                 <div class="tab-pane fade show active" id="dashboard">
-                    <!-- LINHA 1: Gráfico Principal Temporal -->
                     <div class="row g-3 mb-3">
                         <div class="col-12">
                             <div class="card">
@@ -3391,7 +3388,6 @@ class LiveloAnalytics:
                         </div>
                     </div>
                     
-                    <!-- LINHA 2: Análise Estratégica (2 médios) -->
                     <div class="row g-3 mb-3">
                         <div class="col-lg-6">
                             <div class="card">
@@ -3407,7 +3403,6 @@ class LiveloAnalytics:
                         </div>
                     </div>
                     
-                    <!-- LINHA 3: Performance Atual (3 compactos) -->
                     <div class="row g-3 mb-3">
                         <div class="col-lg-4">
                             <div class="card">
@@ -3429,7 +3424,6 @@ class LiveloAnalytics:
                         </div>
                     </div>
                     
-                    <!-- LINHA 4: Insights Avançados (2 médios) -->
                     <div class="row g-3">
                         <div class="col-lg-6">
                             <div class="card">
@@ -3446,9 +3440,7 @@ class LiveloAnalytics:
                     </div>
                 </div>
                 
-                <!-- Análise Completa -->
                 <div class="tab-pane fade" id="analise">
-                    <!-- Filtros Avançados -->
                     {filtros_html}
                     
                     <div class="card">
@@ -3469,7 +3461,6 @@ class LiveloAnalytics:
                     </div>
                 </div>
                 
-                <!-- MINHA CARTEIRA -->
                 <div class="tab-pane fade" id="carteira">
                     <div class="row">
                         <div class="col-lg-8 col-12 mb-3">
@@ -3494,7 +3485,6 @@ class LiveloAnalytics:
                                 </div>
                                 <div class="card-body">
                                     <div id="listaFavoritos">
-                                        <!-- Conteúdo será preenchido pelo JavaScript -->
                                         <div class="text-center p-4">
                                             <div class="spinner-border text-primary" role="status">
                                                 <span class="visually-hidden">Carregando...</span>
@@ -3515,7 +3505,6 @@ class LiveloAnalytics:
                                 </div>
                                 <div class="card-body">
                                     <div id="graficoCarteira">
-                                        <!-- Gráfico será preenchido pelo JavaScript -->
                                         <div class="text-center p-4">
                                             <div class="spinner-border text-secondary" role="status">
                                                 <span class="visually-hidden">Carregando...</span>
@@ -3528,7 +3517,6 @@ class LiveloAnalytics:
                         </div>
                     </div>
                     
-                    <!-- Dicas de Uso -->
                     <div class="row">
                         <div class="col-12">
                             <div class="card bg-light border-0">
@@ -3563,7 +3551,6 @@ class LiveloAnalytics:
                     </div>
                 </div>
                 
-                <!-- Análise Individual -->
                 <div class="tab-pane fade" id="individual">
                     <div class="individual-analysis">
                         <div class="row align-items-end mb-3">
@@ -3592,7 +3579,6 @@ class LiveloAnalytics:
                         </div>
                     </div>
                     
-                    <!-- Estatísticas do Parceiro -->
                     <div class="card mt-3" id="estatisticasParceiro" style="display: none;">
                         <div class="card-header">
                             <h6 class="mb-0">
@@ -3602,14 +3588,12 @@ class LiveloAnalytics:
                         </div>
                         <div class="card-body">
                             <div id="conteudoEstatisticas">
-                                <!-- Conteúdo será preenchido pelo JavaScript -->
-                            </div>
+                                </div>
                         </div>
                     </div>
                 </div>
             </div>
             
-            <!-- Rodapé -->
             <div class="footer">
                 <small onclick="downloadDadosRaw()" title="Download dados brutos">Desenvolvido por gc</small>
             </div>
@@ -5268,7 +5252,6 @@ class LiveloAnalytics:
             }});
         </script>
 
-        <!-- Service Worker para notificações -->
         <script>
             if ('serviceWorker' in navigator) {{
                 navigator.serviceWorker.register('/firebase-messaging-sw.js')
