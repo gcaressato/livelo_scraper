@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Sistema de Notificações Firebase para Livelo Analytics - GitHub Actions
-Caminhos corrigidos para ambiente GitHub Actions
+VERSÃO 2.0 - Com Firestore integrado diretamente
 100% opcional - nunca quebra o pipeline principal
 """
 
@@ -32,12 +32,15 @@ class LiveloFirebaseNotifier:
     def __init__(self):
         self.firebase_configurado = False
         self.messaging = None
+        self.firestore_db = None
         self.projeto_id = None
         self.script_dir = script_dir
         
         # Estatísticas
         self.stats = {
             'usuarios_ativos': 0,
+            'usuarios_firestore': 0,
+            'usuarios_json': 0,
             'notificacoes_enviadas': 0,
             'notificacoes_falharam': 0,
             'mudancas_detectadas': 0,
@@ -45,7 +48,7 @@ class LiveloFirebaseNotifier:
         }
         
     def verificar_configuracao_firebase(self):
-        """Verifica e configura Firebase Admin SDK v2"""
+        """Verifica e configura Firebase Admin SDK v2 + Firestore"""
         logger.info("Verificando configuração Firebase...")
         
         try:
@@ -64,7 +67,7 @@ class LiveloFirebaseNotifier:
             # 2. Verificar se firebase-admin está instalado
             try:
                 import firebase_admin
-                from firebase_admin import credentials, messaging
+                from firebase_admin import credentials, messaging, firestore
                 logger.info("firebase-admin disponível")
             except ImportError:
                 logger.info("firebase-admin não instalado")
@@ -102,11 +105,12 @@ class LiveloFirebaseNotifier:
                 else:
                     logger.info("Firebase Admin SDK já estava inicializado")
                 
-                # Configurar messaging
+                # Configurar messaging E firestore
                 self.messaging = messaging
+                self.firestore_db = firestore.client()
                 self.firebase_configurado = True
                 
-                logger.info(f"Firebase configurado para: {self.projeto_id}")
+                logger.info(f"Firebase + Firestore configurados para: {self.projeto_id}")
                 return True
                 
             except Exception as e:
@@ -117,11 +121,55 @@ class LiveloFirebaseNotifier:
             logger.warning(f"Erro na configuração Firebase: {e}")
             return False
     
-    def carregar_usuarios_favoritos(self):
-        """Carrega usuários e seus favoritos com caminhos corretos"""
-        logger.info("Carregando usuários com favoritos...")
-        
-        # Arquivo de usuários com caminho absoluto
+    def carregar_usuarios_firestore(self):
+        """Carrega usuários do Firestore"""
+        if not self.firestore_db:
+            logger.warning("Firestore não configurado")
+            return {}
+            
+        try:
+            logger.info("Carregando usuários do Firestore...")
+            usuarios_ref = self.firestore_db.collection('usuarios')
+            docs = usuarios_ref.stream()
+            
+            usuarios = {}
+            for doc in docs:
+                try:
+                    data = doc.to_dict()
+                    user_id = doc.id
+                    
+                    # Converter formato Firestore para formato esperado
+                    usuario_convertido = {
+                        "fcm_token": data.get('fcm_token', ''),
+                        "favoritos": data.get('favoritos', []),
+                        "configuracoes": data.get('configuracoes', {
+                            "notificar_ofertas": True,
+                            "notificar_mudancas": True,
+                            "apenas_favoritos": True
+                        }),
+                        "ativo": data.get('ativo', True),
+                        "nome": data.get('nome', f'Usuário {user_id}'),
+                        "fonte": "firestore",
+                        "updated_at": data.get('updated_at'),
+                        "created_at": data.get('created_at')
+                    }
+                    
+                    usuarios[user_id] = usuario_convertido
+                    
+                except Exception as e:
+                    logger.warning(f"Erro ao processar usuário {doc.id}: {e}")
+                    continue
+            
+            self.stats['usuarios_firestore'] = len(usuarios)
+            logger.info(f"✅ Carregados {len(usuarios)} usuários do Firestore")
+            return usuarios
+            
+        except Exception as e:
+            logger.warning(f"Erro ao carregar usuários do Firestore: {e}")
+            return {}
+    
+    def carregar_usuarios_json(self):
+        """Carrega usuários do arquivo JSON (fallback)"""
         arquivo_usuarios = os.path.join(self.script_dir, 'usuarios_favoritos.json')
         
         # Usuários de exemplo
@@ -135,7 +183,8 @@ class LiveloFirebaseNotifier:
                     "apenas_favoritos": True
                 },
                 "ativo": True,
-                "nome": "Usuário Demo 1"
+                "nome": "Usuário Demo 1",
+                "fonte": "json"
             },
             "user_demo_2": {
                 "fcm_token": "exemplo_token_demo_2", 
@@ -146,7 +195,8 @@ class LiveloFirebaseNotifier:
                     "apenas_favoritos": True
                 },
                 "ativo": True,
-                "nome": "Usuário Demo 2"
+                "nome": "Usuário Demo 2",
+                "fonte": "json"
             }
         }
         
@@ -155,10 +205,15 @@ class LiveloFirebaseNotifier:
             if os.path.exists(arquivo_usuarios):
                 with open(arquivo_usuarios, 'r', encoding='utf-8') as f:
                     usuarios_data = json.load(f)
-                    logger.info(f"Carregados {len(usuarios_data)} usuários do arquivo")
+                    # Marcar fonte como JSON
+                    for user_id in usuarios_data:
+                        usuarios_data[user_id]['fonte'] = 'json'
+                    
+                    self.stats['usuarios_json'] = len(usuarios_data)
+                    logger.info(f"✅ Carregados {len(usuarios_data)} usuários do JSON")
                     return usuarios_data
             else:
-                logger.info(f"Arquivo não encontrado: {arquivo_usuarios}")
+                logger.info(f"Arquivo JSON não encontrado: {arquivo_usuarios}")
                 logger.info("Usando dados de exemplo para demonstração")
                 
                 # Salvar exemplo para referência
@@ -170,11 +225,52 @@ class LiveloFirebaseNotifier:
                 except Exception as e:
                     logger.warning(f"Erro ao criar arquivo de exemplo: {e}")
                 
+                self.stats['usuarios_json'] = len(usuarios_exemplo)
                 return usuarios_exemplo
                 
         except Exception as e:
-            logger.warning(f"Erro ao carregar usuários: {e}")
+            logger.warning(f"Erro ao carregar usuários do JSON: {e}")
+            self.stats['usuarios_json'] = len(usuarios_exemplo)
             return usuarios_exemplo
+    
+    def carregar_usuarios_favoritos(self):
+        """Carrega usuários de AMBAS as fontes: Firestore (prioridade) + JSON (fallback)"""
+        logger.info("Carregando usuários com favoritos (Firestore + JSON)...")
+        
+        usuarios_final = {}
+        
+        # 1. Tentar carregar do Firestore primeiro (se Firebase estiver configurado)
+        if self.firebase_configurado and self.firestore_db:
+            usuarios_firestore = self.carregar_usuarios_firestore()
+            usuarios_final.update(usuarios_firestore)
+            logger.info(f"Firestore: {len(usuarios_firestore)} usuários carregados")
+        
+        # 2. Carregar do JSON como fallback ou complemento
+        usuarios_json = self.carregar_usuarios_json()
+        
+        # Adicionar usuários do JSON que não existem no Firestore
+        for user_id, user_data in usuarios_json.items():
+            if user_id not in usuarios_final:
+                usuarios_final[user_id] = user_data
+                logger.debug(f"Adicionado usuário do JSON: {user_id}")
+        
+        logger.info(f"JSON: {len(usuarios_json)} usuários disponíveis")
+        
+        # 3. Se não tem usuários, usar exemplo
+        if not usuarios_final:
+            logger.warning("Nenhum usuário encontrado em nenhuma fonte!")
+            usuarios_final = self.carregar_usuarios_json()
+        
+        total_usuarios = len(usuarios_final)
+        firestore_count = len([u for u in usuarios_final.values() if u.get('fonte') == 'firestore'])
+        json_count = len([u for u in usuarios_final.values() if u.get('fonte') == 'json'])
+        
+        logger.info(f"📊 RESUMO USUÁRIOS:")
+        logger.info(f"   🔥 Firestore: {firestore_count} usuários")
+        logger.info(f"   📄 JSON: {json_count} usuários")
+        logger.info(f"   📋 Total final: {total_usuarios} usuários")
+        
+        return usuarios_final
     
     def analisar_mudancas_ofertas(self):
         """Analisa mudanças nas ofertas baseado nos dados do scraper com caminhos corretos"""
@@ -307,7 +403,7 @@ class LiveloFirebaseNotifier:
             # Preparar dados extras
             dados = {
                 'click_action': 'FLUTTER_NOTIFICATION_CLICK',
-                'url': 'https://gcaressato.github.io/livelo_scraper/',
+                'url': 'https://livel-analytics.web.app/',
                 'sound': 'default'
             }
             
@@ -340,8 +436,8 @@ class LiveloFirebaseNotifier:
                     notification=self.messaging.WebpushNotification(
                         title=titulo,
                         body=corpo,
-                        icon='https://gcaressato.github.io/livelo_scraper/icon-192.png',
-                        click_action='https://gcaressato.github.io/livelo_scraper/'
+                        icon='https://livel-analytics.web.app/icon-192.png',
+                        click_action='https://livel-analytics.web.app/'
                     )
                 )
             )
@@ -367,7 +463,7 @@ class LiveloFirebaseNotifier:
             logger.info("Firebase não configurado - sistema funcionará sem notificações")
             return True
         
-        # 2. Carregar usuários
+        # 2. Carregar usuários (Firestore + JSON)
         usuarios = self.carregar_usuarios_favoritos()
         usuarios_ativos = {k: v for k, v in usuarios.items() if v.get('ativo', False)}
         
@@ -387,7 +483,8 @@ class LiveloFirebaseNotifier:
         # 4. Enviar notificações
         for user_id, usuario in usuarios_ativos.items():
             token = usuario.get('fcm_token')
-            if not token:
+            if not token or token.startswith('exemplo_'):
+                logger.debug(f"Token inválido ou de exemplo para {user_id}, pulando")
                 continue
                 
             favoritos = usuario.get('favoritos', [])
@@ -406,23 +503,28 @@ class LiveloFirebaseNotifier:
                     sucesso = self.enviar_notificacao(token, titulo, corpo, dados_extras)
                     
                     if sucesso:
-                        logger.debug(f"Notificação enviada para {user_id}: {titulo}")
+                        logger.info(f"✅ Notificação enviada para {user_id}: {titulo}")
                     else:
-                        logger.warning(f"Falha ao notificar {user_id}")
+                        logger.warning(f"❌ Falha ao notificar {user_id}")
         
         return True
     
     def gerar_relatorio(self):
         """Gera relatório das notificações"""
-        print("\n" + "="*60)
-        print("🔔 SISTEMA DE NOTIFICAÇÕES FIREBASE")
-        print("="*60)
+        print("\n" + "="*70)
+        print("🔔 SISTEMA DE NOTIFICAÇÕES FIREBASE + FIRESTORE")
+        print("="*70)
         print(f"⏰ Executado: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
         print(f"📁 Diretório: {self.script_dir}")
         print(f"🔥 Firebase: {'✅ Configurado' if self.firebase_configurado else '❌ Não configurado'}")
+        print(f"🗃️ Firestore: {'✅ Ativo' if self.firestore_db else '❌ Não disponível'}")
         print("")
-        print("📊 ESTATÍSTICAS:")
-        print(f"   👥 Usuários ativos: {self.stats['usuarios_ativos']}")
+        print("📊 ESTATÍSTICAS DE USUÁRIOS:")
+        print(f"   🔥 Firestore: {self.stats['usuarios_firestore']} usuários")
+        print(f"   📄 JSON: {self.stats['usuarios_json']} usuários")
+        print(f"   👥 Ativos: {self.stats['usuarios_ativos']} usuários")
+        print("")
+        print("📊 ESTATÍSTICAS DE NOTIFICAÇÕES:")
         print(f"   📈 Mudanças detectadas: {self.stats['mudancas_detectadas']}")
         print(f"   ⭐ Favoritos processados: {self.stats['favoritos_processados']}")
         print(f"   ✅ Notificações enviadas: {self.stats['notificacoes_enviadas']}")
@@ -431,22 +533,29 @@ class LiveloFirebaseNotifier:
         
         if self.firebase_configurado and self.stats['notificacoes_enviadas'] > 0:
             print("🎉 NOTIFICAÇÕES ENVIADAS COM SUCESSO!")
+            print(f"   📱 {self.stats['notificacoes_enviadas']} usuários notificados")
         elif not self.firebase_configurado:
             print("💡 PARA ATIVAR NOTIFICAÇÕES:")
             print("   1. Configure FIREBASE_PROJECT_ID nos secrets")
-            print("   2. Configure FIREBASE_SERVICE_ACCOUNT nos secrets")
-            print("   3. Adicione usuários em usuarios_favoritos.json")
+            print("   2. Configure FIREBASE_SERVICE_ACCOUNT nos secrets")  
+            print("   3. Usuários se cadastram via web interface")
+            print("   4. Dados salvos automaticamente no Firestore")
         else:
             print("ℹ️ NENHUMA NOTIFICAÇÃO ENVIADA")
+            if self.stats['usuarios_ativos'] == 0:
+                print("   Motivo: Nenhum usuário ativo encontrado")
+            elif self.stats['mudancas_detectadas'] == 0:
+                print("   Motivo: Nenhuma mudança detectada")
         
         print("")
         print("✅ Sistema principal não foi afetado")
-        print("="*60)
+        print("🌐 Web Interface: https://livel-analytics.web.app/")
+        print("="*70)
     
     def executar(self):
         """Executa sistema completo - NUNCA falha o pipeline principal"""
         try:
-            logger.info("🚀 Iniciando sistema de notificações Firebase...")
+            logger.info("🚀 Iniciando sistema de notificações Firebase + Firestore...")
             
             sucesso = self.processar_notificacoes()
             
@@ -466,7 +575,7 @@ class LiveloFirebaseNotifier:
             return True
 
 def main():
-    """Função principal - SEMPRE retorna sucesso"""
+    """Função principal"""
     try:
         notifier = LiveloFirebaseNotifier()
         notifier.executar()
