@@ -1,4 +1,100 @@
-  File "/home/runner/work/livelo_scraper/livelo_scraper/main.py", line 128
-    def validar_arquivos_gerados(self):
-                                       ^
-IndentationError: unindent does not match any outer indentation level
+2025-08-23 21:24:37,554 - INFO - 🎯 Mínimo de parceiros ajustado para: 50
+2025-08-23 21:24:37,554 - INFO - 🎯 Iniciando pipeline principal...
+2025-08-23 21:24:37,554 - INFO - 🔍 Etapa 1/4: Validando ambiente...
+2025-08-23 21:24:37,554 - INFO - 🔍 Validando ambiente...
+2025-08-23 21:24:38,216 - INFO - ✅ Dependências básicas disponíveis
+2025-08-23 21:24:38,216 - INFO - 🕷️ Etapa 2/4: Executando scraping...
+2025-08-23 21:24:38,216 - INFO - 🕷️ Iniciando scraping...
+2025-08-23 21:24:38,216 - INFO - 📊 Executando scraper...
+2025-08-23 21:26:00,694 - INFO - ✅ Scraper executado sem erros
+2025-08-23 21:26:00,694 - INFO - 📄 livelo_parceiros.xlsx: 237,929 bytes
+2025-08-23 21:26:00,694 - INFO - 🔍 Validando dados coletados (RIGOROSO)...
+2025-08-23 21:26:01,400 - INFO - 📊 Registros encontrados: 7765
+2025-08-23 21:26:01,400 - WARNING - ⚠️ Coluna esperada não encontrada: nome
+2025-08-23 21:26:01,400 - WARNING - ⚠️ Coluna esperada não encontrada: categoria
+2025-08-23 21:26:01,402 - INFO - ✅ Dados validados: 7765 parceiros coletados
+2025-08-23 21:26:01,402 - INFO - ✅ Colunas encontradas: 6
+2025-08-23 21:26:01,403 - INFO - ✅ Scraping concluído com dados válidos
+2025-08-23 21:26:01,403 - INFO - 📊 Etapa 3/4: Executando análise...
+2025-08-23 21:26:01,403 - INFO - 📊 Iniciando análise...
+2025-08-23 21:26:01,403 - INFO - 🔍 Validando dados coletados (RIGOROSO)...
+2025-08-23 21:26:02,031 - INFO - 📊 Registros encontrados: 7765
+2025-08-23 21:26:02,031 - WARNING - ⚠️ Coluna esperada não encontrada: nome
+2025-08-23 21:26:02,031 - WARNING - ⚠️ Coluna esperada não encontrada: categoria
+2025-08-23 21:26:02,033 - INFO - ✅ Dados validados: 7765 parceiros coletados
+2025-08-23 21:26:02,033 - INFO - ✅ Colunas encontradas: 6
+2025-08-23 21:26:02,033 - INFO - 📈 Executando análise com reporter...
+2025-08-23 21:26:05,799 - INFO - ✅ Reporter executado sem erros
+2025-08-23 21:26:05,800 - INFO - 📄 public/index.html: 7,469,003 bytes
+2025-08-23 21:26:05,800 - INFO - 🔍 Validando arquivos gerados (RIGOROSO)...
+2025-08-23 21:26:05,800 - INFO - ✅ public/index.html: 7,469,003 bytes
+2025-08-23 21:26:05,800 - INFO - ✅ livelo_parceiros.xlsx: 237,929 bytes
+2025-08-23 21:26:05,800 - INFO - 🔍 Validando dados coletados (RIGOROSO)...
+2025-08-23 21:26:06,428 - INFO - 📊 Registros encontrados: 7765
+2025-08-23 21:26:06,429 - WARNING - ⚠️ Coluna esperada não encontrada: nome
+2025-08-23 21:26:06,429 - WARNING - ⚠️ Coluna esperada não encontrada: categoria
+2025-08-23 21:26:06,430 - INFO - ✅ Dados validados: 7765 parceiros coletados
+2025-08-23 21:26:06,431 - INFO - ✅ Colunas encontradas: 6
+2025-08-23 21:26:06,522 - INFO - ✅ HTML validado: 7,468,012 caracteres
+2025-08-23 21:26:06,523 - INFO - ✅ Análise concluída com arquivos válidos
+2025-08-23 21:26:06,523 - INFO - 🚀 Etapa 4/4: Preparando deploy...
+2025-08-23 21:26:06,523 - INFO - 🚀 Verificando arquivos para GitHub Pages...
+2025-08-23 21:26:06,523 - INFO - 📄 livelo_parceiros.xlsx → public/livelo_parceiros.xlsx
+2025-08-23 21:26:06,523 - INFO - ✅ public/index.html: 7,469,003 bytes
+2025-08-23 21:26:06,523 - INFO - ✅ public/livelo_parceiros.xlsx: 237,929 bytes
+2025-08-23 21:26:06,524 - INFO - 🕐 Verificação de deploy em: 2025-08-23 21:26:06
+2025-08-23 21:26:06,524 - INFO - 📅 public/index.html modificado em: 2025-08-23 21:26:05
+2025-08-23 21:26:06,524 - INFO - 📅 public/livelo_parceiros.xlsx modificado em: 2025-08-23 21:25:59
+2025-08-23 21:26:06,524 - INFO - ✅ Todos os arquivos prontos para deploy no public/
+2025-08-23 21:26:06,524 - INFO - 🎉 Pipeline principal concluído com 100% de sucesso!
+2025-08-23 21:26:06,524 - INFO - 🔥 Extra: Tentando Firebase (opcional)...
+2025-08-23 21:26:06,524 - INFO - 🔥 Verificando Firebase (opcional)...
+2025-08-23 21:26:06,524 - INFO - ℹ️ Firebase não configurado (normal)
+2025-08-23 21:26:06,524 - INFO - 💡 Sistema funciona 100% sem Firebase
+2025-08-23 21:26:06,524 - INFO - ✅ Verificação Firebase concluída
+2025-08-23 21:26:06,524 - INFO - 📋 Gerando relatório de execução...
+2025-08-23 21:26:06,524 - INFO - 🎉 Sistema Livelo Analytics funcionando perfeitamente!
+
+🚀 INICIANDO PIPELINE LIVELO ANALYTICS
+============================================================
+⏰ Timestamp: 20250823_212437
+📁 Diretório: /home/runner/work/livelo_scraper/livelo_scraper
+🐍 Python: 3.10.18
+
+🎯 FOCO: Pipeline principal (Scraping → Análise → Deploy)
+🔥 Firebase é 100% opcional e não interfere no processo
+📊 Validação rigorosa: min 50 parceiros
+============================================================
+
+======================================================================
+📊 RELATÓRIO DE EXECUÇÃO LIVELO ANALYTICS
+======================================================================
+⏰ Timestamp: 23/08/2025 21:26:06
+🔥 Etapas Críticas: 4/4
+🔥 Firebase Opcional: ℹ️ Desabilitado
+
+🎯 PIPELINE PRINCIPAL (CRÍTICO):
+   🕷️ Scraping: ✅ SUCESSO
+   📊 Analise: ✅ SUCESSO
+   🔍 Validacao: ✅ SUCESSO
+   🚀 Deploy Preparacao: ✅ SUCESSO
+
+📁 ARQUIVOS PRINCIPAIS:
+   📄 public/index.html: 7,469,003 bytes
+   📄 public/livelo_parceiros.xlsx: 237,929 bytes
+
+🎉 PIPELINE PRINCIPAL CONCLUÍDO COM SUCESSO!
+
+🌐 ACESSO AO SISTEMA:
+   ✅ GitHub Pages: https://gcaressato.github.io/livelo_scraper/
+
+✨ FUNCIONALIDADES ATIVAS:
+   ✅ Dados coletados e processados
+   ✅ Dashboard HTML responsivo
+   ✅ Arquivos preparados para deploy no public/
+   ✅ Sistema 100% funcional
+   ℹ️ Firebase desabilitado (opcional)
+======================================================================
+
+🚀 SISTEMA PRONTO PARA USO!
+📱 Acesse: https://gcaressato.github.io/livelo_scraper/
