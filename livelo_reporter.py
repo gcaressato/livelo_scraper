@@ -3867,6 +3867,11 @@ class LiveloAnalytics:
                     }}
                 }}
 
+                async enable() {{
+                    this.currentRetries = 0;
+                    return await this.attemptEnable();
+                }}
+
                 async disable() {{
                     try {{
                         // 1. Remover do localStorage
@@ -4010,10 +4015,10 @@ class LiveloAnalytics:
                         tokenPreview: this.token ? this.token.substring(0, 20) + '...' : null,
                         permission: Notification.permission,
                         serviceWorkerSupport: 'serviceWorker' in navigator,
-                        firebaseConfig: firebaseConfig.projectId !== 'placeholder-will-be-replaced'
+                        firebaseConfig: firebaseConfig.projectId !== 'placeholder-will-be-replaced',
+                        hasServiceWorkerRegistration: !!this.serviceWorkerRegistration
                     }};
                 }}
-            }}
 
             // ========== CLASSE GERENCIADOR DA CARTEIRA - VERSÃO CORRIGIDA ==========
             class LiveloCarteiraManager {{
