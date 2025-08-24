@@ -89,8 +89,172 @@ jobs:
               exit 1
             fi
           fi
+
+      - name: 🔐 Substituir placeholders Firebase no Service Worker
+        if: env.PIPELINE_OK == 'true'
+        run: |
+          echo "🔧 Substituindo placeholders no firebase-messaging-sw.js..."
+          
+          if [ -f "public/firebase-messaging-sw.js" ]; then
+            # Fazer backup do original
+            cp public/firebase-messaging-sw.js public/firebase-messaging-sw.js.backup
+            
+            # Substituir placeholders com sed
+            sed -i 's/{{FIREBASE_API_KEY}}/${{ secrets.FIREBASE_API_KEY }}/g' public/firebase-messaging-sw.js
+            sed -i 's/{{FIREBASE_AUTH_DOMAIN}}/${{ secrets.FIREBASE_AUTH_DOMAIN }}/g' public/firebase-messaging-sw.js
+            sed -i 's/{{FIREBASE_PROJECT_ID}}/${{ secrets.FIREBASE_PROJECT_ID }}/g' public/firebase-messaging-sw.js
+            sed -i 's/{{FIREBASE_STORAGE_BUCKET}}/${{ secrets.FIREBASE_STORAGE_BUCKET }}/g' public/firebase-messaging-sw.js
+            sed -i 's/{{FIREBASE_MESSAGING_SENDER_ID}}/${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}/g' public/firebase-messaging-sw.js
+            sed -i 's/{{FIREBASE_APP_ID}}/${{ secrets.FIREBASE_APP_ID }}/g' public/firebase-messaging-sw.js
+            
+            echo "✅ Placeholders substituídos no Service Worker"
+          else
+            echo "⚠️ Arquivo public/firebase-messaging-sw.js não encontrado"
+          fi
+      
+      - name: 🔐 Substituir placeholders Firebase no config runtime
+        if: env.PIPELINE_OK == 'true'
+        run: |
+          echo "🔧 Substituindo placeholders no firebase-config-runtime.js..."
+          
+          if [ -f "firebase-config-runtime.js" ]; then
+            # Fazer backup do original
+            cp firebase-config-runtime.js firebase-config-runtime.js.backup
+            
+            # Substituir placeholders
+            sed -i 's/{{FIREBASE_API_KEY}}/${{ secrets.FIREBASE_API_KEY }}/g' firebase-config-runtime.js
+            sed -i 's/{{FIREBASE_AUTH_DOMAIN}}/${{ secrets.FIREBASE_AUTH_DOMAIN }}/g' firebase-config-runtime.js
+            sed -i 's/{{FIREBASE_PROJECT_ID}}/${{ secrets.FIREBASE_PROJECT_ID }}/g' firebase-config-runtime.js
+            sed -i 's/{{FIREBASE_STORAGE_BUCKET}}/${{ secrets.FIREBASE_STORAGE_BUCKET }}/g' firebase-config-runtime.js
+            sed -i 's/{{FIREBASE_MESSAGING_SENDER_ID}}/${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}/g' firebase-config-runtime.js
+            sed -i 's/{{FIREBASE_APP_ID}}/${{ secrets.FIREBASE_APP_ID }}/g' firebase-config-runtime.js
+            sed -i 's/{{FIREBASE_VAPID_KEY}}/${{ secrets.FIREBASE_VAPID_KEY }}/g' firebase-config-runtime.js
+            
+            echo "✅ Placeholders substituídos no config runtime"
+          else
+            echo "⚠️ Arquivo firebase-config-runtime.js não encontrado"
+          fi
+      
+      - name: 🔐 Substituir placeholders Firebase em outros arquivos
+        if: env.PIPELINE_OK == 'true'
+        run: |
+          echo "🔧 Verificando outros arquivos Firebase..."
+          
+          # Verificar e substituir em sender/firebase-config.js se existir
+          if [ -f "sender/firebase-config.js" ]; then
+            echo "📄 Processando sender/firebase-config.js..."
+            cp sender/firebase-config.js sender/firebase-config.js.backup
+            
+            sed -i 's/{{FIREBASE_API_KEY}}/${{ secrets.FIREBASE_API_KEY }}/g' sender/firebase-config.js
+            sed -i 's/{{FIREBASE_AUTH_DOMAIN}}/${{ secrets.FIREBASE_AUTH_DOMAIN }}/g' sender/firebase-config.js
+            sed -i 's/{{FIREBASE_PROJECT_ID}}/${{ secrets.FIREBASE_PROJECT_ID }}/g' sender/firebase-config.js
+            sed -i 's/{{FIREBASE_STORAGE_BUCKET}}/${{ secrets.FIREBASE_STORAGE_BUCKET }}/g' sender/firebase-config.js
+            sed -i 's/{{FIREBASE_MESSAGING_SENDER_ID}}/${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}/g' sender/firebase-config.js
+            sed -i 's/{{FIREBASE_APP_ID}}/${{ secrets.FIREBASE_APP_ID }}/g' sender/firebase-config.js
+            
+            echo "✅ sender/firebase-config.js processado"
+          fi
+          
+          # Verificar outros arquivos .js no public que podem ter placeholders
+          find public -name "*.js" -not -name "firebase-messaging-sw.js" | while read -r file; do
+            if grep -q "{{FIREBASE" "$file" 2>/dev/null; then
+              echo "📄 Processando $file..."
+              cp "$file" "$file.backup"
+              
+              sed -i 's/{{FIREBASE_API_KEY}}/${{ secrets.FIREBASE_API_KEY }}/g' "$file"
+              sed -i 's/{{FIREBASE_AUTH_DOMAIN}}/${{ secrets.FIREBASE_AUTH_DOMAIN }}/g' "$file"
+              sed -i 's/{{FIREBASE_PROJECT_ID}}/${{ secrets.FIREBASE_PROJECT_ID }}/g' "$file"
+              sed -i 's/{{FIREBASE_STORAGE_BUCKET}}/${{ secrets.FIREBASE_STORAGE_BUCKET }}/g' "$file"
+              sed -i 's/{{FIREBASE_MESSAGING_SENDER_ID}}/${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}/g' "$file"
+              sed -i 's/{{FIREBASE_APP_ID}}/${{ secrets.FIREBASE_APP_ID }}/g' "$file"
+              sed -i 's/{{FIREBASE_VAPID_KEY}}/${{ secrets.FIREBASE_VAPID_KEY }}/g' "$file"
+              
+              echo "✅ $file processado"
+            fi
+          done
+      
+      - name: 🔍 Verificar substituições Firebase
+        if: env.PIPELINE_OK == 'true'
+        run: |
+          echo "🔍 Verificando se todas as substituições foram realizadas..."
+          
+          ERROR_FOUND=false
+          
+          # Verificar Service Worker
+          if [ -f "public/firebase-messaging-sw.js" ]; then
+            if grep -q "{{FIREBASE" public/firebase-messaging-sw.js; then
+              echo "❌ ERRO: Placeholders não substituídos no Service Worker:"
+              grep "{{FIREBASE" public/firebase-messaging-sw.js || true
+              ERROR_FOUND=true
+            else
+              echo "✅ Service Worker: Todos os placeholders substituídos"
+              
+              # Verificar se a configuração parece válida
+              if grep -q "livel-analytics" public/firebase-messaging-sw.js; then
+                echo "✅ Service Worker: Configuração Firebase detectada"
+              fi
+            fi
+          fi
+          
+          # Verificar config runtime
+          if [ -f "firebase-config-runtime.js" ]; then
+            if grep -q "{{FIREBASE" firebase-config-runtime.js; then
+              echo "❌ ERRO: Placeholders não substituídos no config runtime:"
+              grep "{{FIREBASE" firebase-config-runtime.js || true
+              ERROR_FOUND=true
+            else
+              echo "✅ Config Runtime: Todos os placeholders substituídos"
+            fi
+          fi
+          
+          # Verificar outros arquivos
+          find . -name "*.js" -not -path "./node_modules/*" -not -name "*.backup" | while read -r file; do
+            if grep -q "{{FIREBASE" "$file" 2>/dev/null; then
+              echo "⚠️ Placeholders encontrados em: $file"
+              grep "{{FIREBASE" "$file" || true
+            fi
+          done
+          
+          if [ "$ERROR_FOUND" = true ]; then
+            echo "❌ FALHA: Alguns placeholders não foram substituídos!"
+            echo "🔍 Verificando se os secrets estão configurados..."
+            
+            if [ -z "${{ secrets.FIREBASE_API_KEY }}" ]; then
+              echo "❌ FIREBASE_API_KEY não está configurado nos secrets"
+            fi
+            if [ -z "${{ secrets.FIREBASE_PROJECT_ID }}" ]; then
+              echo "❌ FIREBASE_PROJECT_ID não está configurado nos secrets"
+            fi
+            
+            echo "📋 Para configurar os secrets:"
+            echo "   1. Vá em Settings > Secrets and Variables > Actions"
+            echo "   2. Configure todos os secrets do Firebase"
+            echo ""
+            echo "⚠️ Continuando sem Firebase (funcionalidade opcional)"
+          else
+            echo "🎉 Todas as substituições Firebase realizadas com sucesso!"
+            
+            # Mostrar preview das configurações (sem revelar valores completos)
+            echo ""
+            echo "📋 Preview das configurações aplicadas:"
+            echo "   - API Key: $(echo '${{ secrets.FIREBASE_API_KEY }}' | cut -c1-10)..."
+            echo "   - Project ID: ${{ secrets.FIREBASE_PROJECT_ID }}"
+            echo "   - Messaging Sender: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}"
+          fi
+      
+      - name: 📁 Copiar firebase-config-runtime.js para public
+        if: env.PIPELINE_OK == 'true'
+        run: |
+          echo "📄 Copiando firebase-config-runtime.js para public/..."
+          
+          if [ -f "firebase-config-runtime.js" ]; then
+            cp firebase-config-runtime.js public/firebase-config-runtime.js
+            echo "✅ firebase-config-runtime.js copiado para public/"
+          else
+            echo "⚠️ firebase-config-runtime.js não encontrado na raiz"
+          fi
         
-      - name: Preparar arquivos para GitHub Pages (LIMPO)
+      - name: Preparar arquivos para GitHub Pages
         run: |
           echo "📁 Preparando arquivos para GitHub Pages..."
           
