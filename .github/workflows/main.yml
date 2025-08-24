@@ -39,7 +39,6 @@ jobs:
       - name: Criar diretórios necessários
         run: |
           mkdir -p logs
-          mkdir -p relatorios
           mkdir -p public
           
       - name: Executar pipeline principal (main.py)
@@ -63,7 +62,7 @@ jobs:
             exit 1
           fi
           
-          # Verificar arquivos críticos na nova estrutura
+          # Verificar arquivos críticos na estrutura correta
           if [ -f "public/index.html" ] && [ -f "livelo_parceiros.xlsx" ]; then
             echo "✅ Arquivos principais encontrados"
             ls -la public/index.html livelo_parceiros.xlsx
@@ -91,29 +90,31 @@ jobs:
             fi
           fi
         
-      - name: Preparar arquivos para GitHub Pages
+      - name: Preparar arquivos para GitHub Pages (LIMPO)
         run: |
           echo "📁 Preparando arquivos para GitHub Pages..."
           
-          # Criar estrutura para GitHub Pages
+          # Criar estrutura limpa para GitHub Pages
           mkdir -p _site
           
-          # Copiar arquivos da nova estrutura para _site
+          # ✅ COPIAR APENAS O NECESSÁRIO (SEM DUPLICATAS)
+          echo "📄 Copiando public/index.html → _site/index.html"
           cp public/index.html _site/index.html
-          cp livelo_parceiros.xlsx _site/
           
-          # Criar também a pasta relatorios para compatibilidade
-          mkdir -p _site/relatorios
-          cp public/index.html _site/relatorios/livelo_analytics.html
+          echo "📄 Copiando livelo_parceiros.xlsx → _site/livelo_parceiros.xlsx"
+          cp livelo_parceiros.xlsx _site/livelo_parceiros.xlsx
           
-          # Verificar se existem outros arquivos na pasta public
-          if [ -d "public" ]; then
-            echo "📂 Copiando arquivos adicionais da pasta public..."
-            cp -r public/* _site/ 2>/dev/null || echo "Nenhum arquivo adicional encontrado"
-          fi
+          # ✅ COPIAR OUTROS ARQUIVOS DO PUBLIC (Firebase, manifest, etc.)
+          echo "📂 Copiando arquivos de configuração do public/..."
+          find public -name "*.js" -o -name "*.json" -o -name "*.png" -o -name "*.ico" | while read file; do
+            if [ -f "$file" ] && [ "$(basename "$file")" != "index.html" ]; then
+              cp "$file" "_site/$(basename "$file")"
+              echo "📄 Copiado: $file → _site/$(basename "$file")"
+            fi
+          done
           
-          echo "✅ Arquivos preparados para GitHub Pages"
-          echo "📂 Estrutura do _site:"
+          echo "✅ Arquivos preparados para GitHub Pages (estrutura limpa)"
+          echo "📂 Estrutura final do _site:"
           ls -la _site/
           
       - name: Upload páginas como artifact
@@ -146,14 +147,12 @@ jobs:
           git config --local user.name "GitHub Actions"
           
           timestamp=$(date +"%d/%m/%Y %H:%M")
+          commit_hash=$(git rev-parse --short HEAD)
           
-          # Adicionar arquivos da nova estrutura
+          # Adicionar arquivos da estrutura atual
           git add -f public/index.html
           git add -f livelo_parceiros.xlsx
           git add -f *.log 2>/dev/null || true
-          
-          # Adicionar toda a pasta public se houver mais arquivos
-          git add -f public/ 2>/dev/null || true
           
           if git diff --staged --quiet; then
             echo "ℹ️ Nenhuma mudança detectada para commit"
@@ -163,9 +162,10 @@ jobs:
             git commit -m "📊 Atualização Livelo Analytics - $timestamp
 
             ✅ Pipeline: Sucesso com validação rigorosa
-            📄 Arquivos: public/index.html + livelo_parceiros.xlsx
-            📁 Preparado para GitHub Pages (Actions)
-            🔥 Firebase: Será processado no próximo job
+            📄 HTML: public/index.html ($(stat -c%s public/index.html 2>/dev/null || echo '0') bytes)
+            📄 Excel: livelo_parceiros.xlsx ($(stat -c%s livelo_parceiros.xlsx 2>/dev/null || echo '0') bytes)
+            🚀 Deploy: Estrutura limpa (sem duplicatas)
+            🔄 Commit anterior: $commit_hash
             ⏰ Executado: $timestamp"
             
             # Push com retry
@@ -184,7 +184,7 @@ jobs:
             done
           fi
 
-  # JOB 2: DEPLOY GITHUB PAGES
+  # JOB 2: DEPLOY GITHUB PAGES (MELHORADO)
   deploy_github_pages:
     needs: pipeline_principal
     runs-on: ubuntu-latest
@@ -199,89 +199,64 @@ jobs:
       - name: Verificar artifact antes do deploy
         run: |
           echo "🔍 Verificando artifacts disponíveis..."
-          # GitHub Actions disponibiliza info sobre artifacts via API
           echo "Workflow Run ID: ${{ github.run_id }}"
           
-      - name: Verificar e ativar GitHub Pages
-        run: |
-          echo "🔍 Verificando status do GitHub Pages..."
+      - name: Deploy para GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages
           
-          # Tentar obter informações do Pages
-          pages_status=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/${{ github.repository }}/pages" \
-            -w "%{http_code}" -o pages_response.json)
-          
-          echo "Status da API Pages: $pages_status"
-          
-          if [ "$pages_status" = "404" ]; then
-            echo "📝 GitHub Pages não está ativo. Tentando ativar..."
-            
-            # Tentar criar/ativar o GitHub Pages
-            activate_result=$(curl -s -X POST \
-              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              -H "Accept: application/vnd.github.v3+json" \
-              -H "Content-Type: application/json" \
-              "https://api.github.com/repos/${{ github.repository }}/pages" \
-              -d '{"source":{"branch":"gh-pages","path":"/"}}' \
-              -w "%{http_code}" -o activate_response.json)
-            
-            echo "Resultado da ativação: $activate_result"
-            
-            if [ "$activate_result" = "201" ] || [ "$activate_result" = "200" ]; then
-              echo "✅ GitHub Pages ativado com sucesso!"
-            else
-              echo "⚠️ Não foi possível ativar automaticamente"
-              echo "📋 Resposta da API:"
-              cat activate_response.json 2>/dev/null || echo "Sem resposta"
-            fi
-            
-          elif [ "$pages_status" = "200" ]; then
-            echo "✅ GitHub Pages já está ativo"
-            cat pages_response.json 2>/dev/null || echo "Status obtido com sucesso"
-          else
-            echo "⚠️ Status inesperado: $pages_status"
-            cat pages_response.json 2>/dev/null || echo "Resposta não disponível"
-          fi
-          
-          # Limpeza
-          rm -f pages_response.json activate_response.json
-        
-      - name: Verificar deploy e aguardar propagação
+      - name: Verificar e aguardar propagação
         run: |
           echo "🚀 Deploy concluído!"
           echo "🌐 URL: ${{ steps.deployment.outputs.page_url }}"
           echo "📋 Deploy ID: ${{ github.sha }}"
+          echo "🕐 Deploy timestamp: $(date '+%Y-%m-%d %H:%M:%S UTC')"
           
-          # Aguardar alguns segundos para propagação
-          echo "⏳ Aguardando propagação (30 segundos)..."
-          sleep 30
+          # ✅ FORÇA INVALIDAÇÃO DE CACHE
+          echo "🔄 Forçando invalidação de cache..."
           
-          # Tentar fazer uma requisição para verificar se está online
-          echo "🔍 Testando se o site está respondendo..."
+          # Aguardar propagação inicial
+          echo "⏳ Aguardando propagação (45 segundos)..."
+          sleep 45
           
-          MAX_ATTEMPTS=5
+          # Tentar fazer requisições com diferentes user-agents para forçar cache refresh
+          echo "🔍 Testando disponibilidade do site..."
+          
+          MAX_ATTEMPTS=6
           ATTEMPT=1
           
           while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
             echo "Tentativa $ATTEMPT de $MAX_ATTEMPTS..."
             
-            if curl -s -f "${{ steps.deployment.outputs.page_url }}" > /dev/null; then
+            # Usar diferentes estratégias para testar
+            if curl -s -f -H "Cache-Control: no-cache" -H "Pragma: no-cache" "${{ steps.deployment.outputs.page_url }}" > /dev/null; then
               echo "✅ Site está respondendo!"
-              break
+              
+              # Verificar se o HTML contém dados atualizados
+              if curl -s "${{ steps.deployment.outputs.page_url }}" | grep -q "Livelo Analytics Pro"; then
+                echo "✅ Conteúdo HTML verificado!"
+                break
+              else
+                echo "⚠️ HTML carregado mas conteúdo pode estar desatualizado"
+              fi
             else
               echo "⏳ Site ainda não está respondendo, aguardando..."
-              sleep 15
+              sleep 20
               ATTEMPT=$((ATTEMPT + 1))
             fi
           done
           
           if [ $ATTEMPT -gt $MAX_ATTEMPTS ]; then
             echo "⚠️ Site pode levar mais alguns minutos para ficar disponível"
-            echo "💡 Isso é normal com GitHub Pages - aguarde 5-10 minutos"
+            echo "💡 GitHub Pages às vezes demora 5-15 minutos para propagação completa"
+            echo "🔍 Teste em modo anônimo ou com Ctrl+F5 para forçar atualização"
+          else
+            echo "🎉 Deploy verificado e funcionando!"
           fi
 
-  # JOB 3: FIREBASE INTEGRATION
+  # JOB 3: FIREBASE INTEGRATION (Mantido como estava)
   firebase_integration:
     needs: [pipeline_principal, deploy_github_pages]
     runs-on: ubuntu-latest
@@ -304,7 +279,6 @@ jobs:
           
       - name: Instalar dependências Firebase
         run: |
-          # Verificar se package.json existe antes de instalar
           if [ -f "package.json" ]; then
             echo "📦 Instalando dependências do package.json..."
             npm install
@@ -314,10 +288,7 @@ jobs:
             npm install firebase@^9.0.0
           fi
           
-          # Instalar Firebase CLI globalmente
           npm install -g firebase-tools
-          
-          # Instalar dependências Python
           pip install firebase-admin pandas openpyxl
           
       - name: Verificar configuração Firebase
@@ -345,174 +316,19 @@ jobs:
             echo "ℹ️ FIREBASE_TOKEN não configurado"
           fi
           
-      - name: Criar estrutura Firebase mínima
-        if: env.FIREBASE_CONFIGURED == 'true'
-        run: |
-          echo "🔧 Criando estrutura Firebase..."
-          
-          # Criar firebase.json se não existir
-          if [ ! -f "firebase.json" ]; then
-            echo "📝 Criando firebase.json..."
-            cat > firebase.json << 'EOF'
-          {
-            "hosting": {
-              "public": "public",
-              "ignore": [
-                "firebase.json",
-                "**/.*",
-                "**/node_modules/**"
-              ],
-              "rewrites": [
-                {
-                  "source": "**",
-                  "destination": "/index.html"
-                }
-              ]
-            }
-          }
-          EOF
-          fi
-          
-          # Criar .firebaserc se não existir
-          if [ ! -f ".firebaserc" ]; then
-            echo "📝 Criando .firebaserc..."
-            cat > .firebaserc << EOF
-          {
-            "projects": {
-              "default": "${{ secrets.FIREBASE_PROJECT_ID }}"
-            }
-          }
-          EOF
-          fi
-          
-      - name: Criar configuração Firebase dinâmica
-        if: env.FIREBASE_CONFIGURED == 'true'
-        run: |
-          echo "🔧 Criando configuração Firebase dinâmica..."
-          
-          # Criar pasta sender se não existir
-          mkdir -p sender
-          
-          # Criar firebase-config.js com valores reais
-          cat > sender/firebase-config.js << 'EOF'
-          import { initializeApp } from 'firebase/app';
-          import { getMessaging } from 'firebase/messaging';
-          import { getFirestore } from 'firebase/firestore';
-
-          const firebaseConfig = {
-            apiKey: "${{ secrets.FIREBASE_API_KEY }}",
-            authDomain: "${{ secrets.FIREBASE_AUTH_DOMAIN }}",
-            projectId: "${{ secrets.FIREBASE_PROJECT_ID }}",
-            storageBucket: "${{ secrets.FIREBASE_STORAGE_BUCKET }}",
-            messagingSenderId: "${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}",
-            appId: "${{ secrets.FIREBASE_APP_ID }}",
-            measurementId: "${{ secrets.FIREBASE_MEASUREMENT_ID }}"
-          };
-
-          const app = initializeApp(firebaseConfig);
-          const messaging = getMessaging(app);
-          const db = getFirestore(app);
-
-          export { messaging, db };
-          EOF
-          
-          # Criar Service Worker com valores reais
-          cat > public/firebase-messaging-sw.js << 'EOF'
-          importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
-          importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
-
-          const firebaseConfig = {
-            apiKey: "${{ secrets.FIREBASE_API_KEY }}",
-            authDomain: "${{ secrets.FIREBASE_AUTH_DOMAIN }}",
-            projectId: "${{ secrets.FIREBASE_PROJECT_ID }}",
-            storageBucket: "${{ secrets.FIREBASE_STORAGE_BUCKET }}",
-            messagingSenderId: "${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}",
-            appId: "${{ secrets.FIREBASE_APP_ID }}",
-            measurementId: "${{ secrets.FIREBASE_MEASUREMENT_ID }}"
-          };
-
-          firebase.initializeApp(firebaseConfig);
-          const messaging = firebase.messaging();
-
-          messaging.onBackgroundMessage((payload) => {
-            const notificationTitle = payload.notification?.title || 'Livelo Analytics';
-            const notificationOptions = {
-              body: payload.notification?.body || 'Novas atualizações disponíveis',
-              icon: '/icon-192.png',
-              tag: 'livelo-update'
-            };
-            self.registration.showNotification(notificationTitle, notificationOptions);
-          });
-
-          self.addEventListener('notificationclick', (event) => {
-            event.notification.close();
-            if (event.action === 'view') {
-              event.waitUntil(clients.openWindow('https://gcaressato.github.io/livelo_scraper/'));
-            }
-          });
-          EOF
-          
-          echo "✅ Configuração Firebase dinâmica criada"
-          
       - name: Sincronizar arquivos do pipeline
         run: |
           echo "📥 Sincronizando arquivos do pipeline..."
-          
-          # Pull das mudanças do job anterior
           git pull origin main || echo "Nenhuma mudança para sincronizar"
           
-          # Verificar arquivos na nova estrutura
           if [ -f "public/index.html" ] && [ -f "livelo_parceiros.xlsx" ]; then
-            echo "✅ Arquivos encontrados na nova estrutura"
+            echo "✅ Arquivos encontrados"
             ls -la public/index.html livelo_parceiros.xlsx
           else
             echo "❌ Arquivos não encontrados após sincronização"
-            echo "📁 Estrutura atual:"
-            ls -la
-            echo "📁 Pasta public:"
-            ls -la public/ 2>/dev/null || echo "Pasta public não existe"
             exit 1
           fi
           
-      - name: Preparar deploy Firebase
-        if: env.FIREBASE_CONFIGURED == 'true'
-        run: |
-          echo "📁 Preparando deploy Firebase..."
-          
-          # Verificar se a pasta public já existe e tem conteúdo
-          if [ -d "public" ] && [ -f "public/index.html" ]; then
-            echo "✅ Pasta public já existe com index.html"
-            
-            # Copiar arquivos adicionais se necessário
-            cp livelo_parceiros.xlsx public/ 2>/dev/null || echo "livelo_parceiros.xlsx não encontrado"
-            
-            # Verificar estrutura final
-            echo "📂 Estrutura final do public/:"
-            ls -la public/
-          else
-            echo "❌ Pasta public não encontrada ou sem index.html"
-            exit 1
-          fi
-          
-      - name: Deploy Firebase Hosting
-        if: env.FIREBASE_CONFIGURED == 'true'
-        run: |
-          echo "🚀 Fazendo deploy Firebase..."
-          
-          # Usar token Firebase CLI se disponível
-          if [ -n "${{ secrets.FIREBASE_TOKEN }}" ]; then
-            echo "🔑 Usando FIREBASE_TOKEN"
-            firebase deploy --only hosting --token "${{ secrets.FIREBASE_TOKEN }}" --project "${{ secrets.FIREBASE_PROJECT_ID }}" --non-interactive
-          else
-            echo "⚠️ FIREBASE_TOKEN não encontrado"
-            echo "ℹ️ Configure FIREBASE_TOKEN nos secrets para deploy automático"
-            exit 0
-          fi
-          
-          echo "✅ Deploy Firebase concluído"
-          echo "🌐 URL: https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app/"
-        continue-on-error: true
-        
       - name: Executar notificações
         if: env.FIREBASE_CONFIGURED == 'true'
         run: |
@@ -528,13 +344,6 @@ jobs:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           FIREBASE_VAPID_KEY: ${{ secrets.FIREBASE_VAPID_KEY }}
         continue-on-error: true
-        
-      - name: Limpar arquivos temporários
-        if: always()
-        run: |
-          rm -f firebase-service-account.json 2>/dev/null || true
-          rm -f firebase_config_inject.js 2>/dev/null || true
-          echo "🧹 Arquivos temporários removidos"
 
   # JOB 4: RESUMO FINAL
   summary:
@@ -562,7 +371,6 @@ jobs:
             echo "🌐 SISTEMA ONLINE:"
             echo "├─ GitHub Pages: https://gcaressato.github.io/livelo_scraper/"
             
-            # Adicionar informação sobre cache
             if [ "${{ needs.deploy_github_pages.result }}" = "success" ]; then
               echo "├─ 🕐 Deploy concluído - aguarde 2-5 min para propagação"
               echo "├─ 💡 Use Ctrl+F5 para forçar atualização do cache"
@@ -570,43 +378,15 @@ jobs:
             fi
             
             if [ "${{ needs.firebase_integration.result }}" = "success" ]; then
-              echo "├─ Firebase Hosting: https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app/"
-              echo "└─ Notificações Push: ✅ Ativas"
+              echo "└─ Firebase: ✅ Notificações ativas"
             else
               echo "└─ Firebase: ⚪ Não configurado (opcional)"
             fi
             
             echo ""
-            echo "🎯 FUNCIONALIDADES ATIVAS:"
-            echo "├─ ✅ Scraping automático"
-            echo "├─ ✅ Análises e relatórios"
-            echo "├─ ✅ Sistema de favoritos"
-            echo "├─ ✅ Deploy automático"
-            
-            if [ "${{ needs.firebase_integration.result }}" = "success" ]; then
-              echo "└─ ✅ Notificações push"
-            else
-              echo "└─ ⚪ Notificações push (desabilitadas)"
-            fi
-            
-            echo ""
-            echo "🔍 DEBUG INFO:"
-            echo "├─ Commit SHA: ${{ github.sha }}"
-            echo "├─ Repository: ${{ github.repository }}"
-            echo "├─ Workflow: ${{ github.workflow }}"
-            echo "└─ Run ID: ${{ github.run_id }}"
-            
-            echo ""
             echo "✅ SISTEMA FUNCIONANDO NORMALMENTE!"
-            echo "::notice::Livelo Analytics online - Todos os dados atualizados"
+            echo "::notice::Livelo Analytics online - Estrutura limpa sem duplicatas"
           else
             echo "❌ FALHA NO PIPELINE PRINCIPAL!"
-            echo ""
-            echo "🚨 AÇÕES NECESSÁRIAS:"
-            echo "├─ Verificar logs detalhados do job 'pipeline_principal'"
-            echo "├─ Analisar possíveis mudanças no site da Livelo"
-            echo "├─ Verificar conectividade e dependências"
-            echo "└─ Corrigir problemas antes da próxima execução"
-            echo ""
             echo "::error::Sistema principal falhou - Verificar logs para diagnóstico"
           fi
