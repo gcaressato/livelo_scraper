@@ -3616,17 +3616,16 @@ class LiveloAnalytics:
 
             // CONFIGURAÇÃO DO FIREBASE - SERÁ INJETADA PELO GITHUB ACTIONS
             const firebaseConfig = {{
-                apiKey: "{firebase_api_key}",
-                authDomain: "{firebase_auth_domain}",
-                projectId: "{firebase_project_id}",
-                storageBucket: "{firebase_storage_bucket}",
-                messagingSenderId: "{firebase_messaging_sender_id}",
-                appId: "{firebase_app_id}",
-                measurementId: "{firebase_measurement_id}"
+                apiKey: "{{{{FIREBASE_API_KEY}}}}",
+                authDomain: "{{{{FIREBASE_AUTH_DOMAIN}}}}",
+                projectId: "{{{{FIREBASE_PROJECT_ID}}}}",
+                storageBucket: "{{{{FIREBASE_STORAGE_BUCKET}}}}",
+                messagingSenderId: "{{{{FIREBASE_MESSAGING_SENDER_ID}}}}",
+                appId: "{{{{FIREBASE_APP_ID}}}}"
             }};
 
             // VAPID KEY
-            const vapidKey = "{firebase_vapid_key}";
+            const vapidKey = "{{{{FIREBASE_VAPID_KEY}}}}";
 
             // INICIALIZAR FIREBASE
             const app = initializeApp(firebaseConfig);
@@ -3659,10 +3658,11 @@ class LiveloAnalytics:
                     this.vapidKey = vapidKey;
                     this.maxRetries = 3;
                     this.currentRetries = 0;
+                    this.serviceWorkerRegistration = null; // ← NOVO: armazenar SW personalizado
                 }}
 
                 async initialize() {{
-                    console.log('[Notifications] Inicializando sistema...');
+                    console.log('[Notifications] Inicializando sistema corrigido...');
                     
                     // Gerar ou recuperar userId
                     this.userId = localStorage.getItem('livelo-user-id') || this.generateUserId();
@@ -3689,6 +3689,57 @@ class LiveloAnalytics:
                     return 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
                 }}
 
+                // ========== NOVA FUNÇÃO: REGISTRAR SERVICE WORKER MANUALMENTE ==========
+                async registerServiceWorker() {{
+                    console.log('[Notifications] 🔧 Registrando Service Worker manualmente...');
+                    
+                    if (!('serviceWorker' in navigator)) {{
+                        throw new Error('Service Worker não suportado neste navegador');
+                    }}
+
+                    try {{
+                        // CAMINHO CORRETO para GitHub Pages subdiretório
+                        const swPath = './firebase-messaging-sw.js'; // Relativo ao site atual
+                        console.log('[Notifications] 📁 Registrando SW em:', window.location.origin + window.location.pathname + swPath);
+
+                        // Registrar com escopo específico
+                        this.serviceWorkerRegistration = await navigator.serviceWorker.register(swPath, {{
+                            scope: './', // Escopo relativo ao diretório atual
+                            updateViaCache: 'none' // Sempre buscar versão mais recente
+                        }});
+
+                        console.log('[Notifications] ✅ Service Worker registrado:', this.serviceWorkerRegistration.scope);
+                        
+                        // Aguardar SW ficar ativo
+                        if (this.serviceWorkerRegistration.installing) {{
+                            console.log('[Notifications] ⏳ Aguardando Service Worker instalar...');
+                            await this.waitForServiceWorkerReady();
+                        }}
+
+                        return this.serviceWorkerRegistration;
+
+                    }} catch (error) {{
+                        console.error('[Notifications] ❌ Erro ao registrar Service Worker:', error);
+                        throw error;
+                    }}
+                }}
+
+                // ========== NOVA FUNÇÃO: AGUARDAR SERVICE WORKER FICAR PRONTO ==========
+                async waitForServiceWorkerReady() {{
+                    return new Promise((resolve) => {{
+                        const checkReady = () => {{
+                            if (this.serviceWorkerRegistration.active) {{
+                                console.log('[Notifications] ✅ Service Worker ativo');
+                                resolve();
+                            }} else {{
+                                console.log('[Notifications] ⏳ Aguardando Service Worker ativar...');
+                                setTimeout(checkReady, 100);
+                            }}
+                        }};
+                        checkReady();
+                    }});
+                }}
+
                 async requestPermission() {{
                     console.log('[Notifications] Solicitando permissão...');
                     
@@ -3708,10 +3759,13 @@ class LiveloAnalytics:
                     }}
                 }}
 
+                // ========== FUNÇÃO MODIFICADA: USAR SERVICE WORKER PERSONALIZADO ==========
                 async getToken() {{
                     try {{
+                        // USAR O SERVICE WORKER QUE REGISTRAMOS MANUALMENTE (SOLUÇÃO GITHUB PAGES)
                         const token = await getToken(this.messaging, {{ 
-                            vapidKey: this.vapidKey 
+                            vapidKey: this.vapidKey,
+                            serviceWorkerRegistration: this.serviceWorkerRegistration // ← CHAVE DA SOLUÇÃO!
                         }});
                         
                         if (token) {{
@@ -3758,39 +3812,38 @@ class LiveloAnalytics:
                     }}
                 }}
 
-                async enable() {{
-                    this.currentRetries = 0;
-                    return await this.attemptEnable();
-                }}
-
+                // ========== FUNÇÃO MODIFICADA: INCLUIR REGISTRO DO SERVICE WORKER ==========
                 async attemptEnable() {{
                     try {{
                         console.log(`[Notifications] Tentativa ${{this.currentRetries + 1}}/${{this.maxRetries}} de ativar notificações`);
                         
-                        // 1. Solicitar permissão e obter token
+                        // 1. REGISTRAR SERVICE WORKER MANUALMENTE PRIMEIRO
+                        await this.registerServiceWorker();
+                        
+                        // 2. Solicitar permissão e obter token
                         const token = await this.requestPermission();
                         
-                        // 2. Salvar no localStorage
+                        // 3. Salvar no localStorage
                         localStorage.setItem('fcm-token', token);
                         
-                        // 3. Obter configurações atuais
+                        // 4. Obter configurações atuais
                         const config = {{
                             notifyOffers: document.getElementById('notifyOffers')?.checked ?? true,
                             notifyChanges: document.getElementById('notifyChanges')?.checked ?? true,
                             onlyFavorites: document.getElementById('onlyFavorites')?.checked ?? true
                         }};
                         
-                        // 4. Salvar no Firestore
+                        // 5. Salvar no Firestore
                         const firestoreSuccess = await this.saveToFirestore(config);
                         
-                        // 5. Atualizar estado
+                        // 6. Atualizar estado
                         this.isEnabled = true;
                         this.updateUI();
                         
                         showToast('Notificações ativadas com sucesso!', 'success');
                         
                         if (firestoreSuccess) {{
-                            console.log('[Notifications] ✅ Sistema completo ativado (FCM + Firestore)');
+                            console.log('[Notifications] ✅ Sistema completo ativado (FCM + Firestore + SW personalizado)');
                         }} else {{
                             console.log('[Notifications] ⚠️ FCM ativado, Firestore com problemas');
                         }}
@@ -5252,17 +5305,6 @@ class LiveloAnalytics:
             }});
         </script>
 
-        <script>
-            if ('serviceWorker' in navigator) {{
-                navigator.serviceWorker.register('/firebase-messaging-sw.js')
-                    .then((registration) => {{
-                        console.log('[SW] Service Worker registrado:', registration);
-                    }})
-                    .catch((error) => {{
-                        console.error('[SW] Erro ao registrar Service Worker:', error);
-                    }});
-            }}
-        </script>
     </body>
     </html>
         """
