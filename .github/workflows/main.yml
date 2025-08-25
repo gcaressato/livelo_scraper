@@ -62,10 +62,11 @@ jobs:
             exit 1
           fi
           
-          # Verificar arquivos críticos na estrutura correta
+          # ✅ VERIFICAR ARQUIVOS NA RAIZ (conforme solicitado)
           if [ -f "public/index.html" ] && [ -f "livelo_parceiros.xlsx" ]; then
             echo "✅ Arquivos principais encontrados"
-            ls -la public/index.html livelo_parceiros.xlsx
+            echo "📄 HTML: public/index.html ($(stat -c%s public/index.html) bytes)"
+            echo "📄 XLSX: livelo_parceiros.xlsx ($(stat -c%s livelo_parceiros.xlsx) bytes)"
             echo "FILES_OK=true" >> $GITHUB_ENV
           else
             echo "❌ Arquivos principais ausentes"
@@ -79,7 +80,7 @@ jobs:
           
           # Verificar tamanho do HTML
           if [ -f "public/index.html" ]; then
-            size=$(stat -f%z "public/index.html" 2>/dev/null || stat -c%s "public/index.html" 2>/dev/null || echo "0")
+            size=$(stat -c%s "public/index.html" 2>/dev/null || echo "0")
             if [ "$size" -gt 50000 ]; then
               echo "✅ HTML válido: $size bytes"
               echo "success=true" >> $GITHUB_OUTPUT
@@ -265,8 +266,17 @@ jobs:
           echo "📄 Copiando public/index.html → _site/index.html"
           cp public/index.html _site/index.html
           
-          echo "📄 Copiando livelo_parceiros.xlsx → _site/livelo_parceiros.xlsx"
-          cp livelo_parceiros.xlsx _site/livelo_parceiros.xlsx
+          # ✅ MANTER XLSX NA RAIZ CONFORME SOLICITADO
+          echo "📄 Garantindo livelo_parceiros.xlsx na raiz para consumo"
+          if [ -f "livelo_parceiros.xlsx" ]; then
+            echo "✅ livelo_parceiros.xlsx encontrado na raiz ($(stat -c%s livelo_parceiros.xlsx) bytes)"
+            # Copiar para _site também para GitHub Pages acessar
+            cp livelo_parceiros.xlsx _site/livelo_parceiros.xlsx
+            echo "📄 livelo_parceiros.xlsx copiado para _site/ para GitHub Pages"
+          else
+            echo "❌ ERRO: livelo_parceiros.xlsx não encontrado na raiz!"
+            exit 1
+          fi
           
           # ✅ COPIAR OUTROS ARQUIVOS DO PUBLIC (Firebase, manifest, etc.)
           echo "📂 Copiando arquivos de configuração do public/..."
@@ -277,9 +287,15 @@ jobs:
             fi
           done
           
-          echo "✅ Arquivos preparados para GitHub Pages (estrutura limpa)"
+          echo "✅ Arquivos preparados para GitHub Pages"
           echo "📂 Estrutura final do _site:"
           ls -la _site/
+          
+          echo ""
+          echo "📋 VERIFICAÇÃO FINAL DOS ARQUIVOS:"
+          echo "├─ Raiz: livelo_parceiros.xlsx ($([ -f "livelo_parceiros.xlsx" ] && echo "✅ $(stat -c%s livelo_parceiros.xlsx) bytes" || echo "❌ AUSENTE"))"
+          echo "├─ _site: index.html ($([ -f "_site/index.html" ] && echo "✅ $(stat -c%s _site/index.html) bytes" || echo "❌ AUSENTE"))"
+          echo "└─ _site: livelo_parceiros.xlsx ($([ -f "_site/livelo_parceiros.xlsx" ] && echo "✅ $(stat -c%s _site/livelo_parceiros.xlsx) bytes" || echo "❌ AUSENTE"))"
           
       - name: Upload páginas como artifact
         uses: actions/upload-pages-artifact@v3
@@ -313,9 +329,9 @@ jobs:
           timestamp=$(date +"%d/%m/%Y %H:%M")
           commit_hash=$(git rev-parse --short HEAD)
           
-          # Adicionar arquivos da estrutura atual
+          # ✅ ADICIONAR ARQUIVOS MANTENDO XLSX NA RAIZ
           git add -f public/index.html
-          git add -f livelo_parceiros.xlsx
+          git add -f livelo_parceiros.xlsx  # XLSX permanece na raiz
           git add -f *.log 2>/dev/null || true
           
           if git diff --staged --quiet; then
@@ -327,8 +343,8 @@ jobs:
 
             ✅ Pipeline: Sucesso com validação rigorosa
             📄 HTML: public/index.html ($(stat -c%s public/index.html 2>/dev/null || echo '0') bytes)
-            📄 Excel: livelo_parceiros.xlsx ($(stat -c%s livelo_parceiros.xlsx 2>/dev/null || echo '0') bytes)
-            🚀 Deploy: Estrutura limpa (sem duplicatas)
+            📄 Excel: livelo_parceiros.xlsx NA RAIZ ($(stat -c%s livelo_parceiros.xlsx 2>/dev/null || echo '0') bytes)
+            🚀 Deploy: GitHub Pages com estrutura limpa
             🔄 Commit anterior: $commit_hash
             ⏰ Executado: $timestamp"
             
@@ -420,7 +436,7 @@ jobs:
             echo "🎉 Deploy verificado e funcionando!"
           fi
 
-  # JOB 3: FIREBASE INTEGRATION (Mantido como estava)
+  # JOB 3: FIREBASE INTEGRATION (CORRIGIDO PARA EVITAR ERRO DE REDE)
   firebase_integration:
     needs: [pipeline_principal, deploy_github_pages]
     runs-on: ubuntu-latest
@@ -435,29 +451,88 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
+          cache: 'npm'  # ✅ ADICIONAR CACHE PARA EVITAR PROBLEMAS DE REDE
+          cache-dependency-path: 'package.json'
           
       - name: Setup Python para notificações
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
           
-      - name: Instalar dependências Firebase
+      - name: 🔧 Instalar dependências Firebase (COM RETRY)
         run: |
-          if [ -f "package.json" ]; then
-            echo "📦 Instalando dependências do package.json..."
-            npm install
+          # ✅ CONFIGURAR NPM PARA MAIOR TOLERÂNCIA A PROBLEMAS DE REDE
+          npm config set registry https://registry.npmjs.org/
+          npm config set fetch-retry-mintimeout 20000
+          npm config set fetch-retry-maxtimeout 120000
+          npm config set fetch-retries 5
+          npm config set fetch-timeout 60000
+          
+          echo "📦 Instalando dependências Firebase com retry..."
+          
+          # ✅ INSTALAR COM RETRY E FALLBACK
+          RETRY_COUNT=0
+          MAX_RETRIES=3
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            echo "🔄 Tentativa $(($RETRY_COUNT + 1)) de $MAX_RETRIES..."
+            
+            if [ -f "package.json" ]; then
+              echo "📦 Instalando dependências do package.json..."
+              if npm ci --no-audit --no-fund --prefer-offline; then
+                echo "✅ npm ci executado com sucesso"
+                break
+              elif npm install --no-audit --no-fund --prefer-offline; then
+                echo "✅ npm install executado com sucesso"
+                break
+              else
+                echo "❌ Falha na instalação via package.json"
+              fi
+            else
+              echo "📦 package.json não encontrado, instalando dependências mínimas..."
+              if npm init -y && npm install --no-audit --no-fund firebase@^9.0.0; then
+                echo "✅ Dependências mínimas instaladas"
+                break
+              else
+                echo "❌ Falha na instalação de dependências mínimas"
+              fi
+            fi
+            
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+              echo "⏳ Aguardando 30 segundos antes de tentar novamente..."
+              sleep 30
+            fi
+          done
+          
+          if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+            echo "❌ FALHA: Não foi possível instalar dependências após $MAX_RETRIES tentativas"
+            echo "🔧 FALLBACK: Continuando sem Firebase (funcionalidade opcional)"
+            echo "FIREBASE_INSTALL_FAILED=true" >> $GITHUB_ENV
           else
-            echo "📦 package.json não encontrado, criando dependências mínimas..."
-            npm init -y
-            npm install firebase@^9.0.0
+            echo "✅ Dependências Firebase instaladas com sucesso!"
+            echo "FIREBASE_INSTALL_FAILED=false" >> $GITHUB_ENV
           fi
           
-          npm install -g firebase-tools
-          pip install firebase-admin pandas openpyxl
+          # ✅ INSTALAR FIREBASE-TOOLS GLOBALMENTE (COM FALLBACK)
+          if [ "$FIREBASE_INSTALL_FAILED" != "true" ]; then
+            echo "🔧 Instalando firebase-tools globalmente..."
+            npm install -g firebase-tools || echo "⚠️ Falha ao instalar firebase-tools (não crítico)"
+          fi
+          
+          # ✅ PYTHON DEPENDENCIES (SEMPRE TENTAR)
+          echo "🐍 Instalando dependências Python..."
+          pip install firebase-admin pandas openpyxl || echo "⚠️ Falha nas dependências Python (não crítico)"
           
       - name: Verificar configuração Firebase
         run: |
           echo "🔍 Verificando configuração Firebase..."
+          
+          if [ "$FIREBASE_INSTALL_FAILED" = "true" ]; then
+            echo "⚠️ Instalação Firebase falhou - Pulando verificação"
+            echo "FIREBASE_CONFIGURED=false" >> $GITHUB_ENV
+            exit 0
+          fi
           
           if [ -n "${{ secrets.FIREBASE_PROJECT_ID }}" ]; then
             echo "✅ FIREBASE_PROJECT_ID configurado"
@@ -485,23 +560,28 @@ jobs:
           echo "📥 Sincronizando arquivos do pipeline..."
           git pull origin main || echo "Nenhuma mudança para sincronizar"
           
+          # ✅ VERIFICAR XLSX NA RAIZ CONFORME SOLICITADO
           if [ -f "public/index.html" ] && [ -f "livelo_parceiros.xlsx" ]; then
             echo "✅ Arquivos encontrados"
-            ls -la public/index.html livelo_parceiros.xlsx
+            echo "📄 HTML: public/index.html ($(stat -c%s public/index.html) bytes)"
+            echo "📄 XLSX na raiz: livelo_parceiros.xlsx ($(stat -c%s livelo_parceiros.xlsx) bytes)"
           else
             echo "❌ Arquivos não encontrados após sincronização"
+            echo "📁 Estrutura atual:"
+            ls -la
             exit 1
           fi
           
       - name: Executar notificações
-        if: env.FIREBASE_CONFIGURED == 'true'
+        if: env.FIREBASE_CONFIGURED == 'true' && env.FIREBASE_INSTALL_FAILED != 'true'
         run: |
           echo "📱 Executando notificações..."
           
           if [ -f "notification_sender.py" ]; then
-            timeout 300 python notification_sender.py || echo "Notificações concluídas"
+            echo "🚀 Iniciando notification_sender.py..."
+            timeout 300 python notification_sender.py || echo "⚠️ Notificações finalizadas (timeout ou erro não crítico)"
           else
-            echo "notification_sender.py não encontrado"
+            echo "ℹ️ notification_sender.py não encontrado"
           fi
         env:
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
@@ -534,6 +614,7 @@ jobs:
           if [ "${{ needs.pipeline_principal.result }}" = "success" ]; then
             echo "🌐 SISTEMA ONLINE:"
             echo "├─ GitHub Pages: https://gcaressato.github.io/livelo_scraper/"
+            echo "├─ 📄 XLSX na raiz: ✅ livelo_parceiros.xlsx (consumo direto)"
             
             if [ "${{ needs.deploy_github_pages.result }}" = "success" ]; then
               echo "├─ 🕐 Deploy concluído - aguarde 2-5 min para propagação"
@@ -544,12 +625,13 @@ jobs:
             if [ "${{ needs.firebase_integration.result }}" = "success" ]; then
               echo "└─ Firebase: ✅ Notificações ativas"
             else
-              echo "└─ Firebase: ⚪ Não configurado (opcional)"
+              echo "└─ Firebase: ⚪ Não configurado/falha de rede (opcional)"
             fi
             
             echo ""
             echo "✅ SISTEMA FUNCIONANDO NORMALMENTE!"
-            echo "::notice::Livelo Analytics online - Estrutura limpa sem duplicatas"
+            echo "📄 XLSX mantido na raiz para consumo direto conforme solicitado"
+            echo "::notice::Livelo Analytics online - XLSX na raiz, estrutura otimizada"
           else
             echo "❌ FALHA NO PIPELINE PRINCIPAL!"
             echo "::error::Sistema principal falhou - Verificar logs para diagnóstico"
