@@ -1,63 +1,63 @@
-2025-08-25 12:59:04,467 - INFO - 🎯 Mínimo de parceiros ajustado para: 50
-2025-08-25 12:59:04,467 - INFO - 🎯 Iniciando pipeline principal...
-2025-08-25 12:59:04,467 - INFO - 🔍 Etapa 1/4: Validando ambiente...
-2025-08-25 12:59:04,467 - INFO - 🔍 Validando ambiente...
-2025-08-25 12:59:05,145 - INFO - ✅ Dependências básicas disponíveis
-2025-08-25 12:59:05,145 - INFO - 🕷️ Etapa 2/4: Executando scraping...
-2025-08-25 12:59:05,145 - INFO - 🕷️ Iniciando scraping...
-2025-08-25 12:59:05,145 - INFO - 📊 Executando scraper...
-2025-08-25 13:00:17,382 - INFO - ✅ Scraper executado sem erros
-2025-08-25 13:00:17,383 - INFO - 📄 livelo_parceiros.xlsx: 253,261 bytes
-2025-08-25 13:00:17,383 - INFO - 🔍 Validando dados coletados (RIGOROSO)...
-2025-08-25 13:00:18,127 - INFO - 📊 Registros encontrados: 8277
-2025-08-25 13:00:18,127 - WARNING - ⚠️ Coluna esperada não encontrada: nome
-2025-08-25 13:00:18,127 - WARNING - ⚠️ Coluna esperada não encontrada: categoria
-2025-08-25 13:00:18,129 - INFO - ✅ Dados validados: 8277 parceiros coletados
-2025-08-25 13:00:18,129 - INFO - ✅ Colunas encontradas: 6
-2025-08-25 13:00:18,129 - INFO - ✅ Scraping concluído com dados válidos
-2025-08-25 13:00:18,129 - INFO - 📊 Etapa 3/4: Executando análise...
-2025-08-25 13:00:18,129 - INFO - 📊 Iniciando análise...
-2025-08-25 13:00:18,129 - INFO - 🔍 Validando dados coletados (RIGOROSO)...
-2025-08-25 13:00:18,805 - INFO - 📊 Registros encontrados: 8277
-2025-08-25 13:00:18,805 - WARNING - ⚠️ Coluna esperada não encontrada: nome
-2025-08-25 13:00:18,805 - WARNING - ⚠️ Coluna esperada não encontrada: categoria
-2025-08-25 13:00:18,807 - INFO - ✅ Dados validados: 8277 parceiros coletados
-2025-08-25 13:00:18,807 - INFO - ✅ Colunas encontradas: 6
-2025-08-25 13:00:18,807 - INFO - 📈 Executando análise com reporter...
-2025-08-25 13:00:22,720 - INFO - ✅ Reporter executado sem erros
-2025-08-25 13:00:22,720 - INFO - 📄 public/index.html: 7,902,763 bytes
-2025-08-25 13:00:22,720 - INFO - 🔍 Validando arquivos gerados (RIGOROSO)...
-2025-08-25 13:00:22,720 - INFO - ✅ public/index.html: 7,902,763 bytes
-2025-08-25 13:00:22,720 - INFO - ✅ livelo_parceiros.xlsx: 253,261 bytes
-2025-08-25 13:00:22,720 - INFO - 🔍 Validando dados coletados (RIGOROSO)...
-2025-08-25 13:00:23,404 - INFO - 📊 Registros encontrados: 8277
-2025-08-25 13:00:23,404 - WARNING - ⚠️ Coluna esperada não encontrada: nome
-2025-08-25 13:00:23,404 - WARNING - ⚠️ Coluna esperada não encontrada: categoria
-2025-08-25 13:00:23,406 - INFO - ✅ Dados validados: 8277 parceiros coletados
-2025-08-25 13:00:23,406 - INFO - ✅ Colunas encontradas: 6
-2025-08-25 13:00:23,501 - INFO - ✅ HTML validado: 7,901,760 caracteres
-2025-08-25 13:00:23,502 - INFO - ✅ Análise concluída com arquivos válidos
-2025-08-25 13:00:23,502 - INFO - 🚀 Etapa 4/4: Preparando deploy...
-2025-08-25 13:00:23,502 - INFO - 🚀 Verificando arquivos para GitHub Pages...
-2025-08-25 13:00:23,502 - INFO - 📄 livelo_parceiros.xlsx → public/livelo_parceiros.xlsx
-2025-08-25 13:00:23,503 - INFO - ✅ public/index.html: 7,902,763 bytes
-2025-08-25 13:00:23,503 - INFO - ✅ public/livelo_parceiros.xlsx: 253,261 bytes
-2025-08-25 13:00:23,503 - INFO - 🕐 Verificação de deploy em: 2025-08-25 13:00:23
-2025-08-25 13:00:23,503 - INFO - 📅 public/index.html modificado em: 2025-08-25 13:00:22
-2025-08-25 13:00:23,503 - INFO - 📅 public/livelo_parceiros.xlsx modificado em: 2025-08-25 13:00:16
-2025-08-25 13:00:23,503 - INFO - ✅ Todos os arquivos prontos para deploy no public/
-2025-08-25 13:00:23,503 - INFO - 🎉 Pipeline principal concluído com 100% de sucesso!
-2025-08-25 13:00:23,503 - INFO - 🔥 Extra: Tentando Firebase (opcional)...
-2025-08-25 13:00:23,503 - INFO - 🔥 Verificando Firebase (opcional)...
-2025-08-25 13:00:23,503 - INFO - ℹ️ Firebase não configurado (normal)
-2025-08-25 13:00:23,503 - INFO - 💡 Sistema funciona 100% sem Firebase
-2025-08-25 13:00:23,503 - INFO - ✅ Verificação Firebase concluída
-2025-08-25 13:00:23,503 - INFO - 📋 Gerando relatório de execução...
-2025-08-25 13:00:23,504 - INFO - 🎉 Sistema Livelo Analytics funcionando perfeitamente!
+2025-08-25 13:43:40,172 - INFO - 🎯 Mínimo de parceiros ajustado para: 50
+2025-08-25 13:43:40,172 - INFO - 🎯 Iniciando pipeline principal...
+2025-08-25 13:43:40,172 - INFO - 🔍 Etapa 1/4: Validando ambiente...
+2025-08-25 13:43:40,172 - INFO - 🔍 Validando ambiente...
+2025-08-25 13:43:40,643 - INFO - ✅ Dependências básicas disponíveis
+2025-08-25 13:43:40,644 - INFO - 🕷️ Etapa 2/4: Executando scraping...
+2025-08-25 13:43:40,644 - INFO - 🕷️ Iniciando scraping...
+2025-08-25 13:43:40,644 - INFO - 📊 Executando scraper...
+2025-08-25 13:44:54,298 - INFO - ✅ Scraper executado sem erros
+2025-08-25 13:44:54,299 - INFO - 📄 livelo_parceiros.xlsx: 253,262 bytes
+2025-08-25 13:44:54,299 - INFO - 🔍 Validando dados coletados (RIGOROSO)...
+2025-08-25 13:44:55,054 - INFO - 📊 Registros encontrados: 8277
+2025-08-25 13:44:55,054 - WARNING - ⚠️ Coluna esperada não encontrada: nome
+2025-08-25 13:44:55,054 - WARNING - ⚠️ Coluna esperada não encontrada: categoria
+2025-08-25 13:44:55,056 - INFO - ✅ Dados validados: 8277 parceiros coletados
+2025-08-25 13:44:55,056 - INFO - ✅ Colunas encontradas: 6
+2025-08-25 13:44:55,056 - INFO - ✅ Scraping concluído com dados válidos
+2025-08-25 13:44:55,056 - INFO - 📊 Etapa 3/4: Executando análise...
+2025-08-25 13:44:55,056 - INFO - 📊 Iniciando análise...
+2025-08-25 13:44:55,056 - INFO - 🔍 Validando dados coletados (RIGOROSO)...
+2025-08-25 13:44:55,735 - INFO - 📊 Registros encontrados: 8277
+2025-08-25 13:44:55,735 - WARNING - ⚠️ Coluna esperada não encontrada: nome
+2025-08-25 13:44:55,735 - WARNING - ⚠️ Coluna esperada não encontrada: categoria
+2025-08-25 13:44:55,737 - INFO - ✅ Dados validados: 8277 parceiros coletados
+2025-08-25 13:44:55,737 - INFO - ✅ Colunas encontradas: 6
+2025-08-25 13:44:55,737 - INFO - 📈 Executando análise com reporter...
+2025-08-25 13:44:59,762 - INFO - ✅ Reporter executado sem erros
+2025-08-25 13:44:59,762 - INFO - 📄 public/index.html: 7,902,719 bytes
+2025-08-25 13:44:59,762 - INFO - 🔍 Validando arquivos gerados (RIGOROSO)...
+2025-08-25 13:44:59,762 - INFO - ✅ public/index.html: 7,902,719 bytes
+2025-08-25 13:44:59,762 - INFO - ✅ livelo_parceiros.xlsx: 253,262 bytes
+2025-08-25 13:44:59,762 - INFO - 🔍 Validando dados coletados (RIGOROSO)...
+2025-08-25 13:45:00,447 - INFO - 📊 Registros encontrados: 8277
+2025-08-25 13:45:00,447 - WARNING - ⚠️ Coluna esperada não encontrada: nome
+2025-08-25 13:45:00,447 - WARNING - ⚠️ Coluna esperada não encontrada: categoria
+2025-08-25 13:45:00,449 - INFO - ✅ Dados validados: 8277 parceiros coletados
+2025-08-25 13:45:00,449 - INFO - ✅ Colunas encontradas: 6
+2025-08-25 13:45:00,547 - INFO - ✅ HTML validado: 7,901,716 caracteres
+2025-08-25 13:45:00,548 - INFO - ✅ Análise concluída com arquivos válidos
+2025-08-25 13:45:00,548 - INFO - 🚀 Etapa 4/4: Preparando deploy...
+2025-08-25 13:45:00,548 - INFO - 🚀 Verificando arquivos para GitHub Pages...
+2025-08-25 13:45:00,549 - INFO - 📄 livelo_parceiros.xlsx → public/livelo_parceiros.xlsx
+2025-08-25 13:45:00,549 - INFO - ✅ public/index.html: 7,902,719 bytes
+2025-08-25 13:45:00,549 - INFO - ✅ public/livelo_parceiros.xlsx: 253,262 bytes
+2025-08-25 13:45:00,549 - INFO - 🕐 Verificação de deploy em: 2025-08-25 13:45:00
+2025-08-25 13:45:00,549 - INFO - 📅 public/index.html modificado em: 2025-08-25 13:44:59
+2025-08-25 13:45:00,550 - INFO - 📅 public/livelo_parceiros.xlsx modificado em: 2025-08-25 13:44:53
+2025-08-25 13:45:00,550 - INFO - ✅ Todos os arquivos prontos para deploy no public/
+2025-08-25 13:45:00,550 - INFO - 🎉 Pipeline principal concluído com 100% de sucesso!
+2025-08-25 13:45:00,550 - INFO - 🔥 Extra: Tentando Firebase (opcional)...
+2025-08-25 13:45:00,550 - INFO - 🔥 Verificando Firebase (opcional)...
+2025-08-25 13:45:00,550 - INFO - ℹ️ Firebase não configurado (normal)
+2025-08-25 13:45:00,550 - INFO - 💡 Sistema funciona 100% sem Firebase
+2025-08-25 13:45:00,550 - INFO - ✅ Verificação Firebase concluída
+2025-08-25 13:45:00,550 - INFO - 📋 Gerando relatório de execução...
+2025-08-25 13:45:00,550 - INFO - 🎉 Sistema Livelo Analytics funcionando perfeitamente!
 
 🚀 INICIANDO PIPELINE LIVELO ANALYTICS
 ============================================================
-⏰ Timestamp: 20250825_125904
+⏰ Timestamp: 20250825_134340
 📁 Diretório: /home/runner/work/livelo_scraper/livelo_scraper
 🐍 Python: 3.10.18
 
@@ -69,7 +69,7 @@
 ======================================================================
 📊 RELATÓRIO DE EXECUÇÃO LIVELO ANALYTICS
 ======================================================================
-⏰ Timestamp: 25/08/2025 13:00:23
+⏰ Timestamp: 25/08/2025 13:45:00
 🔥 Etapas Críticas: 4/4
 🔥 Firebase Opcional: ℹ️ Desabilitado
 
@@ -80,8 +80,8 @@
    🚀 Deploy Preparacao: ✅ SUCESSO
 
 📁 ARQUIVOS PRINCIPAIS:
-   📄 public/index.html: 7,902,763 bytes
-   📄 public/livelo_parceiros.xlsx: 253,261 bytes
+   📄 public/index.html: 7,902,719 bytes
+   📄 public/livelo_parceiros.xlsx: 253,262 bytes
 
 🎉 PIPELINE PRINCIPAL CONCLUÍDO COM SUCESSO!
 
