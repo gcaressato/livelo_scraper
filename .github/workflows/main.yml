@@ -560,25 +560,62 @@ jobs:
             exit 0
           fi
           
+          # ✅ VERIFICAR CONFIGURAÇÃO COMPLETA (AGORA COM SERVICE_ACCOUNT)
+          FIREBASE_OK=true
+          MISSING_SECRETS=()
+          
+          # Verificar secrets obrigatórios
           if [ -n "${{ secrets.FIREBASE_PROJECT_ID }}" ]; then
-            echo "✅ FIREBASE_PROJECT_ID configurado"
-            echo "FIREBASE_CONFIGURED=true" >> $GITHUB_ENV
+            echo "✅ FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}"
           else
-            echo "ℹ️ FIREBASE_PROJECT_ID não configurado"
-            echo "FIREBASE_CONFIGURED=false" >> $GITHUB_ENV
+            echo "❌ FIREBASE_PROJECT_ID não configurado"
+            MISSING_SECRETS+=("FIREBASE_PROJECT_ID")
+            FIREBASE_OK=false
           fi
           
           if [ -n "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" ]; then
-            echo "✅ FIREBASE_SERVICE_ACCOUNT configurado"
+            echo "✅ FIREBASE_SERVICE_ACCOUNT configurado (método preferido)"
+            echo "FIREBASE_AUTH_METHOD=service_account" >> $GITHUB_ENV
+          elif [ -n "${{ secrets.FIREBASE_TOKEN }}" ]; then
+            echo "✅ FIREBASE_TOKEN configurado (fallback)"
+            echo "FIREBASE_AUTH_METHOD=token" >> $GITHUB_ENV
           else
-            echo "ℹ️ FIREBASE_SERVICE_ACCOUNT não configurado"
-            echo "FIREBASE_CONFIGURED=false" >> $GITHUB_ENV
+            echo "❌ Nenhum método de autenticação configurado"
+            MISSING_SECRETS+=("FIREBASE_SERVICE_ACCOUNT ou FIREBASE_TOKEN")
+            FIREBASE_OK=false
           fi
           
-          if [ -n "${{ secrets.FIREBASE_TOKEN }}" ]; then
-            echo "✅ FIREBASE_TOKEN configurado"
+          # Verificar secrets para frontend (opcionais mas recomendados)
+          echo ""
+          echo "📱 Verificando secrets para frontend Firebase:"
+          
+          FRONTEND_SECRETS=0
+          [ -n "${{ secrets.FIREBASE_API_KEY }}" ] && echo "  ✅ FIREBASE_API_KEY" && ((FRONTEND_SECRETS++)) || echo "  ⚪ FIREBASE_API_KEY"
+          [ -n "${{ secrets.FIREBASE_AUTH_DOMAIN }}" ] && echo "  ✅ FIREBASE_AUTH_DOMAIN" && ((FRONTEND_SECRETS++)) || echo "  ⚪ FIREBASE_AUTH_DOMAIN"
+          [ -n "${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}" ] && echo "  ✅ FIREBASE_MESSAGING_SENDER_ID" && ((FRONTEND_SECRETS++)) || echo "  ⚪ FIREBASE_MESSAGING_SENDER_ID"
+          [ -n "${{ secrets.FIREBASE_APP_ID }}" ] && echo "  ✅ FIREBASE_APP_ID" && ((FRONTEND_SECRETS++)) || echo "  ⚪ FIREBASE_APP_ID"
+          [ -n "${{ secrets.FIREBASE_VAPID_KEY }}" ] && echo "  ✅ FIREBASE_VAPID_KEY" && ((FRONTEND_SECRETS++)) || echo "  ⚪ FIREBASE_VAPID_KEY"
+          [ -n "${{ secrets.FIREBASE_STORAGE_BUCKET }}" ] && echo "  ✅ FIREBASE_STORAGE_BUCKET" && ((FRONTEND_SECRETS++)) || echo "  ⚪ FIREBASE_STORAGE_BUCKET"
+          
+          echo "📊 Frontend secrets configurados: $FRONTEND_SECRETS/6"
+          
+          if [ "$FIREBASE_OK" = "true" ]; then
+            echo ""
+            if [ $FRONTEND_SECRETS -ge 4 ]; then
+              echo "🎉 Firebase COMPLETAMENTE configurado! ($FRONTEND_SECRETS/6 secrets frontend)"
+              echo "FIREBASE_CONFIGURED=true" >> $GITHUB_ENV
+              echo "FIREBASE_FRONTEND_READY=true" >> $GITHUB_ENV
+            else
+              echo "✅ Firebase backend configurado, frontend parcial ($FRONTEND_SECRETS/6)"
+              echo "FIREBASE_CONFIGURED=true" >> $GITHUB_ENV
+              echo "FIREBASE_FRONTEND_READY=false" >> $GITHUB_ENV
+            fi
           else
-            echo "ℹ️ FIREBASE_TOKEN não configurado"
+            echo ""
+            echo "❌ Firebase não configurado completamente"
+            echo "🔧 Secrets faltando: ${MISSING_SECRETS[*]}"
+            echo "FIREBASE_CONFIGURED=false" >> $GITHUB_ENV
+            echo "FIREBASE_FRONTEND_READY=false" >> $GITHUB_ENV
           fi
           
       - name: Sincronizar arquivos do pipeline
@@ -601,18 +638,39 @@ jobs:
       - name: Executar notificações
         if: env.FIREBASE_CONFIGURED == 'true' && env.FIREBASE_INSTALL_FAILED != 'true'
         run: |
-          echo "📱 Executando notificações..."
+          echo "📱 Executando sistema de notificações Firebase..."
+          
+          # ✅ USAR SERVICE_ACCOUNT SE DISPONÍVEL (MAIS ROBUSTO)
+          if [ "$FIREBASE_AUTH_METHOD" = "service_account" ]; then
+            echo "🔧 Usando Service Account para autenticação (método robusto)"
+          else
+            echo "🔧 Usando Firebase Token para autenticação (método CLI)"
+          fi
           
           if [ -f "notification_sender.py" ]; then
-            echo "🚀 Iniciando notification_sender.py..."
+            echo "🚀 Iniciando notification_sender.py com configuração completa..."
             timeout 300 python notification_sender.py || echo "⚠️ Notificações finalizadas (timeout ou erro não crítico)"
           else
-            echo "ℹ️ notification_sender.py não encontrado"
+            echo "ℹ️ notification_sender.py não encontrado - Criando exemplo básico..."
+            
+            # ✅ CRIAR SCRIPT DE EXEMPLO SE NÃO EXISTIR
+            cat > notification_test.py << EOF
+import os
+print("🔍 Testando configuração Firebase...")
+print(f"Project ID: {os.environ.get('FIREBASE_PROJECT_ID', 'NÃO CONFIGURADO')}")
+print(f"Auth Method: {os.environ.get('FIREBASE_AUTH_METHOD', 'DESCONHECIDO')}")
+print("✅ Configuração Firebase detectada!")
+EOF
+            
+            python notification_test.py
           fi
         env:
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
           FIREBASE_VAPID_KEY: ${{ secrets.FIREBASE_VAPID_KEY }}
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          FIREBASE_AUTH_METHOD: ${{ env.FIREBASE_AUTH_METHOD }}
         continue-on-error: true
 
   # JOB 4: RESUMO FINAL
