@@ -560,16 +560,14 @@ jobs:
             exit 0
           fi
           
-          # ✅ VERIFICAR CONFIGURAÇÃO COMPLETA (AGORA COM SERVICE_ACCOUNT)
+          # Verificar configuração completa
           FIREBASE_OK=true
-          MISSING_SECRETS=()
           
           # Verificar secrets obrigatórios
           if [ -n "${{ secrets.FIREBASE_PROJECT_ID }}" ]; then
             echo "✅ FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}"
           else
             echo "❌ FIREBASE_PROJECT_ID não configurado"
-            MISSING_SECRETS+=("FIREBASE_PROJECT_ID")
             FIREBASE_OK=false
           fi
           
@@ -581,21 +579,55 @@ jobs:
             echo "FIREBASE_AUTH_METHOD=token" >> $GITHUB_ENV
           else
             echo "❌ Nenhum método de autenticação configurado"
-            MISSING_SECRETS+=("FIREBASE_SERVICE_ACCOUNT ou FIREBASE_TOKEN")
             FIREBASE_OK=false
           fi
           
-          # Verificar secrets para frontend (opcionais mas recomendados)
+          # Verificar secrets para frontend
           echo ""
           echo "📱 Verificando secrets para frontend Firebase:"
-          
           FRONTEND_SECRETS=0
-          [ -n "${{ secrets.FIREBASE_API_KEY }}" ] && echo "  ✅ FIREBASE_API_KEY" && ((FRONTEND_SECRETS++)) || echo "  ⚪ FIREBASE_API_KEY"
-          [ -n "${{ secrets.FIREBASE_AUTH_DOMAIN }}" ] && echo "  ✅ FIREBASE_AUTH_DOMAIN" && ((FRONTEND_SECRETS++)) || echo "  ⚪ FIREBASE_AUTH_DOMAIN"
-          [ -n "${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}" ] && echo "  ✅ FIREBASE_MESSAGING_SENDER_ID" && ((FRONTEND_SECRETS++)) || echo "  ⚪ FIREBASE_MESSAGING_SENDER_ID"
-          [ -n "${{ secrets.FIREBASE_APP_ID }}" ] && echo "  ✅ FIREBASE_APP_ID" && ((FRONTEND_SECRETS++)) || echo "  ⚪ FIREBASE_APP_ID"
-          [ -n "${{ secrets.FIREBASE_VAPID_KEY }}" ] && echo "  ✅ FIREBASE_VAPID_KEY" && ((FRONTEND_SECRETS++)) || echo "  ⚪ FIREBASE_VAPID_KEY"
-          [ -n "${{ secrets.FIREBASE_STORAGE_BUCKET }}" ] && echo "  ✅ FIREBASE_STORAGE_BUCKET" && ((FRONTEND_SECRETS++)) || echo "  ⚪ FIREBASE_STORAGE_BUCKET"
+          
+          if [ -n "${{ secrets.FIREBASE_API_KEY }}" ]; then
+            echo "  ✅ FIREBASE_API_KEY"
+            FRONTEND_SECRETS=$((FRONTEND_SECRETS + 1))
+          else
+            echo "  ⚪ FIREBASE_API_KEY"
+          fi
+          
+          if [ -n "${{ secrets.FIREBASE_AUTH_DOMAIN }}" ]; then
+            echo "  ✅ FIREBASE_AUTH_DOMAIN"
+            FRONTEND_SECRETS=$((FRONTEND_SECRETS + 1))
+          else
+            echo "  ⚪ FIREBASE_AUTH_DOMAIN"
+          fi
+          
+          if [ -n "${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}" ]; then
+            echo "  ✅ FIREBASE_MESSAGING_SENDER_ID"
+            FRONTEND_SECRETS=$((FRONTEND_SECRETS + 1))
+          else
+            echo "  ⚪ FIREBASE_MESSAGING_SENDER_ID"
+          fi
+          
+          if [ -n "${{ secrets.FIREBASE_APP_ID }}" ]; then
+            echo "  ✅ FIREBASE_APP_ID"
+            FRONTEND_SECRETS=$((FRONTEND_SECRETS + 1))
+          else
+            echo "  ⚪ FIREBASE_APP_ID"
+          fi
+          
+          if [ -n "${{ secrets.FIREBASE_VAPID_KEY }}" ]; then
+            echo "  ✅ FIREBASE_VAPID_KEY"
+            FRONTEND_SECRETS=$((FRONTEND_SECRETS + 1))
+          else
+            echo "  ⚪ FIREBASE_VAPID_KEY"
+          fi
+          
+          if [ -n "${{ secrets.FIREBASE_STORAGE_BUCKET }}" ]; then
+            echo "  ✅ FIREBASE_STORAGE_BUCKET"
+            FRONTEND_SECRETS=$((FRONTEND_SECRETS + 1))
+          else
+            echo "  ⚪ FIREBASE_STORAGE_BUCKET"
+          fi
           
           echo "📊 Frontend secrets configurados: $FRONTEND_SECRETS/6"
           
@@ -613,7 +645,6 @@ jobs:
           else
             echo ""
             echo "❌ Firebase não configurado completamente"
-            echo "🔧 Secrets faltando: ${MISSING_SECRETS[*]}"
             echo "FIREBASE_CONFIGURED=false" >> $GITHUB_ENV
             echo "FIREBASE_FRONTEND_READY=false" >> $GITHUB_ENV
           fi
