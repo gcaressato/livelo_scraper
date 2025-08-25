@@ -669,30 +669,23 @@ jobs:
       - name: Executar notificações
         if: env.FIREBASE_CONFIGURED == 'true' && env.FIREBASE_INSTALL_FAILED != 'true'
         run: |
-          echo "📱 Executando sistema de notificações Firebase..."
+          echo "Executando sistema de notificações Firebase..."
           
-          # ✅ USAR SERVICE_ACCOUNT SE DISPONÍVEL (MAIS ROBUSTO)
           if [ "$FIREBASE_AUTH_METHOD" = "service_account" ]; then
-            echo "🔧 Usando Service Account para autenticação (método robusto)"
+            echo "Usando Service Account para autenticação"
           else
-            echo "🔧 Usando Firebase Token para autenticação (método CLI)"
+            echo "Usando Firebase Token para autenticação"
           fi
           
           if [ -f "notification_sender.py" ]; then
-            echo "🚀 Iniciando notification_sender.py com configuração completa..."
-            timeout 300 python notification_sender.py || echo "⚠️ Notificações finalizadas (timeout ou erro não crítico)"
+            echo "Iniciando notification_sender.py..."
+            timeout 300 python notification_sender.py || echo "Notificações finalizadas"
           else
-            echo "ℹ️ notification_sender.py não encontrado - Criando exemplo básico..."
-            
-            # ✅ CRIAR SCRIPT DE EXEMPLO SE NÃO EXISTIR
-            cat > notification_test.py << EOF
-import os
-print("🔍 Testando configuração Firebase...")
-print(f"Project ID: {os.environ.get('FIREBASE_PROJECT_ID', 'NÃO CONFIGURADO')}")
-print(f"Auth Method: {os.environ.get('FIREBASE_AUTH_METHOD', 'DESCONHECIDO')}")
-print("✅ Configuração Firebase detectada!")
-EOF
-            
+            echo "notification_sender.py não encontrado - Criando teste básico..."
+            echo "import os" > notification_test.py
+            echo "print('Testando configuração Firebase...')" >> notification_test.py
+            echo "print('Project ID:', os.environ.get('FIREBASE_PROJECT_ID', 'NÃO CONFIGURADO'))" >> notification_test.py
+            echo "print('Configuração Firebase detectada!')" >> notification_test.py
             python notification_test.py
           fi
         env:
