@@ -1328,7 +1328,8 @@ class LiveloAnalytics:
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <title>Livelo Analytics Pro - {metricas['ultima_atualizacao']}</title>
-        <base href="/livelo_scraper/"> <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <base href="/livelo_scraper/">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -1434,7 +1435,7 @@ class LiveloAnalytics:
                 padding: 12px 15px;
                 border-radius: 8px 8px 0 0;
                 display: flex;
-                justify-content: between;
+                justify-content: space-between;
                 align-items: center;
             }}
             
@@ -3201,7 +3202,7 @@ class LiveloAnalytics:
         
         <div class="notification-settings" id="notificationSettings">
             <div class="notification-header">
-                <div style="display: flex; justify-content: between; align-items: center;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
                         <i class="bi bi-bell-fill me-2"></i>
                         <strong>Sistema de Notificações</strong>
@@ -3616,21 +3617,28 @@ class LiveloAnalytics:
 
             // CONFIGURAÇÃO DO FIREBASE - SERÁ INJETADA PELO GITHUB ACTIONS
             const firebaseConfig = {{
-                apiKey: "{{{{FIREBASE_API_KEY}}}}",
-                authDomain: "{{{{FIREBASE_AUTH_DOMAIN}}}}",
-                projectId: "{{{{FIREBASE_PROJECT_ID}}}}",
-                storageBucket: "{{{{FIREBASE_STORAGE_BUCKET}}}}",
-                messagingSenderId: "{{{{FIREBASE_MESSAGING_SENDER_ID}}}}",
-                appId: "{{{{FIREBASE_APP_ID}}}}"
+                apiKey: "{firebase_api_key}",
+                authDomain: "{firebase_auth_domain}",
+                projectId: "{firebase_project_id}",
+                storageBucket: "{firebase_storage_bucket}",
+                messagingSenderId: "{firebase_messaging_sender_id}",
+                appId: "{firebase_app_id}"
             }};
 
             // VAPID KEY
-            const vapidKey = "{{{{FIREBASE_VAPID_KEY}}}}";
+            const vapidKey = "{firebase_vapid_key}";
 
             // INICIALIZAR FIREBASE
-            const app = initializeApp(firebaseConfig);
-            const messaging = getMessaging(app);
-            const db = getFirestore(app);
+            let app, messaging, db;
+            
+            try {{
+                app = initializeApp(firebaseConfig);
+                messaging = getMessaging(app);
+                db = getFirestore(app);
+                console.log('[Firebase] Inicializado com sucesso');
+            }} catch (error) {{
+                console.error('[Firebase] Erro na inicialização:', error);
+            }}
 
             // ========== VARIÁVEIS GLOBAIS ==========
             const todosOsDados = {dados_json};
@@ -3658,11 +3666,11 @@ class LiveloAnalytics:
                     this.vapidKey = vapidKey;
                     this.maxRetries = 3;
                     this.currentRetries = 0;
-                    this.serviceWorkerRegistration = null; // ← NOVO: armazenar SW personalizado
+                    this.serviceWorkerRegistration = null;
                 }}
 
                 async initialize() {{
-                    console.log('[Notifications] Inicializando sistema corrigido...');
+                    console.log('[Notifications] Inicializando sistema...');
                     
                     // Gerar ou recuperar userId
                     this.userId = localStorage.getItem('livelo-user-id') || this.generateUserId();
@@ -3677,10 +3685,12 @@ class LiveloAnalytics:
                     }}
                     
                     // Configurar listener para mensagens em foreground
-                    onMessage(this.messaging, (payload) => {{
-                        console.log('[Notifications] Mensagem recebida em foreground:', payload);
-                        this.showNotification(payload);
-                    }});
+                    if (messaging) {{
+                        onMessage(messaging, (payload) => {{
+                            console.log('[Notifications] Mensagem recebida em foreground:', payload);
+                            this.showNotification(payload);
+                        }});
+                    }}
                     
                     console.log('[Notifications] Sistema inicializado');
                 }}
@@ -3689,50 +3699,45 @@ class LiveloAnalytics:
                     return 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
                 }}
 
-                // ========== NOVA FUNÇÃO: REGISTRAR SERVICE WORKER MANUALMENTE ==========
                 async registerServiceWorker() {{
-                    console.log('[Notifications] 🔧 Registrando Service Worker manualmente...');
+                    console.log('[Notifications] Registrando Service Worker...');
                     
                     if (!('serviceWorker' in navigator)) {{
                         throw new Error('Service Worker não suportado neste navegador');
                     }}
 
                     try {{
-                        // CAMINHO CORRETO para GitHub Pages subdiretório
-                        const swPath = './firebase-messaging-sw.js'; // Relativo ao site atual
-                        console.log('[Notifications] 📁 Registrando SW em:', window.location.origin + window.location.pathname + swPath);
+                        const swPath = './firebase-messaging-sw.js';
+                        console.log('[Notifications] Registrando SW em:', window.location.origin + window.location.pathname + swPath);
 
-                        // Registrar com escopo específico
                         this.serviceWorkerRegistration = await navigator.serviceWorker.register(swPath, {{
-                            scope: './', // Escopo relativo ao diretório atual
-                            updateViaCache: 'none' // Sempre buscar versão mais recente
+                            scope: './',
+                            updateViaCache: 'none'
                         }});
 
-                        console.log('[Notifications] ✅ Service Worker registrado:', this.serviceWorkerRegistration.scope);
+                        console.log('[Notifications] Service Worker registrado:', this.serviceWorkerRegistration.scope);
                         
-                        // Aguardar SW ficar ativo
                         if (this.serviceWorkerRegistration.installing) {{
-                            console.log('[Notifications] ⏳ Aguardando Service Worker instalar...');
+                            console.log('[Notifications] Aguardando Service Worker instalar...');
                             await this.waitForServiceWorkerReady();
                         }}
 
                         return this.serviceWorkerRegistration;
 
                     }} catch (error) {{
-                        console.error('[Notifications] ❌ Erro ao registrar Service Worker:', error);
+                        console.error('[Notifications] Erro ao registrar Service Worker:', error);
                         throw error;
                     }}
                 }}
 
-                // ========== NOVA FUNÇÃO: AGUARDAR SERVICE WORKER FICAR PRONTO ==========
                 async waitForServiceWorkerReady() {{
                     return new Promise((resolve) => {{
                         const checkReady = () => {{
                             if (this.serviceWorkerRegistration.active) {{
-                                console.log('[Notifications] ✅ Service Worker ativo');
+                                console.log('[Notifications] Service Worker ativo');
                                 resolve();
                             }} else {{
-                                console.log('[Notifications] ⏳ Aguardando Service Worker ativar...');
+                                console.log('[Notifications] Aguardando Service Worker ativar...');
                                 setTimeout(checkReady, 100);
                             }}
                         }};
@@ -3759,13 +3764,11 @@ class LiveloAnalytics:
                     }}
                 }}
 
-                // ========== FUNÇÃO MODIFICADA: USAR SERVICE WORKER PERSONALIZADO ==========
                 async getToken() {{
                     try {{
-                        // USAR O SERVICE WORKER QUE REGISTRAMOS MANUALMENTE (SOLUÇÃO GITHUB PAGES)
-                        const token = await getToken(this.messaging, {{ 
+                        const token = await getToken(messaging, {{ 
                             vapidKey: this.vapidKey,
-                            serviceWorkerRegistration: this.serviceWorkerRegistration // ← CHAVE DA SOLUÇÃO!
+                            serviceWorkerRegistration: this.serviceWorkerRegistration
                         }});
                         
                         if (token) {{
@@ -3780,7 +3783,6 @@ class LiveloAnalytics:
                         throw error;
                     }}
                 }}
-
                 async saveToFirestore(config = {{}}) {{
                     if (!this.token || !this.userId) {{
                         console.warn('[Notifications] Token ou userId não disponível para salvar no Firestore');
@@ -3812,40 +3814,33 @@ class LiveloAnalytics:
                     }}
                 }}
 
-                // ========== FUNÇÃO MODIFICADA: INCLUIR REGISTRO DO SERVICE WORKER ==========
                 async attemptEnable() {{
                     try {{
                         console.log(`[Notifications] Tentativa ${{this.currentRetries + 1}}/${{this.maxRetries}} de ativar notificações`);
                         
-                        // 1. REGISTRAR SERVICE WORKER MANUALMENTE PRIMEIRO
                         await this.registerServiceWorker();
                         
-                        // 2. Solicitar permissão e obter token
                         const token = await this.requestPermission();
                         
-                        // 3. Salvar no localStorage
                         localStorage.setItem('fcm-token', token);
                         
-                        // 4. Obter configurações atuais
                         const config = {{
                             notifyOffers: document.getElementById('notifyOffers')?.checked ?? true,
                             notifyChanges: document.getElementById('notifyChanges')?.checked ?? true,
                             onlyFavorites: document.getElementById('onlyFavorites')?.checked ?? true
                         }};
                         
-                        // 5. Salvar no Firestore
                         const firestoreSuccess = await this.saveToFirestore(config);
                         
-                        // 6. Atualizar estado
                         this.isEnabled = true;
                         this.updateUI();
                         
                         showToast('Notificações ativadas com sucesso!', 'success');
                         
                         if (firestoreSuccess) {{
-                            console.log('[Notifications] ✅ Sistema completo ativado (FCM + Firestore + SW personalizado)');
+                            console.log('[Notifications] Sistema completo ativado');
                         }} else {{
-                            console.log('[Notifications] ⚠️ FCM ativado, Firestore com problemas');
+                            console.log('[Notifications] FCM ativado, Firestore com problemas');
                         }}
                         
                         return true;
@@ -3857,7 +3852,6 @@ class LiveloAnalytics:
                             this.currentRetries++;
                             showToast(`Tentativa ${{this.currentRetries}}/${{this.maxRetries}}... Tentando novamente`, 'info');
                             
-                            // Aguardar um pouco antes da próxima tentativa
                             await new Promise(resolve => setTimeout(resolve, 1000));
                             return await this.attemptEnable();
                         }} else {{
@@ -3874,10 +3868,8 @@ class LiveloAnalytics:
 
                 async disable() {{
                     try {{
-                        // 1. Remover do localStorage
                         localStorage.removeItem('fcm-token');
                         
-                        // 2. Desativar no Firestore (mas manter os dados)
                         if (this.userId) {{
                             try {{
                                 await updateDoc(doc(this.db, 'usuarios', this.userId), {{
@@ -3890,7 +3882,6 @@ class LiveloAnalytics:
                             }}
                         }}
                         
-                        // 3. Atualizar estado
                         this.isEnabled = false;
                         this.token = null;
                         this.updateUI();
@@ -3965,7 +3956,6 @@ class LiveloAnalytics:
                     const copyBtn = document.getElementById('copyTokenBtn');
 
                     if (this.isEnabled) {{
-                        // UI para estado ATIVADO
                         if (trigger) {{
                             trigger.className = 'bi bi-gear-fill';
                             trigger.closest('.notification-trigger').classList.add('active');
@@ -3985,7 +3975,6 @@ class LiveloAnalytics:
                             if (copyBtn) copyBtn.style.display = 'inline-block';
                         }}
                     }} else {{
-                        // UI para estado DESATIVADO
                         if (trigger) {{
                             trigger.className = 'bi bi-gear';
                             trigger.closest('.notification-trigger').classList.remove('active');
@@ -4019,8 +4008,9 @@ class LiveloAnalytics:
                         hasServiceWorkerRegistration: !!this.serviceWorkerRegistration
                     }};
                 }}
+            }}
 
-            // ========== CLASSE GERENCIADOR DA CARTEIRA - VERSÃO CORRIGIDA ==========
+            // ========== CLASSE GERENCIADOR DA CARTEIRA ==========
             class LiveloCarteiraManager {{
                 constructor() {{
                     this.favoritos = this.loadFavoritos();
@@ -4049,7 +4039,6 @@ class LiveloAnalytics:
                         localStorage.setItem('livelo-favoritos', JSON.stringify(this.favoritos));
                         console.log('[Carteira] Favoritos salvos no localStorage:', this.favoritos);
                         
-                        // Também salvar no Firestore se o sistema de notificações estiver ativo
                         if (notificationSystem && notificationSystem.isEnabled) {{
                             notificationSystem.saveToFirestore().catch(error => {{
                                 console.warn('[Carteira] Erro ao sincronizar favoritos com Firestore:', error);
@@ -4100,7 +4089,6 @@ class LiveloAnalytics:
                     this.saveFavoritos();
                     this.updateAllIcons();
                     
-                    // FORÇAR ATUALIZAÇÃO IMEDIATA DA CARTEIRA
                     setTimeout(() => {{
                         this.updateCarteira();
                     }}, 100);
@@ -4589,7 +4577,7 @@ class LiveloAnalytics:
             }}
 
             // ========== FUNÇÕES DE NOTIFICAÇÕES GLOBAIS ==========
-            window.toggleNotificationSettings = function() {{
+            function toggleNotificationSettings() {{
                 const panel = document.getElementById('notificationSettings');
                 if (panel) {{
                     if (panel.classList.contains('show')) {{
@@ -4600,9 +4588,9 @@ class LiveloAnalytics:
                         console.log('[Notifications] Painel aberto');
                     }}
                 }}
-            }};
+            }}
 
-            window.enableNotifications = async function() {{
+            async function enableNotifications() {{
                 if (notificationSystem) {{
                     const result = await notificationSystem.enable();
                     if (result) {{
@@ -4611,16 +4599,16 @@ class LiveloAnalytics:
                         console.log('[Notifications] ❌ Falha ao ativar notificações');
                     }}
                 }}
-            }};
+            }}
 
-            window.disableNotifications = async function() {{
+            async function disableNotifications() {{
                 if (notificationSystem) {{
                     await notificationSystem.disable();
                     console.log('[Notifications] Notificações desativadas');
                 }}
-            }};
+            }}
 
-            window.copyToken = function() {{
+            function copyToken() {{
                 if (notificationSystem && notificationSystem.token) {{
                     navigator.clipboard.writeText(notificationSystem.token).then(() => {{
                         showToast('Token copiado para a área de transferência!', 'success');
@@ -4630,7 +4618,14 @@ class LiveloAnalytics:
                         showToast('Erro ao copiar token', 'error');
                     }});
                 }}
-            }};
+            }}
+
+            // ========== FUNÇÕES GLOBAIS PARA COMPATIBILIDADE ==========
+            window.toggleNotificationSettings = toggleNotificationSettings;
+            window.enableNotifications = enableNotifications;
+            window.disableNotifications = disableNotifications;
+            window.copyToken = copyToken;
+            window.toggleTheme = toggleTheme;
 
             // Event listeners para configurações
             document.addEventListener('change', (e) => {{
@@ -5239,7 +5234,6 @@ class LiveloAnalytics:
             window.downloadDadosRaw = downloadDadosRaw;
             window.toggleAlert = toggleAlert;
             window.closeAlert = closeAlert;
-            window.toggleTheme = toggleTheme;
 
             // ========== INICIALIZAÇÃO PRINCIPAL ==========
             document.addEventListener('DOMContentLoaded', function() {{
